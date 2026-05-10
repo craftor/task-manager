@@ -363,8 +363,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       'project_id', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES projects (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES projects (id) ON DELETE CASCADE'));
   static const VerificationMeta _parentTaskIdMeta =
       const VerificationMeta('parentTaskId');
   @override
@@ -405,13 +405,13 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   late final GeneratedColumn<DateTime> dueDate = GeneratedColumn<DateTime>(
       'due_date', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
-  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
   @override
-  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
-      'tags', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(''));
+  late final GeneratedColumnWithTypeConverter<List<String>, String> tags =
+      GeneratedColumn<String>('tags', aliasedName, false,
+              type: DriftSqlType.string,
+              requiredDuringInsert: false,
+              defaultValue: const Constant('[]'))
+          .withConverter<List<String>>($TasksTable.$convertertags);
   static const VerificationMeta _estimatedMinutesMeta =
       const VerificationMeta('estimatedMinutes');
   @override
@@ -521,10 +521,6 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       context.handle(_dueDateMeta,
           dueDate.isAcceptableOrUnknown(data['due_date']!, _dueDateMeta));
     }
-    if (data.containsKey('tags')) {
-      context.handle(
-          _tagsMeta, tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta));
-    }
     if (data.containsKey('estimated_minutes')) {
       context.handle(
           _estimatedMinutesMeta,
@@ -586,8 +582,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.int, data['${effectivePrefix}status'])!,
       dueDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}due_date']),
-      tags: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}tags'])!,
+      tags: $TasksTable.$convertertags.fromSql(attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags'])!),
       estimatedMinutes: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}estimated_minutes']),
       actualMinutes: attachedDatabase.typeMapping
@@ -607,6 +603,9 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   $TasksTable createAlias(String alias) {
     return $TasksTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<String>, String> $convertertags =
+      const TagsConverter();
 }
 
 class Task extends DataClass implements Insertable<Task> {
@@ -618,7 +617,7 @@ class Task extends DataClass implements Insertable<Task> {
   final int priority;
   final int status;
   final DateTime? dueDate;
-  final String tags;
+  final List<String> tags;
   final int? estimatedMinutes;
   final int? actualMinutes;
   final bool isRecurring;
@@ -656,7 +655,9 @@ class Task extends DataClass implements Insertable<Task> {
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] = Variable<DateTime>(dueDate);
     }
-    map['tags'] = Variable<String>(tags);
+    {
+      map['tags'] = Variable<String>($TasksTable.$convertertags.toSql(tags));
+    }
     if (!nullToAbsent || estimatedMinutes != null) {
       map['estimated_minutes'] = Variable<int>(estimatedMinutes);
     }
@@ -714,7 +715,7 @@ class Task extends DataClass implements Insertable<Task> {
       priority: serializer.fromJson<int>(json['priority']),
       status: serializer.fromJson<int>(json['status']),
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
-      tags: serializer.fromJson<String>(json['tags']),
+      tags: serializer.fromJson<List<String>>(json['tags']),
       estimatedMinutes: serializer.fromJson<int?>(json['estimatedMinutes']),
       actualMinutes: serializer.fromJson<int?>(json['actualMinutes']),
       isRecurring: serializer.fromJson<bool>(json['isRecurring']),
@@ -735,7 +736,7 @@ class Task extends DataClass implements Insertable<Task> {
       'priority': serializer.toJson<int>(priority),
       'status': serializer.toJson<int>(status),
       'dueDate': serializer.toJson<DateTime?>(dueDate),
-      'tags': serializer.toJson<String>(tags),
+      'tags': serializer.toJson<List<String>>(tags),
       'estimatedMinutes': serializer.toJson<int?>(estimatedMinutes),
       'actualMinutes': serializer.toJson<int?>(actualMinutes),
       'isRecurring': serializer.toJson<bool>(isRecurring),
@@ -754,7 +755,7 @@ class Task extends DataClass implements Insertable<Task> {
           int? priority,
           int? status,
           Value<DateTime?> dueDate = const Value.absent(),
-          String? tags,
+          List<String>? tags,
           Value<int?> estimatedMinutes = const Value.absent(),
           Value<int?> actualMinutes = const Value.absent(),
           bool? isRecurring,
@@ -882,7 +883,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<int> priority;
   final Value<int> status;
   final Value<DateTime?> dueDate;
-  final Value<String> tags;
+  final Value<List<String>> tags;
   final Value<int?> estimatedMinutes;
   final Value<int?> actualMinutes;
   final Value<bool> isRecurring;
@@ -977,7 +978,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<int>? priority,
       Value<int>? status,
       Value<DateTime?>? dueDate,
-      Value<String>? tags,
+      Value<List<String>>? tags,
       Value<int?>? estimatedMinutes,
       Value<int?>? actualMinutes,
       Value<bool>? isRecurring,
@@ -1033,7 +1034,8 @@ class TasksCompanion extends UpdateCompanion<Task> {
       map['due_date'] = Variable<DateTime>(dueDate.value);
     }
     if (tags.present) {
-      map['tags'] = Variable<String>(tags.value);
+      map['tags'] =
+          Variable<String>($TasksTable.$convertertags.toSql(tags.value));
     }
     if (estimatedMinutes.present) {
       map['estimated_minutes'] = Variable<int>(estimatedMinutes.value);
@@ -1100,8 +1102,8 @@ class $TimeEntriesTable extends TimeEntries
       'task_id', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES tasks (id)'));
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES tasks (id) ON DELETE CASCADE'));
   static const VerificationMeta _startTimeMeta =
       const VerificationMeta('startTime');
   @override
@@ -1487,6 +1489,25 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
       [projects, tasks, timeEntries];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('projects',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('tasks', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('tasks',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('time_entries', kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }
 
 typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
@@ -1761,7 +1782,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<int> priority,
   Value<int> status,
   Value<DateTime?> dueDate,
-  Value<String> tags,
+  Value<List<String>> tags,
   Value<int?> estimatedMinutes,
   Value<int?> actualMinutes,
   Value<bool> isRecurring,
@@ -1779,7 +1800,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<int> priority,
   Value<int> status,
   Value<DateTime?> dueDate,
-  Value<String> tags,
+  Value<List<String>> tags,
   Value<int?> estimatedMinutes,
   Value<int?> actualMinutes,
   Value<bool> isRecurring,
@@ -1851,8 +1872,10 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   ColumnFilters<DateTime> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get tags => $composableBuilder(
-      column: $table.tags, builder: (column) => ColumnFilters(column));
+  ColumnWithTypeConverterFilters<List<String>, List<String>, String> get tags =>
+      $composableBuilder(
+          column: $table.tags,
+          builder: (column) => ColumnWithTypeConverterFilters(column));
 
   ColumnFilters<int> get estimatedMinutes => $composableBuilder(
       column: $table.estimatedMinutes,
@@ -2021,7 +2044,7 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<DateTime> get dueDate =>
       $composableBuilder(column: $table.dueDate, builder: (column) => column);
 
-  GeneratedColumn<String> get tags =>
+  GeneratedColumnWithTypeConverter<List<String>, String> get tags =>
       $composableBuilder(column: $table.tags, builder: (column) => column);
 
   GeneratedColumn<int> get estimatedMinutes => $composableBuilder(
@@ -2115,7 +2138,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<int> priority = const Value.absent(),
             Value<int> status = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
-            Value<String> tags = const Value.absent(),
+            Value<List<String>> tags = const Value.absent(),
             Value<int?> estimatedMinutes = const Value.absent(),
             Value<int?> actualMinutes = const Value.absent(),
             Value<bool> isRecurring = const Value.absent(),
@@ -2151,7 +2174,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<int> priority = const Value.absent(),
             Value<int> status = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
-            Value<String> tags = const Value.absent(),
+            Value<List<String>> tags = const Value.absent(),
             Value<int?> estimatedMinutes = const Value.absent(),
             Value<int?> actualMinutes = const Value.absent(),
             Value<bool> isRecurring = const Value.absent(),

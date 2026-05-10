@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,6 +7,25 @@ import 'package:path/path.dart' as p;
 import '../../../core/constants/app_constants.dart';
 
 part 'app_database.g.dart';
+
+class TagsConverter extends TypeConverter<List<String>, String> {
+  const TagsConverter();
+
+  @override
+  List<String> fromSql(String fromDb) {
+    if (fromDb.isEmpty) return [];
+    try {
+      return List<String>.from(json.decode(fromDb));
+    } catch (_) {
+      return fromDb.split(',');
+    }
+  }
+
+  @override
+  String toSql(List<String> value) {
+    return json.encode(value);
+  }
+}
 
 class Projects extends Table {
   TextColumn get id => text()();
@@ -21,14 +41,14 @@ class Projects extends Table {
 
 class Tasks extends Table {
   TextColumn get id => text()();
-  TextColumn get projectId => text().references(Projects, #id)();
+  TextColumn get projectId => text().references(Projects, #id, onDelete: KeyAction.cascade)();
   TextColumn get parentTaskId => text().nullable()();
   TextColumn get title => text()();
   TextColumn get description => text().withDefault(const Constant(''))();
   IntColumn get priority => integer().withDefault(const Constant(2))();
   IntColumn get status => integer().withDefault(const Constant(0))();
   DateTimeColumn get dueDate => dateTime().nullable()();
-  TextColumn get tags => text().withDefault(const Constant(''))();
+  TextColumn get tags => text().map(const TagsConverter()).withDefault(const Constant('[]'))();
   IntColumn get estimatedMinutes => integer().nullable()();
   IntColumn get actualMinutes => integer().nullable()();
   BoolColumn get isRecurring => boolean().withDefault(const Constant(false))();
@@ -42,7 +62,7 @@ class Tasks extends Table {
 
 class TimeEntries extends Table {
   TextColumn get id => text()();
-  TextColumn get taskId => text().references(Tasks, #id)();
+  TextColumn get taskId => text().references(Tasks, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get startTime => dateTime()();
   DateTimeColumn get endTime => dateTime().nullable()();
   IntColumn get durationMinutes => integer().nullable()();
