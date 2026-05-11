@@ -11,7 +11,23 @@
       "Bash(git commit -m 'fix: use JSON encoding for tags and add error handling *)",
       "Bash(git commit -m 'fix: resolve ambiguous import errors in providers *)",
       "Bash(git commit -m 'feat: add projects screen with create/edit/delete functionality *)",
-      "Bash(git commit -m 'fix: resolve time tracking import paths and cleanup *)"
+      "Bash(git commit -m 'fix: resolve time tracking import paths and cleanup *)",
+      "Bash(flutter test *)",
+      "Bash(flutter build *)",
+      "Read(//e/01-AI-Proj/**)",
+      "Bash(flutter create *)",
+      "Bash(cp -r \"E:/01-AI-Proj/task-manager/lib/\" \"E:/01-AI-Proj/task_manager_temp/lib/\")",
+      "Bash(cp \"E:/01-AI-Proj/task-manager/pubspec.yaml\" \"E:/01-AI-Proj/task_manager_temp/pubspec.yaml\")",
+      "Bash(cp \"E:/01-AI-Proj/task-manager/lib/main.dart\" \"E:/01-AI-Proj/task_manager_temp/lib/main.dart\")",
+      "Bash(cp \"E:/01-AI-Proj/task-manager/lib/app.dart\" \"E:/01-AI-Proj/task_manager_temp/lib/app.dart\")",
+      "Bash(rm -rf \"E:/01-AI-Proj/task_manager_temp/lib\")",
+      "Bash(cp -r \"E:/01-AI-Proj/task-manager/lib\" \"E:/01-AI-Proj/task_manager_temp/lib\")",
+      "Bash(flutter devices *)",
+      "Bash(flutter install *)",
+      "Bash(adb install *)",
+      "Bash(adb shell *)",
+      "Bash(git commit -m 'docs: add Supabase integration design spec *)",
+      "Bash(git commit *)"
     ]
   }
 }

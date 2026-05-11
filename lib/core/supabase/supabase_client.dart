@@ -5,7 +5,7 @@ class SupabaseConfig {
   static const String anonKey = 'YOUR_SUPABASE_ANON_KEY';
 }
 
-class SupabaseClient {
+class AppSupabaseClient {
   static final Supabase _instance = Supabase.instance;
 
   static Future<void> initialize() async {
@@ -15,9 +15,5 @@ class SupabaseClient {
     );
   }
 
-  static SupabaseClient get instance => _instance;
-  SupabaseClient get client => _instance.client;
-
-  static AuthClient get auth => _instance.client.auth;
-  static DatabaseClient get database => _instance.client;
+  static Supabase get instance => _instance;
 }
