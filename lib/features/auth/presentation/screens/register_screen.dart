@@ -10,18 +10,35 @@ class RegisterScreen extends ConsumerStatefulWidget {
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -33,18 +50,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (email.isEmpty || password.isEmpty) return;
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match'),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Passwords do not match')),
+            ],
+          ),
           backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
     }
     if (password.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Password must be at least 6 characters')),
+            ],
+          ),
           backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -63,8 +96,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       } else if (next.status == AuthStatus.error && next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.errorMessage!),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(next.errorMessage!)),
+              ],
+            ),
             backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -74,81 +115,155 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
-        title: const Text('Create Account'),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Create Account',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 24),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(color: AppColors.textPrimary),
-                  prefixIcon: Icon(Icons.email_outlined, color: AppColors.border),
-                ),
-                style: const TextStyle(color: AppColors.textPrimary),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: const TextStyle(color: AppColors.textPrimary),
-                  prefixIcon: const Icon(Icons.lock_outlined, color: AppColors.border),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                      color: AppColors.border,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 24),
+                // Header
+                const Text(
+                  'Get Started',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                style: const TextStyle(color: AppColors.textPrimary),
-                obscureText: _obscurePassword,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: 'Confirm Password',
-                  labelStyle: const TextStyle(color: AppColors.textPrimary),
-                  prefixIcon: const Icon(Icons.lock_outlined, color: AppColors.border),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirm ? Icons.visibility : Icons.visibility_off,
-                      color: AppColors.border,
-                    ),
-                    onPressed: () {
-                      setState(() => _obscureConfirm = !_obscureConfirm);
-                    },
+                const SizedBox(height: 12),
+                const Text(
+                  'Create your account to start managing tasks',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
                   ),
                 ),
-                style: const TextStyle(color: AppColors.textPrimary),
-                obscureText: _obscureConfirm,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed:
-                    authState.status == AuthStatus.loading ? null : _signUp,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                const SizedBox(height: 40),
+                // Email field
+                TextField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Enter your email',
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(12),
+                      child: const Icon(Icons.email_outlined, color: AppColors.textMuted),
+                    ),
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                 ),
-                child: authState.status == AuthStatus.loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Sign Up'),
-              ),
-            ],
+                const SizedBox(height: 16),
+                // Password field
+                TextField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Create a password',
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(12),
+                      child: const Icon(Icons.lock_outlined, color: AppColors.textMuted),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: AppColors.textMuted,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                    ),
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                  obscureText: _obscurePassword,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+                // Confirm password field
+                TextField(
+                  controller: _confirmPasswordController,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Confirm your password',
+                    prefixIcon: Container(
+                      margin: const EdgeInsets.all(12),
+                      child: const Icon(Icons.lock_outlined, color: AppColors.textMuted),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm ? Icons.visibility : Icons.visibility_off,
+                        color: AppColors.textMuted,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscureConfirm = !_obscureConfirm);
+                      },
+                    ),
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                  obscureText: _obscureConfirm,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _signUp(),
+                ),
+                const SizedBox(height: 32),
+                // Sign up button
+                ElevatedButton(
+                  onPressed:
+                      authState.status == AuthStatus.loading ? null : _signUp,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: authState.status == AuthStatus.loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.background,
+                          ),
+                        )
+                      : const Text(
+                          'Create Account',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 24),
+                // Terms
+                Text(
+                  'By signing up, you agree to our Terms of Service and Privacy Policy',
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),

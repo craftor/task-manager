@@ -40,9 +40,19 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _pendingSyncMeta =
+      const VerificationMeta('pendingSync');
+  @override
+  late final GeneratedColumn<bool> pendingSync = GeneratedColumn<bool>(
+      'pending_sync', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("pending_sync" IN (0, 1))'),
+      defaultValue: const Constant(true));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, parentId, name, color, icon, createdAt];
+      [id, parentId, name, color, icon, createdAt, pendingSync];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -86,6 +96,12 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('pending_sync')) {
+      context.handle(
+          _pendingSyncMeta,
+          pendingSync.isAcceptableOrUnknown(
+              data['pending_sync']!, _pendingSyncMeta));
+    }
     return context;
   }
 
@@ -107,6 +123,8 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
           .read(DriftSqlType.string, data['${effectivePrefix}icon'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      pendingSync: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
     );
   }
 
@@ -123,13 +141,15 @@ class Project extends DataClass implements Insertable<Project> {
   final String color;
   final String icon;
   final DateTime createdAt;
+  final bool pendingSync;
   const Project(
       {required this.id,
       this.parentId,
       required this.name,
       required this.color,
       required this.icon,
-      required this.createdAt});
+      required this.createdAt,
+      required this.pendingSync});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -141,6 +161,7 @@ class Project extends DataClass implements Insertable<Project> {
     map['color'] = Variable<String>(color);
     map['icon'] = Variable<String>(icon);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['pending_sync'] = Variable<bool>(pendingSync);
     return map;
   }
 
@@ -154,6 +175,7 @@ class Project extends DataClass implements Insertable<Project> {
       color: Value(color),
       icon: Value(icon),
       createdAt: Value(createdAt),
+      pendingSync: Value(pendingSync),
     );
   }
 
@@ -167,6 +189,7 @@ class Project extends DataClass implements Insertable<Project> {
       color: serializer.fromJson<String>(json['color']),
       icon: serializer.fromJson<String>(json['icon']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      pendingSync: serializer.fromJson<bool>(json['pendingSync']),
     );
   }
   @override
@@ -179,6 +202,7 @@ class Project extends DataClass implements Insertable<Project> {
       'color': serializer.toJson<String>(color),
       'icon': serializer.toJson<String>(icon),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'pendingSync': serializer.toJson<bool>(pendingSync),
     };
   }
 
@@ -188,7 +212,8 @@ class Project extends DataClass implements Insertable<Project> {
           String? name,
           String? color,
           String? icon,
-          DateTime? createdAt}) =>
+          DateTime? createdAt,
+          bool? pendingSync}) =>
       Project(
         id: id ?? this.id,
         parentId: parentId.present ? parentId.value : this.parentId,
@@ -196,6 +221,7 @@ class Project extends DataClass implements Insertable<Project> {
         color: color ?? this.color,
         icon: icon ?? this.icon,
         createdAt: createdAt ?? this.createdAt,
+        pendingSync: pendingSync ?? this.pendingSync,
       );
   Project copyWithCompanion(ProjectsCompanion data) {
     return Project(
@@ -205,6 +231,8 @@ class Project extends DataClass implements Insertable<Project> {
       color: data.color.present ? data.color.value : this.color,
       icon: data.icon.present ? data.icon.value : this.icon,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      pendingSync:
+          data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
     );
   }
 
@@ -216,13 +244,15 @@ class Project extends DataClass implements Insertable<Project> {
           ..write('name: $name, ')
           ..write('color: $color, ')
           ..write('icon: $icon, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('pendingSync: $pendingSync')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, parentId, name, color, icon, createdAt);
+  int get hashCode =>
+      Object.hash(id, parentId, name, color, icon, createdAt, pendingSync);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -232,7 +262,8 @@ class Project extends DataClass implements Insertable<Project> {
           other.name == this.name &&
           other.color == this.color &&
           other.icon == this.icon &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.pendingSync == this.pendingSync);
 }
 
 class ProjectsCompanion extends UpdateCompanion<Project> {
@@ -242,6 +273,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
   final Value<String> color;
   final Value<String> icon;
   final Value<DateTime> createdAt;
+  final Value<bool> pendingSync;
   final Value<int> rowid;
   const ProjectsCompanion({
     this.id = const Value.absent(),
@@ -250,6 +282,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     this.color = const Value.absent(),
     this.icon = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProjectsCompanion.insert({
@@ -259,6 +292,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     required String color,
     required String icon,
     required DateTime createdAt,
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         name = Value(name),
@@ -272,6 +306,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     Expression<String>? color,
     Expression<String>? icon,
     Expression<DateTime>? createdAt,
+    Expression<bool>? pendingSync,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -281,6 +316,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
       if (color != null) 'color': color,
       if (icon != null) 'icon': icon,
       if (createdAt != null) 'created_at': createdAt,
+      if (pendingSync != null) 'pending_sync': pendingSync,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -292,6 +328,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
       Value<String>? color,
       Value<String>? icon,
       Value<DateTime>? createdAt,
+      Value<bool>? pendingSync,
       Value<int>? rowid}) {
     return ProjectsCompanion(
       id: id ?? this.id,
@@ -300,6 +337,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
       color: color ?? this.color,
       icon: icon ?? this.icon,
       createdAt: createdAt ?? this.createdAt,
+      pendingSync: pendingSync ?? this.pendingSync,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -325,6 +363,9 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (pendingSync.present) {
+      map['pending_sync'] = Variable<bool>(pendingSync.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -340,6 +381,7 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
           ..write('color: $color, ')
           ..write('icon: $icon, ')
           ..write('createdAt: $createdAt, ')
+          ..write('pendingSync: $pendingSync, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -399,6 +441,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _dueDateMeta =
       const VerificationMeta('dueDate');
   @override
@@ -452,6 +500,16 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _pendingSyncMeta =
+      const VerificationMeta('pendingSync');
+  @override
+  late final GeneratedColumn<bool> pendingSync = GeneratedColumn<bool>(
+      'pending_sync', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("pending_sync" IN (0, 1))'),
+      defaultValue: const Constant(true));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -461,6 +519,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         description,
         priority,
         status,
+        startDate,
         dueDate,
         tags,
         estimatedMinutes,
@@ -468,7 +527,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         isRecurring,
         recurringRule,
         createdAt,
-        updatedAt
+        updatedAt,
+        pendingSync
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -517,6 +577,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    }
     if (data.containsKey('due_date')) {
       context.handle(_dueDateMeta,
           dueDate.isAcceptableOrUnknown(data['due_date']!, _dueDateMeta));
@@ -557,6 +621,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('pending_sync')) {
+      context.handle(
+          _pendingSyncMeta,
+          pendingSync.isAcceptableOrUnknown(
+              data['pending_sync']!, _pendingSyncMeta));
+    }
     return context;
   }
 
@@ -580,6 +650,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.int, data['${effectivePrefix}priority'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}status'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
       dueDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}due_date']),
       tags: $TasksTable.$convertertags.fromSql(attachedDatabase.typeMapping
@@ -596,6 +668,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      pendingSync: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
     );
   }
 
@@ -616,6 +690,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String description;
   final int priority;
   final int status;
+  final DateTime? startDate;
   final DateTime? dueDate;
   final List<String> tags;
   final int? estimatedMinutes;
@@ -624,6 +699,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String? recurringRule;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool pendingSync;
   const Task(
       {required this.id,
       required this.projectId,
@@ -632,6 +708,7 @@ class Task extends DataClass implements Insertable<Task> {
       required this.description,
       required this.priority,
       required this.status,
+      this.startDate,
       this.dueDate,
       required this.tags,
       this.estimatedMinutes,
@@ -639,7 +716,8 @@ class Task extends DataClass implements Insertable<Task> {
       required this.isRecurring,
       this.recurringRule,
       required this.createdAt,
-      required this.updatedAt});
+      required this.updatedAt,
+      required this.pendingSync});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -652,6 +730,9 @@ class Task extends DataClass implements Insertable<Task> {
     map['description'] = Variable<String>(description);
     map['priority'] = Variable<int>(priority);
     map['status'] = Variable<int>(status);
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
+    }
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] = Variable<DateTime>(dueDate);
     }
@@ -670,6 +751,7 @@ class Task extends DataClass implements Insertable<Task> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['pending_sync'] = Variable<bool>(pendingSync);
     return map;
   }
 
@@ -684,6 +766,9 @@ class Task extends DataClass implements Insertable<Task> {
       description: Value(description),
       priority: Value(priority),
       status: Value(status),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
       dueDate: dueDate == null && nullToAbsent
           ? const Value.absent()
           : Value(dueDate),
@@ -700,6 +785,7 @@ class Task extends DataClass implements Insertable<Task> {
           : Value(recurringRule),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      pendingSync: Value(pendingSync),
     );
   }
 
@@ -714,6 +800,7 @@ class Task extends DataClass implements Insertable<Task> {
       description: serializer.fromJson<String>(json['description']),
       priority: serializer.fromJson<int>(json['priority']),
       status: serializer.fromJson<int>(json['status']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
       dueDate: serializer.fromJson<DateTime?>(json['dueDate']),
       tags: serializer.fromJson<List<String>>(json['tags']),
       estimatedMinutes: serializer.fromJson<int?>(json['estimatedMinutes']),
@@ -722,6 +809,7 @@ class Task extends DataClass implements Insertable<Task> {
       recurringRule: serializer.fromJson<String?>(json['recurringRule']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      pendingSync: serializer.fromJson<bool>(json['pendingSync']),
     );
   }
   @override
@@ -735,6 +823,7 @@ class Task extends DataClass implements Insertable<Task> {
       'description': serializer.toJson<String>(description),
       'priority': serializer.toJson<int>(priority),
       'status': serializer.toJson<int>(status),
+      'startDate': serializer.toJson<DateTime?>(startDate),
       'dueDate': serializer.toJson<DateTime?>(dueDate),
       'tags': serializer.toJson<List<String>>(tags),
       'estimatedMinutes': serializer.toJson<int?>(estimatedMinutes),
@@ -743,6 +832,7 @@ class Task extends DataClass implements Insertable<Task> {
       'recurringRule': serializer.toJson<String?>(recurringRule),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'pendingSync': serializer.toJson<bool>(pendingSync),
     };
   }
 
@@ -754,6 +844,7 @@ class Task extends DataClass implements Insertable<Task> {
           String? description,
           int? priority,
           int? status,
+          Value<DateTime?> startDate = const Value.absent(),
           Value<DateTime?> dueDate = const Value.absent(),
           List<String>? tags,
           Value<int?> estimatedMinutes = const Value.absent(),
@@ -761,7 +852,8 @@ class Task extends DataClass implements Insertable<Task> {
           bool? isRecurring,
           Value<String?> recurringRule = const Value.absent(),
           DateTime? createdAt,
-          DateTime? updatedAt}) =>
+          DateTime? updatedAt,
+          bool? pendingSync}) =>
       Task(
         id: id ?? this.id,
         projectId: projectId ?? this.projectId,
@@ -771,6 +863,7 @@ class Task extends DataClass implements Insertable<Task> {
         description: description ?? this.description,
         priority: priority ?? this.priority,
         status: status ?? this.status,
+        startDate: startDate.present ? startDate.value : this.startDate,
         dueDate: dueDate.present ? dueDate.value : this.dueDate,
         tags: tags ?? this.tags,
         estimatedMinutes: estimatedMinutes.present
@@ -783,6 +876,7 @@ class Task extends DataClass implements Insertable<Task> {
             recurringRule.present ? recurringRule.value : this.recurringRule,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        pendingSync: pendingSync ?? this.pendingSync,
       );
   Task copyWithCompanion(TasksCompanion data) {
     return Task(
@@ -796,6 +890,7 @@ class Task extends DataClass implements Insertable<Task> {
           data.description.present ? data.description.value : this.description,
       priority: data.priority.present ? data.priority.value : this.priority,
       status: data.status.present ? data.status.value : this.status,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       tags: data.tags.present ? data.tags.value : this.tags,
       estimatedMinutes: data.estimatedMinutes.present
@@ -811,6 +906,8 @@ class Task extends DataClass implements Insertable<Task> {
           : this.recurringRule,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      pendingSync:
+          data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
     );
   }
 
@@ -824,6 +921,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('description: $description, ')
           ..write('priority: $priority, ')
           ..write('status: $status, ')
+          ..write('startDate: $startDate, ')
           ..write('dueDate: $dueDate, ')
           ..write('tags: $tags, ')
           ..write('estimatedMinutes: $estimatedMinutes, ')
@@ -831,7 +929,8 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('isRecurring: $isRecurring, ')
           ..write('recurringRule: $recurringRule, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSync: $pendingSync')
           ..write(')'))
         .toString();
   }
@@ -845,6 +944,7 @@ class Task extends DataClass implements Insertable<Task> {
       description,
       priority,
       status,
+      startDate,
       dueDate,
       tags,
       estimatedMinutes,
@@ -852,7 +952,8 @@ class Task extends DataClass implements Insertable<Task> {
       isRecurring,
       recurringRule,
       createdAt,
-      updatedAt);
+      updatedAt,
+      pendingSync);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -864,6 +965,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.description == this.description &&
           other.priority == this.priority &&
           other.status == this.status &&
+          other.startDate == this.startDate &&
           other.dueDate == this.dueDate &&
           other.tags == this.tags &&
           other.estimatedMinutes == this.estimatedMinutes &&
@@ -871,7 +973,8 @@ class Task extends DataClass implements Insertable<Task> {
           other.isRecurring == this.isRecurring &&
           other.recurringRule == this.recurringRule &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.pendingSync == this.pendingSync);
 }
 
 class TasksCompanion extends UpdateCompanion<Task> {
@@ -882,6 +985,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String> description;
   final Value<int> priority;
   final Value<int> status;
+  final Value<DateTime?> startDate;
   final Value<DateTime?> dueDate;
   final Value<List<String>> tags;
   final Value<int?> estimatedMinutes;
@@ -890,6 +994,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String?> recurringRule;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<bool> pendingSync;
   final Value<int> rowid;
   const TasksCompanion({
     this.id = const Value.absent(),
@@ -899,6 +1004,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.description = const Value.absent(),
     this.priority = const Value.absent(),
     this.status = const Value.absent(),
+    this.startDate = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.tags = const Value.absent(),
     this.estimatedMinutes = const Value.absent(),
@@ -907,6 +1013,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurringRule = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TasksCompanion.insert({
@@ -917,6 +1024,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.description = const Value.absent(),
     this.priority = const Value.absent(),
     this.status = const Value.absent(),
+    this.startDate = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.tags = const Value.absent(),
     this.estimatedMinutes = const Value.absent(),
@@ -925,6 +1033,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurringRule = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         projectId = Value(projectId),
@@ -939,6 +1048,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? description,
     Expression<int>? priority,
     Expression<int>? status,
+    Expression<DateTime>? startDate,
     Expression<DateTime>? dueDate,
     Expression<String>? tags,
     Expression<int>? estimatedMinutes,
@@ -947,6 +1057,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? recurringRule,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<bool>? pendingSync,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -957,6 +1068,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (description != null) 'description': description,
       if (priority != null) 'priority': priority,
       if (status != null) 'status': status,
+      if (startDate != null) 'start_date': startDate,
       if (dueDate != null) 'due_date': dueDate,
       if (tags != null) 'tags': tags,
       if (estimatedMinutes != null) 'estimated_minutes': estimatedMinutes,
@@ -965,6 +1077,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (recurringRule != null) 'recurring_rule': recurringRule,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (pendingSync != null) 'pending_sync': pendingSync,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -977,6 +1090,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<String>? description,
       Value<int>? priority,
       Value<int>? status,
+      Value<DateTime?>? startDate,
       Value<DateTime?>? dueDate,
       Value<List<String>>? tags,
       Value<int?>? estimatedMinutes,
@@ -985,6 +1099,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<String?>? recurringRule,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
+      Value<bool>? pendingSync,
       Value<int>? rowid}) {
     return TasksCompanion(
       id: id ?? this.id,
@@ -994,6 +1109,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       description: description ?? this.description,
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
       dueDate: dueDate ?? this.dueDate,
       tags: tags ?? this.tags,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
@@ -1002,6 +1118,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       recurringRule: recurringRule ?? this.recurringRule,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      pendingSync: pendingSync ?? this.pendingSync,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1030,6 +1147,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (status.present) {
       map['status'] = Variable<int>(status.value);
     }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
     if (dueDate.present) {
       map['due_date'] = Variable<DateTime>(dueDate.value);
     }
@@ -1055,6 +1175,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (pendingSync.present) {
+      map['pending_sync'] = Variable<bool>(pendingSync.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1071,6 +1194,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('description: $description, ')
           ..write('priority: $priority, ')
           ..write('status: $status, ')
+          ..write('startDate: $startDate, ')
           ..write('dueDate: $dueDate, ')
           ..write('tags: $tags, ')
           ..write('estimatedMinutes: $estimatedMinutes, ')
@@ -1079,6 +1203,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('recurringRule: $recurringRule, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSync: $pendingSync, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1138,9 +1263,27 @@ class $TimeEntriesTable extends TimeEntries
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("manual" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _pendingSyncMeta =
+      const VerificationMeta('pendingSync');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, taskId, startTime, endTime, durationMinutes, note, manual];
+  late final GeneratedColumn<bool> pendingSync = GeneratedColumn<bool>(
+      'pending_sync', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("pending_sync" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        taskId,
+        startTime,
+        endTime,
+        durationMinutes,
+        note,
+        manual,
+        pendingSync
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1186,6 +1329,12 @@ class $TimeEntriesTable extends TimeEntries
       context.handle(_manualMeta,
           manual.isAcceptableOrUnknown(data['manual']!, _manualMeta));
     }
+    if (data.containsKey('pending_sync')) {
+      context.handle(
+          _pendingSyncMeta,
+          pendingSync.isAcceptableOrUnknown(
+              data['pending_sync']!, _pendingSyncMeta));
+    }
     return context;
   }
 
@@ -1209,6 +1358,8 @@ class $TimeEntriesTable extends TimeEntries
           .read(DriftSqlType.string, data['${effectivePrefix}note'])!,
       manual: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}manual'])!,
+      pendingSync: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
     );
   }
 
@@ -1226,6 +1377,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
   final int? durationMinutes;
   final String note;
   final bool manual;
+  final bool pendingSync;
   const TimeEntry(
       {required this.id,
       required this.taskId,
@@ -1233,7 +1385,8 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
       this.endTime,
       this.durationMinutes,
       required this.note,
-      required this.manual});
+      required this.manual,
+      required this.pendingSync});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1248,6 +1401,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
     }
     map['note'] = Variable<String>(note);
     map['manual'] = Variable<bool>(manual);
+    map['pending_sync'] = Variable<bool>(pendingSync);
     return map;
   }
 
@@ -1264,6 +1418,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
           : Value(durationMinutes),
       note: Value(note),
       manual: Value(manual),
+      pendingSync: Value(pendingSync),
     );
   }
 
@@ -1278,6 +1433,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
       durationMinutes: serializer.fromJson<int?>(json['durationMinutes']),
       note: serializer.fromJson<String>(json['note']),
       manual: serializer.fromJson<bool>(json['manual']),
+      pendingSync: serializer.fromJson<bool>(json['pendingSync']),
     );
   }
   @override
@@ -1291,6 +1447,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
       'durationMinutes': serializer.toJson<int?>(durationMinutes),
       'note': serializer.toJson<String>(note),
       'manual': serializer.toJson<bool>(manual),
+      'pendingSync': serializer.toJson<bool>(pendingSync),
     };
   }
 
@@ -1301,7 +1458,8 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
           Value<DateTime?> endTime = const Value.absent(),
           Value<int?> durationMinutes = const Value.absent(),
           String? note,
-          bool? manual}) =>
+          bool? manual,
+          bool? pendingSync}) =>
       TimeEntry(
         id: id ?? this.id,
         taskId: taskId ?? this.taskId,
@@ -1312,6 +1470,7 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
             : this.durationMinutes,
         note: note ?? this.note,
         manual: manual ?? this.manual,
+        pendingSync: pendingSync ?? this.pendingSync,
       );
   TimeEntry copyWithCompanion(TimeEntriesCompanion data) {
     return TimeEntry(
@@ -1324,6 +1483,8 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
           : this.durationMinutes,
       note: data.note.present ? data.note.value : this.note,
       manual: data.manual.present ? data.manual.value : this.manual,
+      pendingSync:
+          data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
     );
   }
 
@@ -1336,14 +1497,15 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
           ..write('endTime: $endTime, ')
           ..write('durationMinutes: $durationMinutes, ')
           ..write('note: $note, ')
-          ..write('manual: $manual')
+          ..write('manual: $manual, ')
+          ..write('pendingSync: $pendingSync')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, taskId, startTime, endTime, durationMinutes, note, manual);
+  int get hashCode => Object.hash(id, taskId, startTime, endTime,
+      durationMinutes, note, manual, pendingSync);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1354,7 +1516,8 @@ class TimeEntry extends DataClass implements Insertable<TimeEntry> {
           other.endTime == this.endTime &&
           other.durationMinutes == this.durationMinutes &&
           other.note == this.note &&
-          other.manual == this.manual);
+          other.manual == this.manual &&
+          other.pendingSync == this.pendingSync);
 }
 
 class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
@@ -1365,6 +1528,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
   final Value<int?> durationMinutes;
   final Value<String> note;
   final Value<bool> manual;
+  final Value<bool> pendingSync;
   final Value<int> rowid;
   const TimeEntriesCompanion({
     this.id = const Value.absent(),
@@ -1374,6 +1538,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
     this.durationMinutes = const Value.absent(),
     this.note = const Value.absent(),
     this.manual = const Value.absent(),
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TimeEntriesCompanion.insert({
@@ -1384,6 +1549,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
     this.durationMinutes = const Value.absent(),
     this.note = const Value.absent(),
     this.manual = const Value.absent(),
+    this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         taskId = Value(taskId),
@@ -1396,6 +1562,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
     Expression<int>? durationMinutes,
     Expression<String>? note,
     Expression<bool>? manual,
+    Expression<bool>? pendingSync,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1406,6 +1573,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
       if (durationMinutes != null) 'duration_minutes': durationMinutes,
       if (note != null) 'note': note,
       if (manual != null) 'manual': manual,
+      if (pendingSync != null) 'pending_sync': pendingSync,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1418,6 +1586,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
       Value<int?>? durationMinutes,
       Value<String>? note,
       Value<bool>? manual,
+      Value<bool>? pendingSync,
       Value<int>? rowid}) {
     return TimeEntriesCompanion(
       id: id ?? this.id,
@@ -1427,6 +1596,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
       durationMinutes: durationMinutes ?? this.durationMinutes,
       note: note ?? this.note,
       manual: manual ?? this.manual,
+      pendingSync: pendingSync ?? this.pendingSync,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1455,6 +1625,9 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
     if (manual.present) {
       map['manual'] = Variable<bool>(manual.value);
     }
+    if (pendingSync.present) {
+      map['pending_sync'] = Variable<bool>(pendingSync.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1471,6 +1644,7 @@ class TimeEntriesCompanion extends UpdateCompanion<TimeEntry> {
           ..write('durationMinutes: $durationMinutes, ')
           ..write('note: $note, ')
           ..write('manual: $manual, ')
+          ..write('pendingSync: $pendingSync, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1517,6 +1691,7 @@ typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
   required String color,
   required String icon,
   required DateTime createdAt,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 typedef $$ProjectsTableUpdateCompanionBuilder = ProjectsCompanion Function({
@@ -1526,6 +1701,7 @@ typedef $$ProjectsTableUpdateCompanionBuilder = ProjectsCompanion Function({
   Value<String> color,
   Value<String> icon,
   Value<DateTime> createdAt,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 
@@ -1575,6 +1751,9 @@ class $$ProjectsTableFilterComposer
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnFilters(column));
+
   Expression<bool> tasksRefs(
       Expression<bool> Function($$TasksTableFilterComposer f) f) {
     final $$TasksTableFilterComposer composer = $composerBuilder(
@@ -1623,6 +1802,9 @@ class $$ProjectsTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ProjectsTableAnnotationComposer
@@ -1651,6 +1833,9 @@ class $$ProjectsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => column);
 
   Expression<T> tasksRefs<T extends Object>(
       Expression<T> Function($$TasksTableAnnotationComposer a) f) {
@@ -1703,6 +1888,7 @@ class $$ProjectsTableTableManager extends RootTableManager<
             Value<String> color = const Value.absent(),
             Value<String> icon = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ProjectsCompanion(
@@ -1712,6 +1898,7 @@ class $$ProjectsTableTableManager extends RootTableManager<
             color: color,
             icon: icon,
             createdAt: createdAt,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -1721,6 +1908,7 @@ class $$ProjectsTableTableManager extends RootTableManager<
             required String color,
             required String icon,
             required DateTime createdAt,
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ProjectsCompanion.insert(
@@ -1730,6 +1918,7 @@ class $$ProjectsTableTableManager extends RootTableManager<
             color: color,
             icon: icon,
             createdAt: createdAt,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -1781,6 +1970,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String> description,
   Value<int> priority,
   Value<int> status,
+  Value<DateTime?> startDate,
   Value<DateTime?> dueDate,
   Value<List<String>> tags,
   Value<int?> estimatedMinutes,
@@ -1789,6 +1979,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> recurringRule,
   required DateTime createdAt,
   required DateTime updatedAt,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
@@ -1799,6 +1990,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String> description,
   Value<int> priority,
   Value<int> status,
+  Value<DateTime?> startDate,
   Value<DateTime?> dueDate,
   Value<List<String>> tags,
   Value<int?> estimatedMinutes,
@@ -1807,6 +1999,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> recurringRule,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 
@@ -1869,6 +2062,9 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   ColumnFilters<int> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<DateTime> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnFilters(column));
 
@@ -1895,6 +2091,9 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnFilters(column));
 
   $$ProjectsTableFilterComposer get projectId {
     final $$ProjectsTableFilterComposer composer = $composerBuilder(
@@ -1966,6 +2165,9 @@ class $$TasksTableOrderingComposer
   ColumnOrderings<int> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get dueDate => $composableBuilder(
       column: $table.dueDate, builder: (column) => ColumnOrderings(column));
 
@@ -1992,6 +2194,9 @@ class $$TasksTableOrderingComposer
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
 
   $$ProjectsTableOrderingComposer get projectId {
     final $$ProjectsTableOrderingComposer composer = $composerBuilder(
@@ -2041,6 +2246,9 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<int> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
   GeneratedColumn<DateTime> get dueDate =>
       $composableBuilder(column: $table.dueDate, builder: (column) => column);
 
@@ -2064,6 +2272,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => column);
 
   $$ProjectsTableAnnotationComposer get projectId {
     final $$ProjectsTableAnnotationComposer composer = $composerBuilder(
@@ -2137,6 +2348,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String> description = const Value.absent(),
             Value<int> priority = const Value.absent(),
             Value<int> status = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
             Value<List<String>> tags = const Value.absent(),
             Value<int?> estimatedMinutes = const Value.absent(),
@@ -2145,6 +2357,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> recurringRule = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TasksCompanion(
@@ -2155,6 +2368,7 @@ class $$TasksTableTableManager extends RootTableManager<
             description: description,
             priority: priority,
             status: status,
+            startDate: startDate,
             dueDate: dueDate,
             tags: tags,
             estimatedMinutes: estimatedMinutes,
@@ -2163,6 +2377,7 @@ class $$TasksTableTableManager extends RootTableManager<
             recurringRule: recurringRule,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -2173,6 +2388,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String> description = const Value.absent(),
             Value<int> priority = const Value.absent(),
             Value<int> status = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> dueDate = const Value.absent(),
             Value<List<String>> tags = const Value.absent(),
             Value<int?> estimatedMinutes = const Value.absent(),
@@ -2181,6 +2397,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> recurringRule = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TasksCompanion.insert(
@@ -2191,6 +2408,7 @@ class $$TasksTableTableManager extends RootTableManager<
             description: description,
             priority: priority,
             status: status,
+            startDate: startDate,
             dueDate: dueDate,
             tags: tags,
             estimatedMinutes: estimatedMinutes,
@@ -2199,6 +2417,7 @@ class $$TasksTableTableManager extends RootTableManager<
             recurringRule: recurringRule,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -2277,6 +2496,7 @@ typedef $$TimeEntriesTableCreateCompanionBuilder = TimeEntriesCompanion
   Value<int?> durationMinutes,
   Value<String> note,
   Value<bool> manual,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 typedef $$TimeEntriesTableUpdateCompanionBuilder = TimeEntriesCompanion
@@ -2288,6 +2508,7 @@ typedef $$TimeEntriesTableUpdateCompanionBuilder = TimeEntriesCompanion
   Value<int?> durationMinutes,
   Value<String> note,
   Value<bool> manual,
+  Value<bool> pendingSync,
   Value<int> rowid,
 });
 
@@ -2338,6 +2559,9 @@ class $$TimeEntriesTableFilterComposer
   ColumnFilters<bool> get manual => $composableBuilder(
       column: $table.manual, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnFilters(column));
+
   $$TasksTableFilterComposer get taskId {
     final $$TasksTableFilterComposer composer = $composerBuilder(
         composer: this,
@@ -2387,6 +2611,9 @@ class $$TimeEntriesTableOrderingComposer
   ColumnOrderings<bool> get manual => $composableBuilder(
       column: $table.manual, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
+
   $$TasksTableOrderingComposer get taskId {
     final $$TasksTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -2434,6 +2661,9 @@ class $$TimeEntriesTableAnnotationComposer
 
   GeneratedColumn<bool> get manual =>
       $composableBuilder(column: $table.manual, builder: (column) => column);
+
+  GeneratedColumn<bool> get pendingSync => $composableBuilder(
+      column: $table.pendingSync, builder: (column) => column);
 
   $$TasksTableAnnotationComposer get taskId {
     final $$TasksTableAnnotationComposer composer = $composerBuilder(
@@ -2486,6 +2716,7 @@ class $$TimeEntriesTableTableManager extends RootTableManager<
             Value<int?> durationMinutes = const Value.absent(),
             Value<String> note = const Value.absent(),
             Value<bool> manual = const Value.absent(),
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TimeEntriesCompanion(
@@ -2496,6 +2727,7 @@ class $$TimeEntriesTableTableManager extends RootTableManager<
             durationMinutes: durationMinutes,
             note: note,
             manual: manual,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -2506,6 +2738,7 @@ class $$TimeEntriesTableTableManager extends RootTableManager<
             Value<int?> durationMinutes = const Value.absent(),
             Value<String> note = const Value.absent(),
             Value<bool> manual = const Value.absent(),
+            Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TimeEntriesCompanion.insert(
@@ -2516,6 +2749,7 @@ class $$TimeEntriesTableTableManager extends RootTableManager<
             durationMinutes: durationMinutes,
             note: note,
             manual: manual,
+            pendingSync: pendingSync,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0

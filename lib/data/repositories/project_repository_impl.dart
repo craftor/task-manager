@@ -43,9 +43,13 @@ class ProjectRepositoryImpl implements ProjectRepository {
           id: Value(project.id),
           parentId: Value(project.parentId),
           name: Value(project.name),
+          description: Value(project.description),
           color: Value(project.color),
           icon: Value(project.icon),
+          startDate: Value(project.startDate),
+          endDate: Value(project.endDate),
           createdAt: Value(project.createdAt),
+          isDefault: Value(project.isDefault),
         ),
       );
     } catch (e) {
@@ -61,9 +65,13 @@ class ProjectRepositoryImpl implements ProjectRepository {
           id: Value(project.id),
           parentId: Value(project.parentId),
           name: Value(project.name),
+          description: Value(project.description),
           color: Value(project.color),
           icon: Value(project.icon),
+          startDate: Value(project.startDate),
+          endDate: Value(project.endDate),
           createdAt: Value(project.createdAt),
+          isDefault: Value(project.isDefault),
         ),
       );
     } catch (e) {
@@ -85,9 +93,13 @@ class ProjectRepositoryImpl implements ProjectRepository {
       id: dbProject.id,
       parentId: dbProject.parentId,
       name: dbProject.name,
+      description: dbProject.description,
       color: dbProject.color,
       icon: dbProject.icon,
+      startDate: dbProject.startDate,
+      endDate: dbProject.endDate,
       createdAt: dbProject.createdAt,
+      isDefault: dbProject.isDefault,
     );
   }
 }

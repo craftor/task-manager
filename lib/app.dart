@@ -1,20 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/providers/auth_provider.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/projects/presentation/providers/projects_provider.dart';
 import 'features/projects/presentation/screens/projects_screen.dart';
 import 'features/tasks/presentation/screens/tasks_screen.dart';
 import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
+import 'features/calendar/presentation/screens/calendar_screen.dart';
+import 'features/gantt/presentation/screens/gantt_screen.dart';
 
-class TaskManagerApp extends StatelessWidget {
+class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Task Manager',
+      debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends ConsumerWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
+    switch (authState.status) {
+      case AuthStatus.initial:
+      case AuthStatus.loading:
+        return const Scaffold(
+          backgroundColor: AppColors.background,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.task_alt,
+                  size: 80,
+                  color: AppColors.primary,
+                ),
+                SizedBox(height: 32),
+                CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+          ),
+        );
+      case AuthStatus.authenticated:
+        return const MainScreen();
+      case AuthStatus.unauthenticated:
+      case AuthStatus.error:
+        return const LoginScreen();
+    }
   }
 }
 
@@ -29,36 +73,151 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   int _selectedIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(projectsProvider.notifier).ensureDefaultProject();
+    });
+  }
+
+  static const List<NavigationDestination> _destinations = [
+    NavigationDestination(
+      icon: Icon(Icons.folder_outlined, size: 26),
+      selectedIcon: Icon(Icons.folder, size: 26),
+      label: 'Projects',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.task_alt_outlined, size: 26),
+      selectedIcon: Icon(Icons.task_alt, size: 26),
+      label: 'Tasks',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.timer_outlined, size: 26),
+      selectedIcon: Icon(Icons.timer, size: 26),
+      label: 'Time',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.calendar_month_outlined, size: 26),
+      selectedIcon: Icon(Icons.calendar_month, size: 26),
+      label: 'Calendar',
+    ),
+    NavigationDestination(
+      icon: Icon(Icons.bar_chart_outlined, size: 26),
+      selectedIcon: Icon(Icons.bar_chart, size: 26),
+      label: 'Gantt',
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            backgroundColor: const Color(0xFF1a1a2e),
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.folder_outlined),
-                selectedIcon: Icon(Icons.folder),
-                label: Text('Projects'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.task_outlined),
-                selectedIcon: Icon(Icons.task),
-                label: Text('Tasks'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.timer_outlined),
-                selectedIcon: Icon(Icons.timer),
-                label: Text('Time'),
-              ),
-            ],
+          // Navigation Rail
+          Container(
+            width: 88,
+            color: AppColors.surface,
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                // Logo
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.task_alt,
+                    size: 28,
+                    color: AppColors.background,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Navigation items
+                Expanded(
+                  child: Column(
+                    children: List.generate(_destinations.length, (index) {
+                      final dest = _destinations[index];
+                      final isSelected = index == _selectedIndex;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedIndex = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withOpacity(0.15)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            children: [
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 200),
+                                child: isSelected
+                                    ? dest.selectedIcon
+                                    : dest.icon,
+                              ),
+                              const SizedBox(height: 4),
+                              AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 200),
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                                child: Text(dest.label),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                // User avatar
+                GestureDetector(
+                  onTap: () => _showUserProfile(context),
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.primary.withOpacity(0.2),
+                      child: Text(
+                        _getUserInitials(ref),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
-          Expanded(child: _buildBody()),
+          // Divider
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: AppColors.border,
+          ),
+          // Content
+          Expanded(
+            child: _buildBody(),
+          ),
         ],
       ),
     );
@@ -72,35 +231,177 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         return const TasksScreen();
       case 2:
         return const TimeTrackingScreen();
+      case 3:
+        return const CalendarScreen();
+      case 4:
+        return const GanttScreen();
       default:
         return const ProjectsScreen();
     }
   }
-}
 
-class ProjectsView extends StatelessWidget {
-  const ProjectsView({super.key});
+  String _getUserInitials(WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final email = authState.email ?? '';
+    if (email.isEmpty) return '?';
+    final parts = email.split('@');
+    return parts[0].substring(0, parts[0].length > 2 ? 2 : 1).toUpperCase();
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Projects', style: TextStyle(fontSize: 24)));
+  void _showUserProfile(BuildContext context) {
+    final authState = ref.read(authStateProvider);
+    final email = authState.email ?? 'Unknown';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          width: 320,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Center(
+                  child: Text(
+                    _getUserInitials(ref),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Personal Profile',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _ProfileItem(
+                icon: Icons.email_outlined,
+                label: 'Email',
+                value: email,
+              ),
+              const SizedBox(height: 12),
+              _ProfileItem(
+                icon: Icons.badge_outlined,
+                label: 'Nickname',
+                value: email.split('@').first,
+              ),
+              const SizedBox(height: 12),
+              _ProfileItem(
+                icon: Icons.info_outline,
+                label: 'Version',
+                value: '0.1.0',
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.border),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Close'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ref.read(authStateProvider.notifier).signOut();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Sign Out'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
-class TasksView extends StatelessWidget {
-  const TasksView({super.key});
+class _ProfileItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ProfileItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: Text('Tasks', style: TextStyle(fontSize: 24)));
-  }
-}
-
-class TimeTrackingView extends StatelessWidget {
-  const TimeTrackingView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Time Tracking', style: TextStyle(fontSize: 24)));
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 20),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

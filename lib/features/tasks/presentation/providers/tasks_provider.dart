@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../data/repositories/task_repository_impl.dart';
@@ -16,7 +17,11 @@ final tasksProvider = StreamNotifierProvider<TasksNotifier, List<Task>>(
 class TasksNotifier extends StreamNotifier<List<Task>> {
   @override
   Stream<List<Task>> build() {
-    return ref.watch(taskRepositoryProvider).watchAllTasks();
+    final stream = ref.watch(taskRepositoryProvider).watchAllTasks();
+    stream.listen((tasks) {
+      debugPrint('TasksNotifier stream received: ${tasks.length} tasks');
+    });
+    return stream;
   }
 
   Future<void> createTask({
@@ -25,12 +30,14 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
     required String title,
     String description = '',
     Priority priority = Priority.medium,
+    DateTime? startDate,
     DateTime? dueDate,
     List<String> tags = const [],
     int? estimatedMinutes,
     bool isRecurring = false,
     String? recurringRule,
   }) async {
+    debugPrint('TasksNotifier.createTask called: $title');
     final repository = ref.read(taskRepositoryProvider);
     final now = DateTime.now();
     final task = Task(
@@ -41,6 +48,7 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       description: description,
       priority: priority,
       status: TaskStatus.pending,
+      startDate: startDate,
       dueDate: dueDate,
       tags: tags,
       estimatedMinutes: estimatedMinutes,
@@ -50,17 +58,21 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       updatedAt: now,
     );
     await repository.createTask(task);
+    debugPrint('TasksNotifier.createTask done, invalidating');
+    ref.invalidate(tasksProvider);
   }
 
   Future<void> updateTask(Task task) async {
     final repository = ref.read(taskRepositoryProvider);
     final updatedTask = task.copyWith(updatedAt: DateTime.now());
     await repository.updateTask(updatedTask);
+    ref.invalidate(tasksProvider);
   }
 
   Future<void> deleteTask(String id) async {
     final repository = ref.read(taskRepositoryProvider);
     await repository.deleteTask(id);
+    ref.invalidate(tasksProvider);
   }
 
   Future<void> toggleTaskStatus(String id) async {
@@ -75,6 +87,7 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
         updatedAt: DateTime.now(),
       );
       await repository.updateTask(updatedTask);
+      ref.invalidate(tasksProvider);
     }
   }
 }

@@ -24,19 +24,43 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
     return ref.watch(projectRepositoryProvider).watchAllProjects();
   }
 
+  Future<void> ensureDefaultProject() async {
+    final repository = ref.read(projectRepositoryProvider);
+    final projects = await repository.getAllProjects();
+    final hasDefault = projects.any((p) => p.isDefault);
+    if (!hasDefault) {
+      final defaultProject = Project(
+        id: 'default-project',
+        name: 'Default',
+        description: 'Default project for uncategorized tasks',
+        color: '#808080',
+        icon: 'folder',
+        createdAt: DateTime.now(),
+        isDefault: true,
+      );
+      await repository.createProject(defaultProject);
+    }
+  }
+
   Future<void> createProject({
     String? parentId,
     required String name,
+    String? description,
     required String color,
     required String icon,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
     final repository = ref.read(projectRepositoryProvider);
     final project = Project(
       id: const Uuid().v4(),
       parentId: parentId,
       name: name,
+      description: description,
       color: color,
       icon: icon,
+      startDate: startDate,
+      endDate: endDate,
       createdAt: DateTime.now(),
     );
     await repository.createProject(project);
@@ -49,6 +73,11 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
 
   Future<void> deleteProject(String id) async {
     final repository = ref.read(projectRepositoryProvider);
+    final projects = await repository.getAllProjects();
+    final project = projects.firstWhere((p) => p.id == id, orElse: () => throw Exception('Project not found'));
+    if (project.isDefault) {
+      return; // Cannot delete default project
+    }
     await repository.deleteProject(id);
   }
 }

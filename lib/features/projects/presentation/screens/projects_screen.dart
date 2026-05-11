@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/entities/project.dart';
+import '../../../../domain/entities/task.dart';
+import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../providers/projects_provider.dart';
 
 class ProjectsScreen extends ConsumerWidget {
@@ -14,19 +16,62 @@ class ProjectsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Projects'),
+        title: const Text('My Projects'),
         backgroundColor: AppColors.surface,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showProjectDialog(context, ref),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.add, color: AppColors.primary),
+              onPressed: () => _showProjectDialog(context, ref),
+            ),
           ),
         ],
       ),
       body: projectsAsync.when(
         data: (projects) => _buildProjectList(context, ref, projects),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (error, stack) => _buildErrorState(error),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Something went wrong',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            style: const TextStyle(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -37,72 +82,110 @@ class ProjectsScreen extends ConsumerWidget {
     List<Project> projects,
   ) {
     if (projects.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.folder_outlined, size: 64, color: AppColors.border),
-            const SizedBox(height: 16),
-            const Text(
-              'No projects yet',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton.icon(
-              onPressed: () => _showProjectDialog(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Create Project'),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyState(context, ref);
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 16),
       itemCount: projects.length,
+      onReorder: (oldIndex, newIndex) {
+        if (oldIndex < newIndex) newIndex--;
+        // Reorder in provider would need additional implementation
+        // For now, just visual reorder - data order stays same
+      },
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final double elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
+            return Material(
+              elevation: elevation,
+              color: Colors.transparent,
+              shadowColor: AppColors.primary.withOpacity(0.3),
+              child: child,
+            );
+          },
+          child: child,
+        );
+      },
       itemBuilder: (context, index) {
         final project = projects[index];
         return _ProjectCard(
+          key: ValueKey(project.id),
           project: project,
-          onTap: () => _showProjectDialog(context, ref, project),
-          onDelete: () => ref.read(projectsProvider.notifier).deleteProject(project.id),
+          onEdit: () => _showProjectDialog(context, ref, project),
+          onDelete: () => _confirmDelete(context, ref, project),
+          ref: ref,
         );
       },
     );
   }
 
-  void _showProjectDialog(BuildContext context, WidgetRef ref, [Project? project]) {
-    final nameController = TextEditingController(text: project?.name ?? '');
-    final isEditing = project != null;
-    String selectedColor = project?.color ?? '#00ff9f';
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.folder_outlined,
+              size: 64,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'No Projects Yet',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Create your first project to get started',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () => _showProjectDialog(context, ref),
+            icon: const Icon(Icons.add),
+            label: const Text('Create Project'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, Project project) {
+    if (project.isDefault) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete default project'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text(isEditing ? 'Edit Project' : 'New Project'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Project Name',
-                labelStyle: TextStyle(color: AppColors.textPrimary),
-              ),
-              style: const TextStyle(color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 16),
-            StatefulBuilder(
-              builder: (context, setState) => _ColorPicker(
-                selectedColor: selectedColor,
-                onColorSelected: (color) {
-                  setState(() => selectedColor = color);
-                },
-              ),
-            ),
-          ],
+        title: const Text('Delete Project?'),
+        content: Text(
+          'Are you sure you want to delete "${project.name}"? This action cannot be undone.',
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -111,76 +194,238 @@ class ProjectsScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                if (isEditing) {
-                  ref.read(projectsProvider.notifier).updateProject(
-                        project!.copyWith(name: nameController.text, color: selectedColor),
-                      );
-                } else {
-                  ref.read(projectsProvider.notifier).createProject(
-                        name: nameController.text,
-                        color: selectedColor,
-                        icon: 'folder',
-                      );
-                }
-                Navigator.pop(dialogContext);
-              }
+              Navigator.pop(dialogContext);
+              ref.read(projectsProvider.notifier).deleteProject(project.id);
             },
-            child: Text(isEditing ? 'Save' : 'Create'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
-}
 
-class _ProjectCard extends StatelessWidget {
-  final Project project;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
+  void _showProjectDialog(BuildContext context, WidgetRef ref, [Project? project]) {
+    final nameController = TextEditingController(text: project?.name ?? '');
+    final descController = TextEditingController(text: project?.description ?? '');
+    final isEditing = project != null;
+    String selectedColor = project?.color ?? '#00ff9f';
+    DateTime? startDate = project?.startDate;
+    DateTime? endDate = project?.endDate;
 
-  const _ProjectCard({
-    required this.project,
-    required this.onTap,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Color(int.parse(project.color.replaceFirst('#', '0xFF'))),
-                  borderRadius: BorderRadius.circular(8),
+    showDialog(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85,
+          padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isEditing ? 'Edit Project' : 'New Project',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.folder, color: Colors.white),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  project.name,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Project Name',
+                    labelStyle: TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Enter project name...',
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    labelStyle: TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Enter project description...',
+                    alignLabelWithHint: true,
+                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                StatefulBuilder(
+                  builder: (context, setDialogState) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Start Date',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: startDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (date != null) {
+                            setDialogState(() => startDate = date);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                startDate != null
+                                    ? '${startDate!.year}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')}'
+                                    : 'Select date',
+                                style: TextStyle(
+                                  color: startDate != null ? AppColors.textPrimary : AppColors.textMuted,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'End Date',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: endDate ?? DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (date != null) {
+                            setDialogState(() => endDate = date);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                endDate != null
+                                    ? '${endDate!.year}-${endDate!.month.toString().padLeft(2, '0')}-${endDate!.day.toString().padLeft(2, '0')}'
+                                    : 'Select date',
+                                style: TextStyle(
+                                  color: endDate != null ? AppColors.textPrimary : AppColors.textMuted,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Color',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.error),
-                onPressed: onDelete,
-              ),
-            ],
+                const SizedBox(height: 12),
+                StatefulBuilder(
+                  builder: (context, setState) => _ColorPicker(
+                    selectedColor: selectedColor,
+                    onColorSelected: (color) {
+                      setState(() => selectedColor = color);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (nameController.text.isNotEmpty) {
+                          if (isEditing) {
+                            ref.read(projectsProvider.notifier).updateProject(
+                              project.copyWith(
+                                name: nameController.text,
+                                description: descController.text.isEmpty ? null : descController.text,
+                                color: selectedColor,
+                                startDate: startDate,
+                                endDate: endDate,
+                              ),
+                            );
+                          } else {
+                            ref.read(projectsProvider.notifier).createProject(
+                              name: nameController.text,
+                              color: selectedColor,
+                              icon: 'folder',
+                            );
+                          }
+                          Navigator.pop(dialogContext);
+                        }
+                      },
+                      child: Text(isEditing ? 'Save' : 'Create'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -188,7 +433,266 @@ class _ProjectCard extends StatelessWidget {
   }
 }
 
-class _ColorPicker extends StatefulWidget {
+class _ProjectCard extends StatefulWidget {
+  final Project project;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final WidgetRef ref;
+
+  const _ProjectCard({
+    super.key,
+    required this.project,
+    required this.onEdit,
+    required this.onDelete,
+    required this.ref,
+  });
+
+  @override
+  State<_ProjectCard> createState() => _ProjectCardState();
+}
+
+class _ProjectCardState extends State<_ProjectCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tasksAsync = widget.ref.watch(tasksProvider);
+    final projectTasks = tasksAsync.when(
+      data: (tasks) => tasks.where((t) => t.projectId == widget.project.id).toList(),
+      loading: () => <Task>[],
+      error: (_, __) => <Task>[],
+    );
+
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Material(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: _projectColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Icons.folder_rounded,
+                        color: _projectColor,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.project.name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Created ${_formatDate(widget.project.createdAt)}',
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+                        onPressed: widget.onEdit,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: AppColors.textSecondary),
+                        onPressed: widget.onDelete,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: AnimatedRotation(
+                          turns: _isExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_isExpanded)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            margin: const EdgeInsets.only(left: 32, right: 16, bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: projectTasks.isEmpty
+                ? const Text(
+                    'No tasks in this project',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tasks (${projectTasks.length})',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...projectTasks.map((task) => _TaskMiniCard(task: task)),
+                    ],
+                  ),
+          ),
+      ],
+    );
+  }
+
+  Color get _projectColor {
+    try {
+      return Color(int.parse(widget.project.color.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return AppColors.primary;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      return 'today';
+    } else if (diff.inDays == 1) {
+      return 'yesterday';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+}
+
+class _TaskMiniCard extends StatelessWidget {
+  final Task task;
+
+  const _TaskMiniCard({required this.task});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _priorityColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              task.title,
+              style: TextStyle(
+                color: task.status == TaskStatus.completed
+                    ? AppColors.textMuted
+                    : AppColors.textPrimary,
+                fontSize: 13,
+                decoration: task.status == TaskStatus.completed
+                    ? TextDecoration.lineThrough
+                    : null,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (task.dueDate != null) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+            const SizedBox(width: 2),
+            Text(
+              _formatDate(task.dueDate!),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Color get _priorityColor {
+    switch (task.priority) {
+      case Priority.low:
+        return AppColors.secondary;
+      case Priority.medium:
+        return AppColors.warning;
+      case Priority.high:
+        return Colors.orange;
+      case Priority.urgent:
+        return AppColors.error;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}';
+  }
+}
+
+class _ColorPicker extends StatelessWidget {
   final String selectedColor;
   final ValueChanged<String> onColorSelected;
 
@@ -197,13 +701,6 @@ class _ColorPicker extends StatefulWidget {
     required this.onColorSelected,
   });
 
-  @override
-  State<_ColorPicker> createState() => _ColorPickerState();
-}
-
-class _ColorPickerState extends State<_ColorPicker> {
-  late String _selectedColor;
-
   static const _colors = [
     '#00ff9f',
     '#00d4ff',
@@ -211,33 +708,42 @@ class _ColorPickerState extends State<_ColorPicker> {
     '#ffcc00',
     '#ff6b81',
     '#7bed9f',
+    '#a55eea',
+    '#f368e0',
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedColor = widget.selectedColor;
-  }
 
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
+      spacing: 12,
+      runSpacing: 12,
       children: _colors.map((color) {
-        final isSelected = color == _selectedColor;
+        final isSelected = color == selectedColor;
         return GestureDetector(
-          onTap: () {
-            setState(() => _selectedColor = color);
-            widget.onColorSelected(color);
-          },
-          child: Container(
-            width: 32,
-            height: 32,
+          onTap: () => onColorSelected(color),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Color(int.parse(color.replaceFirst('#', '0xFF'))),
               shape: BoxShape.circle,
-              border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+              border: isSelected
+                  ? Border.all(color: Colors.white, width: 3)
+                  : null,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: Color(int.parse(color.replaceFirst('#', '0xFF'))).withOpacity(0.4),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : null,
             ),
+            child: isSelected
+                ? const Icon(Icons.check, color: Colors.white, size: 20)
+                : null,
           ),
         );
       }).toList(),

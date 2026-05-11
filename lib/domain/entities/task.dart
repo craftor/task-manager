@@ -10,6 +10,7 @@ class Task {
   final String description;
   final Priority priority;
   final TaskStatus status;
+  final DateTime? startDate;
   final DateTime? dueDate;
   final List<String> tags;
   final int? estimatedMinutes;
@@ -27,6 +28,7 @@ class Task {
     this.description = '',
     this.priority = Priority.medium,
     this.status = TaskStatus.pending,
+    this.startDate,
     this.dueDate,
     this.tags = const [],
     this.estimatedMinutes,
@@ -45,6 +47,7 @@ class Task {
     String? description,
     Priority? priority,
     TaskStatus? status,
+    DateTime? startDate,
     DateTime? dueDate,
     List<String>? tags,
     int? estimatedMinutes,
@@ -62,6 +65,7 @@ class Task {
       description: description ?? this.description,
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      startDate: startDate ?? this.startDate,
       dueDate: dueDate ?? this.dueDate,
       tags: tags ?? this.tags,
       estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
