@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../../data/datasources/local/app_database.dart';
+import '../../../../data/datasources/local/app_database.dart' show AppDatabase;
 import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';

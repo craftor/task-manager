@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../data/repositories/task_repository_impl.dart';
-import '../../../../domain/entities/task.dart';
+import '../../../../domain/entities/task.dart' show Task, Priority, TaskStatus;
 import '../../../../domain/repositories/task_repository.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 

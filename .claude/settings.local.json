@@ -8,7 +8,8 @@
       "Bash(git commit -m ' *)",
       "Bash(flutter pub *)",
       "Bash(flutter analyze *)",
-      "Bash(git commit -m 'fix: use JSON encoding for tags and add error handling *)"
+      "Bash(git commit -m 'fix: use JSON encoding for tags and add error handling *)",
+      "Bash(git commit -m 'fix: resolve ambiguous import errors in providers *)"
     ]
   }
 }
