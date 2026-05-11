@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'features/tasks/presentation/screens/tasks_screen.dart';
+import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 
 class TaskManagerApp extends StatelessWidget {
   const TaskManagerApp({super.key});
@@ -66,9 +68,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 0:
         return const ProjectsView();
       case 1:
-        return const TasksView();
+        return const TasksScreen();
       case 2:
-        return const TimeTrackingView();
+        return const TimeTrackingScreen();
       default:
         return const ProjectsView();
     }
