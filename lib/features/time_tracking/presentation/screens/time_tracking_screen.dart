@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../providers/time_tracking_provider.dart';
 
 class TimeTrackingScreen extends ConsumerWidget {
@@ -10,7 +9,6 @@ class TimeTrackingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeEntriesAsync = ref.watch(timeEntriesProvider);
-    final tasksAsync = ref.watch(tasksProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,

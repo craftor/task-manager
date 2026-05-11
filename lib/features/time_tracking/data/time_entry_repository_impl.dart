@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import '../../../../data/datasources/local/app_database.dart';
-import '../../domain/time_entry_entity.dart' as entity;
-import '../../domain/time_entry_repository.dart';
+import '../domain/time_entry_entity.dart' as entity;
+import '../domain/time_entry_repository.dart';
 
 class TimeEntryRepositoryImpl implements TimeEntryRepository {
   final AppDatabase _db;

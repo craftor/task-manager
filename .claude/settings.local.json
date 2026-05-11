@@ -9,7 +9,9 @@
       "Bash(flutter pub *)",
       "Bash(flutter analyze *)",
       "Bash(git commit -m 'fix: use JSON encoding for tags and add error handling *)",
-      "Bash(git commit -m 'fix: resolve ambiguous import errors in providers *)"
+      "Bash(git commit -m 'fix: resolve ambiguous import errors in providers *)",
+      "Bash(git commit -m 'feat: add projects screen with create/edit/delete functionality *)",
+      "Bash(git commit -m 'fix: resolve time tracking import paths and cleanup *)"
     ]
   }
 }
