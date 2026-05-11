@@ -29,7 +29,7 @@ class SupabaseDatasource {
       'color': project.color,
       'icon': project.icon,
       'created_at': project.createdAt.toIso8601String(),
-      'updated_at': project.updatedAt.toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
     });
   }
 
