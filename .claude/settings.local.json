@@ -6,7 +6,9 @@
       "Bash(git init *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(git commit -m 'fix: use JSON encoding for tags and add error handling *)"
     ]
   }
 }
