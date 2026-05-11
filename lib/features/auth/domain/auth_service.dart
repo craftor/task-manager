@@ -10,11 +10,7 @@ class AuthResult {
 }
 
 class AuthService {
-  final Supabase _client;
-
-  AuthService(this._client);
-
-  AuthClient get _auth => _client.auth;
+  GoTrueClient get _auth => Supabase.instance.client.auth;
 
   Future<AuthResult> signInWithEmail(String email, String password) async {
     try {
@@ -47,7 +43,5 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   bool get isAuthenticated => _auth.currentUser != null;
 
-  Stream<User?> get onAuthStateChange => _auth.onAuthStateChange.map(
-        (event) => event.session?.user,
-      );
+  Stream<AuthState> get onAuthStateChange => _auth.onAuthStateChange;
 }
