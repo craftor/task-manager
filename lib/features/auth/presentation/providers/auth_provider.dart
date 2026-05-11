@@ -55,10 +55,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     _authService.onAuthStateChange.listen((event) {
-      if (event.session?.user != null) {
+      final user = event.session?.user;
+      if (user != null) {
         state = AuthState(
           status: AuthStatus.authenticated,
-          email: event.session?.user?.email,
+          email: user.email,
         );
       } else {
         state = const AuthState(status: AuthStatus.unauthenticated);
