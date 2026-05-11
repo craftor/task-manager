@@ -1,10 +1,7 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import '../../domain/entities/task.dart' as entity;
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/app_database.dart';
-import 'package:task_manager/utils/logger.dart';
 
 class TaskRepositoryImpl implements TaskRepository {
   final AppDatabase _db;
@@ -17,7 +14,6 @@ class TaskRepositoryImpl implements TaskRepository {
       final tasks = await _db.getAllTasks();
       return tasks.map(_mapToEntity).toList();
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.getAllTasks', e);
       rethrow;
     }
   }
@@ -35,7 +31,6 @@ class TaskRepositoryImpl implements TaskRepository {
       final task = await _db.getTaskById(id);
       return task != null ? _mapToEntity(task) : null;
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.getTaskById', e);
       rethrow;
     }
   }
@@ -46,7 +41,6 @@ class TaskRepositoryImpl implements TaskRepository {
       final tasks = await _db.getTasksByProject(projectId);
       return tasks.map(_mapToEntity).toList();
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.getTasksByProject', e);
       rethrow;
     }
   }
@@ -64,7 +58,7 @@ class TaskRepositoryImpl implements TaskRepository {
           priority: Value(task.priority.index),
           status: Value(task.status.index),
           dueDate: Value(task.dueDate),
-          tags: Value(json.encode(task.tags)),
+          tags: Value(task.tags),
           estimatedMinutes: Value(task.estimatedMinutes),
           actualMinutes: Value(task.actualMinutes),
           isRecurring: Value(task.isRecurring),
@@ -74,7 +68,6 @@ class TaskRepositoryImpl implements TaskRepository {
         ),
       );
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.createTask', e);
       rethrow;
     }
   }
@@ -92,7 +85,7 @@ class TaskRepositoryImpl implements TaskRepository {
           priority: Value(task.priority.index),
           status: Value(task.status.index),
           dueDate: Value(task.dueDate),
-          tags: Value(json.encode(task.tags)),
+          tags: Value(task.tags),
           estimatedMinutes: Value(task.estimatedMinutes),
           actualMinutes: Value(task.actualMinutes),
           isRecurring: Value(task.isRecurring),
@@ -102,7 +95,6 @@ class TaskRepositoryImpl implements TaskRepository {
         ),
       );
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.updateTask', e);
       rethrow;
     }
   }
@@ -112,7 +104,6 @@ class TaskRepositoryImpl implements TaskRepository {
     try {
       await _db.deleteTask(id);
     } catch (e) {
-      Logger.e('TaskRepositoryImpl.deleteTask', e);
       rethrow;
     }
   }
@@ -127,7 +118,7 @@ class TaskRepositoryImpl implements TaskRepository {
       priority: entity.Priority.values[dbTask.priority],
       status: entity.TaskStatus.values[dbTask.status],
       dueDate: dbTask.dueDate,
-      tags: dbTask.tags.isEmpty ? [] : List<String>.from(json.decode(dbTask.tags)),
+      tags: dbTask.tags,
       estimatedMinutes: dbTask.estimatedMinutes,
       actualMinutes: dbTask.actualMinutes,
       isRecurring: dbTask.isRecurring,

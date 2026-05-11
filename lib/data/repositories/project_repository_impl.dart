@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 import '../../domain/entities/project.dart' as entity;
 import '../../domain/repositories/project_repository.dart';
 import '../datasources/local/app_database.dart';
-import 'package:task_manager/utils/logger.dart';
 
 class ProjectRepositoryImpl implements ProjectRepository {
   final AppDatabase _db;
@@ -15,7 +14,6 @@ class ProjectRepositoryImpl implements ProjectRepository {
       final projects = await _db.getAllProjects();
       return projects.map(_mapToEntity).toList();
     } catch (e) {
-      Logger.e('ProjectRepositoryImpl.getAllProjects', e);
       rethrow;
     }
   }
@@ -33,7 +31,6 @@ class ProjectRepositoryImpl implements ProjectRepository {
       final project = await _db.getProjectById(id);
       return project != null ? _mapToEntity(project) : null;
     } catch (e) {
-      Logger.e('ProjectRepositoryImpl.getProjectById', e);
       rethrow;
     }
   }
@@ -52,7 +49,6 @@ class ProjectRepositoryImpl implements ProjectRepository {
         ),
       );
     } catch (e) {
-      Logger.e('ProjectRepositoryImpl.createProject', e);
       rethrow;
     }
   }
@@ -71,7 +67,6 @@ class ProjectRepositoryImpl implements ProjectRepository {
         ),
       );
     } catch (e) {
-      Logger.e('ProjectRepositoryImpl.updateProject', e);
       rethrow;
     }
   }
@@ -81,7 +76,6 @@ class ProjectRepositoryImpl implements ProjectRepository {
     try {
       await _db.deleteProject(id);
     } catch (e) {
-      Logger.e('ProjectRepositoryImpl.deleteProject', e);
       rethrow;
     }
   }
