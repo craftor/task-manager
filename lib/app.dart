@@ -427,7 +427,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                 icon: Icons.info_outline,
                 label: 'Version',
-                value: '0.2.1',
+                value: '0.2.2',
               ),
               const SizedBox(height: 24),
               Row(
