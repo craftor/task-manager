@@ -37,6 +37,7 @@ class Projects extends Table {
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(true))();
 
@@ -61,6 +62,7 @@ class Tasks extends Table {
   TextColumn get recurringRule => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(true))();
 
   @override
@@ -86,7 +88,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -105,6 +107,10 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await customStatement('ALTER TABLE projects ADD COLUMN is_default INTEGER DEFAULT 0');
+        }
+        if (from < 5) {
+          await customStatement('ALTER TABLE projects ADD COLUMN sort_order INTEGER DEFAULT 0');
+          await customStatement('ALTER TABLE tasks ADD COLUMN sort_order INTEGER DEFAULT 0');
         }
       },
     );
@@ -141,6 +147,7 @@ class AppDatabase extends _$AppDatabase {
       startDate: Value(data['start_date'] != null ? DateTime.parse(data['start_date'] as String) : null),
       endDate: Value(data['end_date'] != null ? DateTime.parse(data['end_date'] as String) : null),
       createdAt: Value(DateTime.parse(data['created_at'] as String)),
+      sortOrder: Value(data['sort_order'] as int? ?? 0),
       isDefault: Value(data['is_default'] as bool? ?? false),
       pendingSync: const Value(false),
     ));
@@ -185,6 +192,7 @@ class AppDatabase extends _$AppDatabase {
       recurringRule: Value(data['recurring_rule'] as String?),
       createdAt: Value(DateTime.parse(data['created_at'] as String)),
       updatedAt: Value(data['updated_at'] != null ? DateTime.parse(data['updated_at'] as String) : DateTime.now()),
+      sortOrder: Value(data['sort_order'] as int? ?? 0),
       pendingSync: const Value(false),
     ));
   }

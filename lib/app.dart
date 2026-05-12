@@ -12,6 +12,7 @@ import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/sync/presentation/providers/sync_status_provider.dart';
 
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -118,6 +119,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep SyncManager alive while authenticated
+    ref.watch(syncStatusProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -392,7 +395,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                 icon: Icons.info_outline,
                 label: 'Version',
-                value: '0.1.1',
+                value: '0.2.0',
               ),
               const SizedBox(height: 24),
               Row(

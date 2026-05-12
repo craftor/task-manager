@@ -9,6 +9,7 @@ class Project {
   final DateTime? endDate;
   final DateTime createdAt;
   final bool isDefault;
+  final int sortOrder;
 
   const Project({
     required this.id,
@@ -21,6 +22,7 @@ class Project {
     this.endDate,
     required this.createdAt,
     this.isDefault = false,
+    this.sortOrder = 0,
   });
 
   Project copyWith({
@@ -34,6 +36,7 @@ class Project {
     DateTime? endDate,
     DateTime? createdAt,
     bool? isDefault,
+    int? sortOrder,
   }) {
     return Project(
       id: id ?? this.id,
@@ -46,6 +49,7 @@ class Project {
       endDate: endDate ?? this.endDate,
       createdAt: createdAt ?? this.createdAt,
       isDefault: isDefault ?? this.isDefault,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 }

@@ -760,53 +760,6 @@ class _TaskMiniCard extends StatelessWidget {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}';
   }
-
-  IconData _getProjectIcon(String iconName) {
-    switch (iconName) {
-      case 'folder':
-        return Icons.folder_rounded;
-      case 'work':
-        return Icons.work_rounded;
-      case 'star':
-        return Icons.star_rounded;
-      case 'favorite':
-        return Icons.favorite_rounded;
-      case 'bookmark':
-        return Icons.bookmark_rounded;
-      case 'code':
-        return Icons.code_rounded;
-      case 'build':
-        return Icons.build_rounded;
-      case 'home':
-        return Icons.home_rounded;
-      case 'shopping':
-        return Icons.shopping_cart_rounded;
-      case 'school':
-        return Icons.school_rounded;
-      case 'fitness':
-        return Icons.fitness_center_rounded;
-      case 'travel':
-        return Icons.flight_rounded;
-      case 'music':
-        return Icons.music_note_rounded;
-      case 'photo':
-        return Icons.photo_rounded;
-      case 'movie':
-        return Icons.movie_rounded;
-      case 'game':
-        return Icons.games_rounded;
-      case 'sports':
-        return Icons.sports_soccer_rounded;
-      case 'health':
-        return Icons.health_and_safety_rounded;
-      case 'science':
-        return Icons.science_rounded;
-      case 'business':
-        return Icons.business_center_rounded;
-      default:
-        return Icons.folder_rounded;
-    }
-  }
 }
 
 class _IconPicker extends StatelessWidget {

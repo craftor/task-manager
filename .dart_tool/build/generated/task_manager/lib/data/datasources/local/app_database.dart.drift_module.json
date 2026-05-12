@@ -7,7 +7,7 @@
       },
       "declaration": {
         "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-        "offset": 2590,
+        "offset": 3279,
         "name": "AppDatabase"
       },
       "references": [
@@ -42,7 +42,7 @@
       "views": [],
       "includes": [],
       "queries": [],
-      "schema_version": 1,
+      "schema_version": 5,
       "daos": [],
       "has_constructor_arg": false
     },
@@ -126,12 +126,33 @@
           "sqlType": {
             "builtin": "string"
           },
+          "nullable": true,
+          "nameInSql": "description",
+          "nameInDart": "description",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 840,
+            "name": "description"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "string"
+          },
           "nullable": false,
           "nameInSql": "color",
           "nameInDart": "color",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 840,
+            "offset": 893,
             "name": "color"
           },
           "typeConverter": null,
@@ -152,8 +173,50 @@
           "nameInDart": "icon",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 876,
+            "offset": 929,
             "name": "icon"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": true,
+          "nameInSql": "start_date",
+          "nameInDart": "startDate",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 968,
+            "name": "startDate"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": true,
+          "nameInSql": "end_date",
+          "nameInDart": "endDate",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 1027,
+            "name": "endDate"
           },
           "typeConverter": null,
           "clientDefaultCode": null,
@@ -173,12 +236,102 @@
           "nameInDart": "createdAt",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 915,
+            "offset": 1084,
             "name": "createdAt"
           },
           "typeConverter": null,
           "clientDefaultCode": null,
           "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "sort_order",
+          "nameInDart": "sortOrder",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 1127,
+            "name": "sortOrder"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "bool"
+          },
+          "nullable": false,
+          "nameInSql": "is_default",
+          "nameInDart": "isDefault",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 1201,
+            "name": "isDefault"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(false)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "bool"
+          },
+          "nullable": false,
+          "nameInSql": "pending_sync",
+          "nameInDart": "pendingSync",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 1279,
+            "name": "pendingSync"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(true)"
+            ]
+          },
           "overriddenJsonName": null,
           "referenceName": null,
           "documentationComment": null,
@@ -214,7 +367,7 @@
       },
       "declaration": {
         "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-        "offset": 1002,
+        "offset": 1401,
         "name": "Tasks"
       },
       "references": [
@@ -234,7 +387,7 @@
           "nameInDart": "id",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1041,
+            "offset": 1440,
             "name": "id"
           },
           "typeConverter": null,
@@ -255,7 +408,7 @@
           "nameInDart": "projectId",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1074,
+            "offset": 1473,
             "name": "projectId"
           },
           "typeConverter": null,
@@ -290,7 +443,7 @@
           "nameInDart": "parentTaskId",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1169,
+            "offset": 1568,
             "name": "parentTaskId"
           },
           "typeConverter": null,
@@ -311,7 +464,7 @@
           "nameInDart": "title",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1223,
+            "offset": 1622,
             "name": "title"
           },
           "typeConverter": null,
@@ -332,7 +485,7 @@
           "nameInDart": "description",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1259,
+            "offset": 1658,
             "name": "description"
           },
           "typeConverter": null,
@@ -362,7 +515,7 @@
           "nameInDart": "priority",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1332,
+            "offset": 1731,
             "name": "priority"
           },
           "typeConverter": null,
@@ -392,7 +545,7 @@
           "nameInDart": "status",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1404,
+            "offset": 1803,
             "name": "status"
           },
           "typeConverter": null,
@@ -418,11 +571,32 @@
             "builtin": "dateTime"
           },
           "nullable": true,
+          "nameInSql": "start_date",
+          "nameInDart": "startDate",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 1878,
+            "name": "startDate"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "dateTime"
+          },
+          "nullable": true,
           "nameInSql": "due_date",
           "nameInDart": "dueDate",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1479,
+            "offset": 1937,
             "name": "dueDate"
           },
           "typeConverter": null,
@@ -443,7 +617,7 @@
           "nameInDart": "tags",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1532,
+            "offset": 1990,
             "name": "tags"
           },
           "typeConverter": {
@@ -493,7 +667,7 @@
           "nameInDart": "estimatedMinutes",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1627,
+            "offset": 2085,
             "name": "estimatedMinutes"
           },
           "typeConverter": null,
@@ -514,7 +688,7 @@
           "nameInDart": "actualMinutes",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1687,
+            "offset": 2145,
             "name": "actualMinutes"
           },
           "typeConverter": null,
@@ -535,7 +709,7 @@
           "nameInDart": "isRecurring",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1745,
+            "offset": 2203,
             "name": "isRecurring"
           },
           "typeConverter": null,
@@ -565,7 +739,7 @@
           "nameInDart": "recurringRule",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1825,
+            "offset": 2283,
             "name": "recurringRule"
           },
           "typeConverter": null,
@@ -586,7 +760,7 @@
           "nameInDart": "createdAt",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1884,
+            "offset": 2342,
             "name": "createdAt"
           },
           "typeConverter": null,
@@ -607,12 +781,72 @@
           "nameInDart": "updatedAt",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 1932,
+            "offset": 2390,
             "name": "updatedAt"
           },
           "typeConverter": null,
           "clientDefaultCode": null,
           "defaultArgument": null,
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "int"
+          },
+          "nullable": false,
+          "nameInSql": "sort_order",
+          "nameInDart": "sortOrder",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 2433,
+            "name": "sortOrder"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(0)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "bool"
+          },
+          "nullable": false,
+          "nameInSql": "pending_sync",
+          "nameInDart": "pendingSync",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 2507,
+            "name": "pendingSync"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(true)"
+            ]
+          },
           "overriddenJsonName": null,
           "referenceName": null,
           "documentationComment": null,
@@ -648,7 +882,7 @@
       },
       "declaration": {
         "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-        "offset": 2019,
+        "offset": 2629,
         "name": "TimeEntries"
       },
       "references": [
@@ -668,7 +902,7 @@
           "nameInDart": "id",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2064,
+            "offset": 2674,
             "name": "id"
           },
           "typeConverter": null,
@@ -689,7 +923,7 @@
           "nameInDart": "taskId",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2097,
+            "offset": 2707,
             "name": "taskId"
           },
           "typeConverter": null,
@@ -724,7 +958,7 @@
           "nameInDart": "startTime",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2190,
+            "offset": 2800,
             "name": "startTime"
           },
           "typeConverter": null,
@@ -745,7 +979,7 @@
           "nameInDart": "endTime",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2238,
+            "offset": 2848,
             "name": "endTime"
           },
           "typeConverter": null,
@@ -766,7 +1000,7 @@
           "nameInDart": "durationMinutes",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2290,
+            "offset": 2900,
             "name": "durationMinutes"
           },
           "typeConverter": null,
@@ -787,7 +1021,7 @@
           "nameInDart": "note",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2350,
+            "offset": 2960,
             "name": "note"
           },
           "typeConverter": null,
@@ -817,7 +1051,7 @@
           "nameInDart": "manual",
           "declaration": {
             "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
-            "offset": 2417,
+            "offset": 3027,
             "name": "manual"
           },
           "typeConverter": null,
@@ -830,6 +1064,36 @@
                 "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
               },
               "(false)"
+            ]
+          },
+          "overriddenJsonName": null,
+          "referenceName": null,
+          "documentationComment": null,
+          "constraints": [],
+          "customConstraints": null
+        },
+        {
+          "sqlType": {
+            "builtin": "bool"
+          },
+          "nullable": false,
+          "nameInSql": "pending_sync",
+          "nameInDart": "pendingSync",
+          "declaration": {
+            "source_uri": "package:task_manager/data/datasources/local/app_database.dart",
+            "offset": 3102,
+            "name": "pendingSync"
+          },
+          "typeConverter": null,
+          "clientDefaultCode": null,
+          "defaultArgument": {
+            "elements": [
+              "const ",
+              {
+                "lexeme": "Constant",
+                "import_uri": "package:drift/src/runtime/query_builder/query_builder.dart"
+              },
+              "(true)"
             ]
           },
           "overriddenJsonName": null,

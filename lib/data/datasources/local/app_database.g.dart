@@ -24,6 +24,12 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
@@ -34,12 +40,42 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
   late final GeneratedColumn<String> icon = GeneratedColumn<String>(
       'icon', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _endDateMeta =
+      const VerificationMeta('endDate');
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+      'end_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _isDefaultMeta =
+      const VerificationMeta('isDefault');
+  @override
+  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
+      'is_default', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_default" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _pendingSyncMeta =
       const VerificationMeta('pendingSync');
   @override
@@ -51,8 +87,20 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
           'CHECK ("pending_sync" IN (0, 1))'),
       defaultValue: const Constant(true));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, parentId, name, color, icon, createdAt, pendingSync];
+  List<GeneratedColumn> get $columns => [
+        id,
+        parentId,
+        name,
+        description,
+        color,
+        icon,
+        startDate,
+        endDate,
+        createdAt,
+        sortOrder,
+        isDefault,
+        pendingSync
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -78,6 +126,12 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
     if (data.containsKey('color')) {
       context.handle(
           _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
@@ -90,11 +144,27 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
     } else if (isInserting) {
       context.missing(_iconMeta);
     }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(_endDateMeta,
+          endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(_isDefaultMeta,
+          isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta));
     }
     if (data.containsKey('pending_sync')) {
       context.handle(
@@ -117,12 +187,22 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
           .read(DriftSqlType.string, data['${effectivePrefix}parent_id']),
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
       color: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
       icon: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}icon'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
+      endDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      isDefault: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_default'])!,
       pendingSync: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
     );
@@ -138,17 +218,27 @@ class Project extends DataClass implements Insertable<Project> {
   final String id;
   final String? parentId;
   final String name;
+  final String? description;
   final String color;
   final String icon;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final DateTime createdAt;
+  final int sortOrder;
+  final bool isDefault;
   final bool pendingSync;
   const Project(
       {required this.id,
       this.parentId,
       required this.name,
+      this.description,
       required this.color,
       required this.icon,
+      this.startDate,
+      this.endDate,
       required this.createdAt,
+      required this.sortOrder,
+      required this.isDefault,
       required this.pendingSync});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -158,9 +248,20 @@ class Project extends DataClass implements Insertable<Project> {
       map['parent_id'] = Variable<String>(parentId);
     }
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     map['color'] = Variable<String>(color);
     map['icon'] = Variable<String>(icon);
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
+    }
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['is_default'] = Variable<bool>(isDefault);
     map['pending_sync'] = Variable<bool>(pendingSync);
     return map;
   }
@@ -172,9 +273,20 @@ class Project extends DataClass implements Insertable<Project> {
           ? const Value.absent()
           : Value(parentId),
       name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       color: Value(color),
       icon: Value(icon),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
       createdAt: Value(createdAt),
+      sortOrder: Value(sortOrder),
+      isDefault: Value(isDefault),
       pendingSync: Value(pendingSync),
     );
   }
@@ -186,9 +298,14 @@ class Project extends DataClass implements Insertable<Project> {
       id: serializer.fromJson<String>(json['id']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
       color: serializer.fromJson<String>(json['color']),
       icon: serializer.fromJson<String>(json['icon']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      isDefault: serializer.fromJson<bool>(json['isDefault']),
       pendingSync: serializer.fromJson<bool>(json['pendingSync']),
     );
   }
@@ -199,9 +316,14 @@ class Project extends DataClass implements Insertable<Project> {
       'id': serializer.toJson<String>(id),
       'parentId': serializer.toJson<String?>(parentId),
       'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
       'color': serializer.toJson<String>(color),
       'icon': serializer.toJson<String>(icon),
+      'startDate': serializer.toJson<DateTime?>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'isDefault': serializer.toJson<bool>(isDefault),
       'pendingSync': serializer.toJson<bool>(pendingSync),
     };
   }
@@ -210,17 +332,27 @@ class Project extends DataClass implements Insertable<Project> {
           {String? id,
           Value<String?> parentId = const Value.absent(),
           String? name,
+          Value<String?> description = const Value.absent(),
           String? color,
           String? icon,
+          Value<DateTime?> startDate = const Value.absent(),
+          Value<DateTime?> endDate = const Value.absent(),
           DateTime? createdAt,
+          int? sortOrder,
+          bool? isDefault,
           bool? pendingSync}) =>
       Project(
         id: id ?? this.id,
         parentId: parentId.present ? parentId.value : this.parentId,
         name: name ?? this.name,
+        description: description.present ? description.value : this.description,
         color: color ?? this.color,
         icon: icon ?? this.icon,
+        startDate: startDate.present ? startDate.value : this.startDate,
+        endDate: endDate.present ? endDate.value : this.endDate,
         createdAt: createdAt ?? this.createdAt,
+        sortOrder: sortOrder ?? this.sortOrder,
+        isDefault: isDefault ?? this.isDefault,
         pendingSync: pendingSync ?? this.pendingSync,
       );
   Project copyWithCompanion(ProjectsCompanion data) {
@@ -228,9 +360,15 @@ class Project extends DataClass implements Insertable<Project> {
       id: data.id.present ? data.id.value : this.id,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       name: data.name.present ? data.name.value : this.name,
+      description:
+          data.description.present ? data.description.value : this.description,
       color: data.color.present ? data.color.value : this.color,
       icon: data.icon.present ? data.icon.value : this.icon,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
       pendingSync:
           data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
     );
@@ -242,17 +380,22 @@ class Project extends DataClass implements Insertable<Project> {
           ..write('id: $id, ')
           ..write('parentId: $parentId, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('color: $color, ')
           ..write('icon: $icon, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
           ..write('createdAt: $createdAt, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('isDefault: $isDefault, ')
           ..write('pendingSync: $pendingSync')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, parentId, name, color, icon, createdAt, pendingSync);
+  int get hashCode => Object.hash(id, parentId, name, description, color, icon,
+      startDate, endDate, createdAt, sortOrder, isDefault, pendingSync);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -260,9 +403,14 @@ class Project extends DataClass implements Insertable<Project> {
           other.id == this.id &&
           other.parentId == this.parentId &&
           other.name == this.name &&
+          other.description == this.description &&
           other.color == this.color &&
           other.icon == this.icon &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
           other.createdAt == this.createdAt &&
+          other.sortOrder == this.sortOrder &&
+          other.isDefault == this.isDefault &&
           other.pendingSync == this.pendingSync);
 }
 
@@ -270,18 +418,28 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
   final Value<String> id;
   final Value<String?> parentId;
   final Value<String> name;
+  final Value<String?> description;
   final Value<String> color;
   final Value<String> icon;
+  final Value<DateTime?> startDate;
+  final Value<DateTime?> endDate;
   final Value<DateTime> createdAt;
+  final Value<int> sortOrder;
+  final Value<bool> isDefault;
   final Value<bool> pendingSync;
   final Value<int> rowid;
   const ProjectsCompanion({
     this.id = const Value.absent(),
     this.parentId = const Value.absent(),
     this.name = const Value.absent(),
+    this.description = const Value.absent(),
     this.color = const Value.absent(),
     this.icon = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.isDefault = const Value.absent(),
     this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -289,9 +447,14 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     required String id,
     this.parentId = const Value.absent(),
     required String name,
+    this.description = const Value.absent(),
     required String color,
     required String icon,
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
     required DateTime createdAt,
+    this.sortOrder = const Value.absent(),
+    this.isDefault = const Value.absent(),
     this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -303,9 +466,14 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     Expression<String>? id,
     Expression<String>? parentId,
     Expression<String>? name,
+    Expression<String>? description,
     Expression<String>? color,
     Expression<String>? icon,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
     Expression<DateTime>? createdAt,
+    Expression<int>? sortOrder,
+    Expression<bool>? isDefault,
     Expression<bool>? pendingSync,
     Expression<int>? rowid,
   }) {
@@ -313,9 +481,14 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
       if (id != null) 'id': id,
       if (parentId != null) 'parent_id': parentId,
       if (name != null) 'name': name,
+      if (description != null) 'description': description,
       if (color != null) 'color': color,
       if (icon != null) 'icon': icon,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
       if (createdAt != null) 'created_at': createdAt,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (isDefault != null) 'is_default': isDefault,
       if (pendingSync != null) 'pending_sync': pendingSync,
       if (rowid != null) 'rowid': rowid,
     });
@@ -325,18 +498,28 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
       {Value<String>? id,
       Value<String?>? parentId,
       Value<String>? name,
+      Value<String?>? description,
       Value<String>? color,
       Value<String>? icon,
+      Value<DateTime?>? startDate,
+      Value<DateTime?>? endDate,
       Value<DateTime>? createdAt,
+      Value<int>? sortOrder,
+      Value<bool>? isDefault,
       Value<bool>? pendingSync,
       Value<int>? rowid}) {
     return ProjectsCompanion(
       id: id ?? this.id,
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
+      description: description ?? this.description,
       color: color ?? this.color,
       icon: icon ?? this.icon,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       createdAt: createdAt ?? this.createdAt,
+      sortOrder: sortOrder ?? this.sortOrder,
+      isDefault: isDefault ?? this.isDefault,
       pendingSync: pendingSync ?? this.pendingSync,
       rowid: rowid ?? this.rowid,
     );
@@ -354,14 +537,29 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
     if (icon.present) {
       map['icon'] = Variable<String>(icon.value);
     }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (isDefault.present) {
+      map['is_default'] = Variable<bool>(isDefault.value);
     }
     if (pendingSync.present) {
       map['pending_sync'] = Variable<bool>(pendingSync.value);
@@ -378,9 +576,14 @@ class ProjectsCompanion extends UpdateCompanion<Project> {
           ..write('id: $id, ')
           ..write('parentId: $parentId, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('color: $color, ')
           ..write('icon: $icon, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
           ..write('createdAt: $createdAt, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('isDefault: $isDefault, ')
           ..write('pendingSync: $pendingSync, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -500,6 +703,14 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
       'updated_at', aliasedName, false,
       type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   static const VerificationMeta _pendingSyncMeta =
       const VerificationMeta('pendingSync');
   @override
@@ -528,6 +739,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         recurringRule,
         createdAt,
         updatedAt,
+        sortOrder,
         pendingSync
       ];
   @override
@@ -621,6 +833,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
     if (data.containsKey('pending_sync')) {
       context.handle(
           _pendingSyncMeta,
@@ -668,6 +884,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
       pendingSync: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}pending_sync'])!,
     );
@@ -699,6 +917,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String? recurringRule;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int sortOrder;
   final bool pendingSync;
   const Task(
       {required this.id,
@@ -717,6 +936,7 @@ class Task extends DataClass implements Insertable<Task> {
       this.recurringRule,
       required this.createdAt,
       required this.updatedAt,
+      required this.sortOrder,
       required this.pendingSync});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -751,6 +971,7 @@ class Task extends DataClass implements Insertable<Task> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sort_order'] = Variable<int>(sortOrder);
     map['pending_sync'] = Variable<bool>(pendingSync);
     return map;
   }
@@ -785,6 +1006,7 @@ class Task extends DataClass implements Insertable<Task> {
           : Value(recurringRule),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      sortOrder: Value(sortOrder),
       pendingSync: Value(pendingSync),
     );
   }
@@ -809,6 +1031,7 @@ class Task extends DataClass implements Insertable<Task> {
       recurringRule: serializer.fromJson<String?>(json['recurringRule']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
       pendingSync: serializer.fromJson<bool>(json['pendingSync']),
     );
   }
@@ -832,6 +1055,7 @@ class Task extends DataClass implements Insertable<Task> {
       'recurringRule': serializer.toJson<String?>(recurringRule),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'sortOrder': serializer.toJson<int>(sortOrder),
       'pendingSync': serializer.toJson<bool>(pendingSync),
     };
   }
@@ -853,6 +1077,7 @@ class Task extends DataClass implements Insertable<Task> {
           Value<String?> recurringRule = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
+          int? sortOrder,
           bool? pendingSync}) =>
       Task(
         id: id ?? this.id,
@@ -876,6 +1101,7 @@ class Task extends DataClass implements Insertable<Task> {
             recurringRule.present ? recurringRule.value : this.recurringRule,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        sortOrder: sortOrder ?? this.sortOrder,
         pendingSync: pendingSync ?? this.pendingSync,
       );
   Task copyWithCompanion(TasksCompanion data) {
@@ -906,6 +1132,7 @@ class Task extends DataClass implements Insertable<Task> {
           : this.recurringRule,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       pendingSync:
           data.pendingSync.present ? data.pendingSync.value : this.pendingSync,
     );
@@ -930,6 +1157,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('recurringRule: $recurringRule, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('pendingSync: $pendingSync')
           ..write(')'))
         .toString();
@@ -953,6 +1181,7 @@ class Task extends DataClass implements Insertable<Task> {
       recurringRule,
       createdAt,
       updatedAt,
+      sortOrder,
       pendingSync);
   @override
   bool operator ==(Object other) =>
@@ -974,6 +1203,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.recurringRule == this.recurringRule &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
+          other.sortOrder == this.sortOrder &&
           other.pendingSync == this.pendingSync);
 }
 
@@ -994,6 +1224,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String?> recurringRule;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<int> sortOrder;
   final Value<bool> pendingSync;
   final Value<int> rowid;
   const TasksCompanion({
@@ -1013,6 +1244,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurringRule = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.sortOrder = const Value.absent(),
     this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1033,6 +1265,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.recurringRule = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
+    this.sortOrder = const Value.absent(),
     this.pendingSync = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -1057,6 +1290,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? recurringRule,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<int>? sortOrder,
     Expression<bool>? pendingSync,
     Expression<int>? rowid,
   }) {
@@ -1077,6 +1311,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (recurringRule != null) 'recurring_rule': recurringRule,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (sortOrder != null) 'sort_order': sortOrder,
       if (pendingSync != null) 'pending_sync': pendingSync,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1099,6 +1334,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<String?>? recurringRule,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
+      Value<int>? sortOrder,
       Value<bool>? pendingSync,
       Value<int>? rowid}) {
     return TasksCompanion(
@@ -1118,6 +1354,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       recurringRule: recurringRule ?? this.recurringRule,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sortOrder: sortOrder ?? this.sortOrder,
       pendingSync: pendingSync ?? this.pendingSync,
       rowid: rowid ?? this.rowid,
     );
@@ -1175,6 +1412,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
     if (pendingSync.present) {
       map['pending_sync'] = Variable<bool>(pendingSync.value);
     }
@@ -1203,6 +1443,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('recurringRule: $recurringRule, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('sortOrder: $sortOrder, ')
           ..write('pendingSync: $pendingSync, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1688,9 +1929,14 @@ typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
   required String id,
   Value<String?> parentId,
   required String name,
+  Value<String?> description,
   required String color,
   required String icon,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
   required DateTime createdAt,
+  Value<int> sortOrder,
+  Value<bool> isDefault,
   Value<bool> pendingSync,
   Value<int> rowid,
 });
@@ -1698,9 +1944,14 @@ typedef $$ProjectsTableUpdateCompanionBuilder = ProjectsCompanion Function({
   Value<String> id,
   Value<String?> parentId,
   Value<String> name,
+  Value<String?> description,
   Value<String> color,
   Value<String> icon,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
   Value<DateTime> createdAt,
+  Value<int> sortOrder,
+  Value<bool> isDefault,
   Value<bool> pendingSync,
   Value<int> rowid,
 });
@@ -1742,14 +1993,29 @@ class $$ProjectsTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get icon => $composableBuilder(
       column: $table.icon, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isDefault => $composableBuilder(
+      column: $table.isDefault, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnFilters(column));
@@ -1794,14 +2060,29 @@ class $$ProjectsTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get icon => $composableBuilder(
       column: $table.icon, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isDefault => $composableBuilder(
+      column: $table.isDefault, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
@@ -1825,14 +2106,29 @@ class $$ProjectsTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
   GeneratedColumn<String> get icon =>
       $composableBuilder(column: $table.icon, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
 
   GeneratedColumn<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => column);
@@ -1885,9 +2181,14 @@ class $$ProjectsTableTableManager extends RootTableManager<
             Value<String> id = const Value.absent(),
             Value<String?> parentId = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> description = const Value.absent(),
             Value<String> color = const Value.absent(),
             Value<String> icon = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<bool> isDefault = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -1895,9 +2196,14 @@ class $$ProjectsTableTableManager extends RootTableManager<
             id: id,
             parentId: parentId,
             name: name,
+            description: description,
             color: color,
             icon: icon,
+            startDate: startDate,
+            endDate: endDate,
             createdAt: createdAt,
+            sortOrder: sortOrder,
+            isDefault: isDefault,
             pendingSync: pendingSync,
             rowid: rowid,
           ),
@@ -1905,9 +2211,14 @@ class $$ProjectsTableTableManager extends RootTableManager<
             required String id,
             Value<String?> parentId = const Value.absent(),
             required String name,
+            Value<String?> description = const Value.absent(),
             required String color,
             required String icon,
+            Value<DateTime?> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
             required DateTime createdAt,
+            Value<int> sortOrder = const Value.absent(),
+            Value<bool> isDefault = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -1915,9 +2226,14 @@ class $$ProjectsTableTableManager extends RootTableManager<
             id: id,
             parentId: parentId,
             name: name,
+            description: description,
             color: color,
             icon: icon,
+            startDate: startDate,
+            endDate: endDate,
             createdAt: createdAt,
+            sortOrder: sortOrder,
+            isDefault: isDefault,
             pendingSync: pendingSync,
             rowid: rowid,
           ),
@@ -1979,6 +2295,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> recurringRule,
   required DateTime createdAt,
   required DateTime updatedAt,
+  Value<int> sortOrder,
   Value<bool> pendingSync,
   Value<int> rowid,
 });
@@ -1999,6 +2316,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> recurringRule,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
+  Value<int> sortOrder,
   Value<bool> pendingSync,
   Value<int> rowid,
 });
@@ -2091,6 +2409,9 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnFilters(column));
@@ -2195,6 +2516,9 @@ class $$TasksTableOrderingComposer
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+      column: $table.sortOrder, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => ColumnOrderings(column));
 
@@ -2272,6 +2596,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
   GeneratedColumn<bool> get pendingSync => $composableBuilder(
       column: $table.pendingSync, builder: (column) => column);
@@ -2357,6 +2684,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> recurringRule = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -2377,6 +2705,7 @@ class $$TasksTableTableManager extends RootTableManager<
             recurringRule: recurringRule,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            sortOrder: sortOrder,
             pendingSync: pendingSync,
             rowid: rowid,
           ),
@@ -2397,6 +2726,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> recurringRule = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
+            Value<int> sortOrder = const Value.absent(),
             Value<bool> pendingSync = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
@@ -2417,6 +2747,7 @@ class $$TasksTableTableManager extends RootTableManager<
             recurringRule: recurringRule,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            sortOrder: sortOrder,
             pendingSync: pendingSync,
             rowid: rowid,
           ),

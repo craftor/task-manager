@@ -53,6 +53,7 @@ class TimeEntryRepositoryImpl implements TimeEntryRepository {
         durationMinutes: Value(entry.durationMinutes),
         note: Value(entry.note),
         manual: Value(entry.manual),
+        pendingSync: const Value(true),
       ),
     );
   }

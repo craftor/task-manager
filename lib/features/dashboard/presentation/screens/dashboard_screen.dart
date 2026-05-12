@@ -7,7 +7,9 @@ import '../../../time_tracking/presentation/providers/time_tracking_provider.dar
 import '../../../../domain/entities/task.dart';
 
 class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+  final Function(int)? onNavigate;
+
+  const DashboardScreen({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,6 +34,10 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _scrollToSection(int index) {
+    onNavigate?.call(index);
   }
 
   Widget _buildDashboard(
@@ -83,6 +89,7 @@ class DashboardScreen extends ConsumerWidget {
                 value: totalTasks.toString(),
                 icon: Icons.task_alt,
                 color: AppColors.primary,
+                onTap: () => _scrollToSection(1),
               )),
               const SizedBox(width: 12),
               Expanded(child: _SummaryCard(
@@ -122,6 +129,7 @@ class DashboardScreen extends ConsumerWidget {
                 value: totalProjects.toString(),
                 icon: Icons.folder,
                 color: AppColors.secondary,
+                onTap: () => _scrollToSection(1),
               )),
             ],
           ),
@@ -145,52 +153,57 @@ class _SummaryCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

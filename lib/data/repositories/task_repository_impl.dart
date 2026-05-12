@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/task.dart' as entity;
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/app_database.dart';
@@ -12,8 +13,10 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<List<entity.Task>> getAllTasks() async {
     try {
       final tasks = await _db.getAllTasks();
+      debugPrint('TaskRepositoryImpl.getAllTasks: ${tasks.length} tasks');
       return tasks.map(_mapToEntity).toList();
     } catch (e) {
+      debugPrint('TaskRepositoryImpl.getAllTasks error: $e');
       rethrow;
     }
   }
@@ -21,7 +24,10 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Stream<List<entity.Task>> watchAllTasks() {
     return _db.watchAllTasks().map(
-          (tasks) => tasks.map(_mapToEntity).toList(),
+          (tasks) {
+            debugPrint('TaskRepositoryImpl.watchAllTasks: ${tasks.length} tasks');
+            return tasks.map(_mapToEntity).toList();
+          },
         );
   }
 
@@ -48,6 +54,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> createTask(entity.Task task) async {
     try {
+      debugPrint('TaskRepositoryImpl.createTask: ${task.title}');
       await _db.insertTask(
         TasksCompanion(
           id: Value(task.id),
@@ -66,9 +73,13 @@ class TaskRepositoryImpl implements TaskRepository {
           recurringRule: Value(task.recurringRule),
           createdAt: Value(task.createdAt),
           updatedAt: Value(task.updatedAt),
+          sortOrder: Value(task.sortOrder),
+          pendingSync: const Value(true),
         ),
       );
+      debugPrint('TaskRepositoryImpl.createTask: success');
     } catch (e) {
+      debugPrint('TaskRepositoryImpl.createTask error: $e');
       rethrow;
     }
   }
@@ -94,6 +105,8 @@ class TaskRepositoryImpl implements TaskRepository {
           recurringRule: Value(task.recurringRule),
           createdAt: Value(task.createdAt),
           updatedAt: Value(task.updatedAt),
+          sortOrder: Value(task.sortOrder),
+          pendingSync: const Value(true),
         ),
       );
     } catch (e) {
@@ -128,6 +141,7 @@ class TaskRepositoryImpl implements TaskRepository {
       recurringRule: dbTask.recurringRule,
       createdAt: dbTask.createdAt,
       updatedAt: dbTask.updatedAt,
+      sortOrder: dbTask.sortOrder,
     );
   }
 }

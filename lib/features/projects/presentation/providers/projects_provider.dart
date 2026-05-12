@@ -5,6 +5,9 @@ import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';
 
+/// Fixed UUID for the default project so it's consistent across all devices.
+const String defaultProjectId = '00000000-0000-0000-0000-000000000001';
+
 final databaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase();
 });
@@ -30,13 +33,14 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
     final hasDefault = projects.any((p) => p.isDefault);
     if (!hasDefault) {
       final defaultProject = Project(
-        id: 'default-project',
+        id: defaultProjectId,
         name: 'Default',
         description: 'Default project for uncategorized tasks',
         color: '#808080',
         icon: 'folder',
         createdAt: DateTime.now(),
         isDefault: true,
+        sortOrder: -1, // Default project always first
       );
       await repository.createProject(defaultProject);
     }
@@ -52,6 +56,8 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
     DateTime? endDate,
   }) async {
     final repository = ref.read(projectRepositoryProvider);
+    final projects = await repository.getAllProjects();
+    final maxSortOrder = projects.isEmpty ? 0 : projects.map((p) => p.sortOrder).reduce((a, b) => a > b ? a : b);
     final project = Project(
       id: const Uuid().v4(),
       parentId: parentId,
@@ -62,6 +68,7 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
       startDate: startDate,
       endDate: endDate,
       createdAt: DateTime.now(),
+      sortOrder: maxSortOrder + 1,
     );
     await repository.createProject(project);
   }
@@ -69,6 +76,26 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
   Future<void> updateProject(Project project) async {
     final repository = ref.read(projectRepositoryProvider);
     await repository.updateProject(project);
+  }
+
+  Future<void> reorderProjects(int oldIndex, int newIndex) async {
+    final repository = ref.read(projectRepositoryProvider);
+    final projects = await repository.getAllProjects();
+    // Sort by sortOrder
+    projects.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final item = projects.removeAt(oldIndex);
+    projects.insert(newIndex, item);
+
+    // Update all sort orders
+    for (int i = 0; i < projects.length; i++) {
+      final updated = projects[i].copyWith(sortOrder: i);
+      await repository.updateProject(updated);
+    }
   }
 
   Future<void> deleteProject(String id) async {

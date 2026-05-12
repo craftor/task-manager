@@ -64,4 +64,13 @@ GitHub Actions workflows configured for:
 
 ## Version
 
-Current version: 0.1.4
+Current version: 0.2.0
+
+## Changelog
+
+### 0.2.0
+- **Sync**: Bidirectional Supabase sync for projects, tasks, and time entries
+- **Time Tracking**: Manual entry form with task selector, date/time pickers, and notes
+- **Timer**: Task selector dialog before starting a timer
+- **Bug Fixes**: Supabase NULL query, time rounding, Riverpod self-invalidation, version consistency
+- **UI**: Custom app icon, app display name "TaskManager"

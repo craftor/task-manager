@@ -59,20 +59,20 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
     );
     await repository.createTask(task);
     debugPrint('TasksNotifier.createTask done, invalidating');
-    ref.invalidate(tasksProvider);
+    ref.invalidateSelf();
   }
 
   Future<void> updateTask(Task task) async {
     final repository = ref.read(taskRepositoryProvider);
     final updatedTask = task.copyWith(updatedAt: DateTime.now());
     await repository.updateTask(updatedTask);
-    ref.invalidate(tasksProvider);
+    ref.invalidateSelf();
   }
 
   Future<void> deleteTask(String id) async {
     final repository = ref.read(taskRepositoryProvider);
     await repository.deleteTask(id);
-    ref.invalidate(tasksProvider);
+    ref.invalidateSelf();
   }
 
   Future<void> toggleTaskStatus(String id) async {
@@ -87,7 +87,23 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
         updatedAt: DateTime.now(),
       );
       await repository.updateTask(updatedTask);
-      ref.invalidate(tasksProvider);
+      ref.invalidateSelf();
     }
+  }
+
+  Future<void> reorderTasks(List<Task> tasks, int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    final item = tasks.removeAt(oldIndex);
+    tasks.insert(newIndex, item);
+
+    final repository = ref.read(taskRepositoryProvider);
+    for (int i = 0; i < tasks.length; i++) {
+      final updated = tasks[i].copyWith(sortOrder: i);
+      await repository.updateTask(updated);
+    }
+    ref.invalidateSelf();
   }
 }

@@ -49,6 +49,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
           startDate: Value(project.startDate),
           endDate: Value(project.endDate),
           createdAt: Value(project.createdAt),
+          sortOrder: Value(project.sortOrder),
           isDefault: Value(project.isDefault),
         ),
       );
@@ -71,6 +72,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
           startDate: Value(project.startDate),
           endDate: Value(project.endDate),
           createdAt: Value(project.createdAt),
+          sortOrder: Value(project.sortOrder),
           isDefault: Value(project.isDefault),
         ),
       );
@@ -99,6 +101,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
       startDate: dbProject.startDate,
       endDate: dbProject.endDate,
       createdAt: dbProject.createdAt,
+      sortOrder: dbProject.sortOrder,
       isDefault: dbProject.isDefault,
     );
   }

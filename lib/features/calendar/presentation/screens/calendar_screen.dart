@@ -115,8 +115,14 @@ class CalendarScreen extends ConsumerWidget {
       ),
       eventLoader: (day) {
         return tasks.where((task) {
-          if (task.dueDate == null) return false;
-          return isSameDay(task.dueDate!, day);
+          // Show task if its startDate or dueDate matches this day
+          if (task.startDate != null && isSameDay(task.startDate!, day)) return true;
+          if (task.dueDate != null && isSameDay(task.dueDate!, day)) return true;
+          // Also show if task spans this day (for time block display)
+          if (task.startDate != null && task.dueDate != null) {
+            return !day.isBefore(task.startDate!) && !day.isAfter(task.dueDate!);
+          }
+          return false;
         }).toList();
       },
       onDaySelected: (selectedDay, focusedDay) {
@@ -132,10 +138,12 @@ class CalendarScreen extends ConsumerWidget {
 
           // Find tasks that span this date
           final spanningTasks = tasks.where((task) {
-            if (task.dueDate == null) return false;
-            final taskStart = task.createdAt;
-            final taskEnd = task.dueDate!;
-            return !date.isBefore(taskStart) && !date.isAfter(taskEnd);
+            if (task.startDate != null && task.dueDate != null) {
+              return !date.isBefore(task.startDate!) && !date.isAfter(task.dueDate!);
+            }
+            if (task.startDate != null && isSameDay(task.startDate!, date)) return true;
+            if (task.dueDate != null && isSameDay(task.dueDate!, date)) return true;
+            return false;
           }).toList();
 
           if (spanningTasks.isEmpty) return null;
@@ -198,8 +206,13 @@ class CalendarScreen extends ConsumerWidget {
     DateTime selectedDay,
   ) {
     final dayTasks = tasks.where((task) {
-      if (task.dueDate == null) return false;
-      return isSameDay(task.dueDate!, selectedDay);
+      // Match start date, due date, or tasks that span this day
+      if (task.startDate != null && isSameDay(task.startDate!, selectedDay)) return true;
+      if (task.dueDate != null && isSameDay(task.dueDate!, selectedDay)) return true;
+      if (task.startDate != null && task.dueDate != null) {
+        return !selectedDay.isBefore(task.startDate!) && !selectedDay.isAfter(task.dueDate!);
+      }
+      return false;
     }).toList();
 
     if (dayTasks.isEmpty) {
@@ -260,6 +273,12 @@ class _CalendarTaskCard extends StatelessWidget {
     }
   }
 
+  String _formatDateTime(DateTime dt) {
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '${dt.day}/${dt.month} $hour:$minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -282,12 +301,37 @@ class _CalendarTaskCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              task.title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (task.startDate != null) ...[
+                      Icon(Icons.play_arrow, size: 12, color: AppColors.textMuted),
+                      Text(
+                        _formatDateTime(task.startDate!),
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (task.dueDate != null) ...[
+                      Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+                      Text(
+                        _formatDateTime(task.dueDate!),
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ),
           Container(

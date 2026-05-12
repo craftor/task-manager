@@ -15,7 +15,7 @@ class SupabaseDatasource {
         .from('projects')
         .select()
         .eq('user_id', userId)
-        .eq('deleted_at', 'null')
+        .filter('deleted_at', 'is', null)
         .order('created_at');
     return response;
   }
@@ -45,7 +45,7 @@ class SupabaseDatasource {
         .from('tasks')
         .select()
         .eq('user_id', userId)
-        .eq('deleted_at', 'null')
+        .filter('deleted_at', 'is', null)
         .order('created_at');
     return response;
   }

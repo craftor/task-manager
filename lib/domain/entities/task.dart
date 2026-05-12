@@ -19,6 +19,7 @@ class Task {
   final String? recurringRule;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int sortOrder;
 
   const Task({
     required this.id,
@@ -37,6 +38,7 @@ class Task {
     this.recurringRule,
     required this.createdAt,
     required this.updatedAt,
+    this.sortOrder = 0,
   });
 
   Task copyWith({
@@ -56,6 +58,7 @@ class Task {
     String? recurringRule,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? sortOrder,
   }) {
     return Task(
       id: id ?? this.id,
@@ -74,6 +77,7 @@ class Task {
       recurringRule: recurringRule ?? this.recurringRule,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 }

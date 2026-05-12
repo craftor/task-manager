@@ -872,12 +872,17 @@ class _DateTimePickerField extends StatelessWidget {
       );
 
       if (pickedTime != null) {
+        final adjustedMinute = _roundToHalfHour(pickedTime.minute);
+        // Round up: minutes >= 45 carry to the next hour
+        final adjustedHour = pickedTime.minute >= 45
+            ? pickedTime.hour + 1
+            : pickedTime.hour;
         final combined = DateTime(
           pickedDate.year,
           pickedDate.month,
           pickedDate.day,
-          pickedTime.hour,
-          _roundToHalfHour(pickedTime.minute),
+          adjustedHour,
+          adjustedMinute,
         );
         onChanged(combined);
       } else {
@@ -887,13 +892,9 @@ class _DateTimePickerField extends StatelessWidget {
   }
 
   int _roundToHalfHour(int minute) {
-    if (minute < 15) {
-      return 0;
-    } else if (minute < 45) {
-      return 30;
-    } else {
-      return 0;
-    }
+    if (minute < 15) return 0;
+    if (minute < 45) return 30;
+    return 0; // caller adds 1 hour when minute >= 45
   }
 
   String _formatDateTime(DateTime dt) {

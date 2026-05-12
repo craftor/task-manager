@@ -3,6 +3,14 @@
   "imports": [
     "package:flutter/material.dart",
     "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:task_manager/core/theme/app_theme.dart"
+    "package:task_manager/core/theme/app_theme.dart",
+    "package:task_manager/features/auth/presentation/providers/auth_provider.dart",
+    "package:task_manager/features/auth/presentation/screens/login_screen.dart",
+    "package:task_manager/features/projects/presentation/providers/projects_provider.dart",
+    "package:task_manager/features/projects/presentation/screens/projects_screen.dart",
+    "package:task_manager/features/tasks/presentation/screens/tasks_screen.dart",
+    "package:task_manager/features/time_tracking/presentation/screens/time_tracking_screen.dart",
+    "package:task_manager/features/calendar/presentation/screens/calendar_screen.dart",
+    "package:task_manager/features/gantt/presentation/screens/gantt_screen.dart"
   ]
 }

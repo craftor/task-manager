@@ -27,7 +27,28 @@
       "Bash(adb install *)",
       "Bash(adb shell *)",
       "Bash(git commit -m 'docs: add Supabase integration design spec *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "WebSearch",
+      "Bash(find ~/.pub-cache/hosted/pub.dev/supabase-2.*/lib -name \"*.dart\")",
+      "Bash(xargs grep -l \"PostgrestFilterBuilder\")",
+      "Bash(adb devices *)",
+      "Bash(supabase --version)",
+      "Bash(flutter clean *)",
+      "Bash(adb logcat *)",
+      "Bash(flutter --version)",
+      "Bash(flutter --help)",
+      "Bash(dart pub *)",
+      "Bash(dart run *)",
+      "Bash(dart analyze *)",
+      "Bash(emulator -list-avds)",
+      "Bash(adb *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(awk BEGIN{depth=0; max=250} NR>=238 && NR<=250 {for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\(\"||c==\"[\"||c==\"{\"\\) depth++; if\\(c==\"\\)\"||c==\"]\"||c==\"}\"\\) depth--} print NR, depth, $0} *)",
+      "Bash(awk BEGIN{depth=0} NR>=405 && NR<=415 {for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\(\"||c==\"[\"||c==\"{\"\\) depth++; if\\(c==\"\\)\"||c==\"]\"||c==\"}\"\\) depth--} print NR, depth, $0} *)",
+      "Bash(awk BEGIN{depth=0} NR>=330 && NR<=345 {for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\(\"||c==\"[\"||c==\"{\"\\) depth++; if\\(c==\"\\)\"||c==\"]\"||c==\"}\"\\) depth--} print NR, depth, $0} *)",
+      "Bash(flutter config *)",
+      "Bash(git tag *)"
     ]
   }
 }
