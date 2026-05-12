@@ -54,3 +54,32 @@ jobs:
         with:
           name: windows-exe
           path: build/windows/x64/runner/Release/task_manager.exe
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.9'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build macOS
+        run: flutter build macos --release
+
+      - name: Package macOS app
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r task_manager-macos.zip task_manager.app
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: build/macos/Build/Products/Release/task_manager-macos.zip

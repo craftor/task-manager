@@ -56,11 +56,18 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
+## Platforms
+
+- **Android** (APK)
+- **Windows** (EXE)
+- **macOS** (App)
+
 ## CI/CD
 
 GitHub Actions workflows configured for:
-- **Android**: Debug APK build on tag push
+- **Android**: Release APK build on tag push
 - **Windows**: Release build on tag push
+- **macOS**: Release build on tag push
 
 ## Version
 
