@@ -17,6 +17,8 @@ class TimeEntry {
     this.manual = false,
   });
 
+  bool get isRunning => endTime == null;
+
   TimeEntry copyWith({
     String? id,
     String? taskId,

@@ -436,8 +436,11 @@ class ProjectsScreen extends ConsumerWidget {
                           } else {
                             ref.read(projectsProvider.notifier).createProject(
                               name: nameController.text,
+                              description: descController.text.isEmpty ? null : descController.text,
                               color: selectedColor,
                               icon: selectedIcon,
+                              startDate: startDate,
+                              endDate: endDate,
                             );
                           }
                           Navigator.pop(dialogContext);

@@ -13,6 +13,7 @@ import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
+import 'features/sync/data/sync_manager.dart';
 
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -120,7 +121,38 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   Widget build(BuildContext context) {
     // Keep SyncManager alive while authenticated
-    ref.watch(syncStatusProvider);
+    final syncState = ref.watch(syncStatusProvider);
+    ref.listen(syncStatusProvider, (prev, next) {
+      final now = next.valueOrNull;
+      if (now == null || prev?.valueOrNull?.status == now.status) return;
+      if (now.status == SyncStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(children: [
+              Icon(Icons.cloud_done, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Sync completed'),
+            ]),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (now.status == SyncStatus.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(children: [
+              const Icon(Icons.cloud_off, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(now.errorMessage ?? 'Sync failed')),
+            ]),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -395,7 +427,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                 icon: Icons.info_outline,
                 label: 'Version',
-                value: '0.2.0',
+                value: '0.2.1',
               ),
               const SizedBox(height: 24),
               Row(

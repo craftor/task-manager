@@ -26,10 +26,15 @@ class SupabaseDatasource {
       'user_id': userId,
       'parent_id': project.parentId,
       'name': project.name,
+      'description': project.description,
       'color': project.color,
       'icon': project.icon,
+      'start_date': project.startDate?.toIso8601String(),
+      'end_date': project.endDate?.toIso8601String(),
       'created_at': project.createdAt.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
+      'sort_order': project.sortOrder,
+      'is_default': project.isDefault,
     });
   }
 
@@ -60,6 +65,7 @@ class SupabaseDatasource {
       'description': task.description,
       'priority': task.priority.index,
       'status': task.status.index,
+      'start_date': task.startDate?.toIso8601String(),
       'due_date': task.dueDate?.toIso8601String(),
       'tags': task.tags.join(','),
       'estimated_minutes': task.estimatedMinutes,

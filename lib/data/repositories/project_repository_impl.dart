@@ -51,6 +51,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
           createdAt: Value(project.createdAt),
           sortOrder: Value(project.sortOrder),
           isDefault: Value(project.isDefault),
+          pendingSync: const Value(true),
         ),
       );
     } catch (e) {
@@ -74,6 +75,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
           createdAt: Value(project.createdAt),
           sortOrder: Value(project.sortOrder),
           isDefault: Value(project.isDefault),
+          pendingSync: const Value(true),
         ),
       );
     } catch (e) {

@@ -64,9 +64,16 @@ GitHub Actions workflows configured for:
 
 ## Version
 
-Current version: 0.2.0
+Current version: 0.2.1
 
 ## Changelog
+
+### 0.2.1
+- Fix project sync: pendingSync flag, missing Supabase fields (description, dates, sort_order)
+- Fix task sync: missing start_date in upsertTask
+- TimeEntry: add isRunning getter to domain entity
+- Project creation: pass description, startDate, endDate
+- Sync status: SnackBar notification on success/error
 
 ### 0.2.0
 - **Sync**: Bidirectional Supabase sync for projects, tasks, and time entries
