@@ -85,8 +85,13 @@ class TasksScreen extends ConsumerWidget {
       return _buildEmptyState(context, ref);
     }
 
+    // Sort pending tasks by sortOrder
     final pendingTasks = tasks.where((t) => t.status != TaskStatus.completed).toList();
+    pendingTasks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    // Sort completed tasks by sortOrder
     final completedTasks = tasks.where((t) => t.status == TaskStatus.completed).toList();
+    completedTasks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -98,8 +103,7 @@ class TasksScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onReorder: (oldIndex, newIndex) {
-                if (oldIndex < newIndex) newIndex--;
-                // Just visual reorder for now
+                ref.read(tasksProvider.notifier).reorderTasks(pendingTasks, oldIndex, newIndex);
               },
               proxyDecorator: (child, index, animation) {
                 return AnimatedBuilder(
@@ -145,7 +149,7 @@ class TasksScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onReorder: (oldIndex, newIndex) {
-                if (oldIndex < newIndex) newIndex--;
+                ref.read(tasksProvider.notifier).reorderTasks(completedTasks, oldIndex, newIndex);
               },
               proxyDecorator: (child, index, animation) {
                 return AnimatedBuilder(

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
@@ -9,6 +11,7 @@ import 'features/tasks/presentation/screens/tasks_screen.dart';
 import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
+import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -82,6 +85,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   static const List<NavigationDestination> _destinations = [
     NavigationDestination(
+      icon: Icon(Icons.dashboard_outlined, size: 26),
+      selectedIcon: Icon(Icons.dashboard, size: 26),
+      label: 'Dashboard',
+    ),
+    NavigationDestination(
       icon: Icon(Icons.folder_outlined, size: 26),
       selectedIcon: Icon(Icons.folder, size: 26),
       label: 'Projects',
@@ -137,72 +145,60 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 ),
                 const SizedBox(height: 32),
                 // Navigation items
-                Expanded(
-                  child: Column(
-                    children: List.generate(_destinations.length, (index) {
-                      final dest = _destinations[index];
-                      final isSelected = index == _selectedIndex;
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: List.generate(_destinations.length, (index) {
+                    final dest = _destinations[index];
+                    final isSelected = index == _selectedIndex;
 
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedIndex = index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary.withOpacity(0.15)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Column(
-                            children: [
-                              AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 200),
-                                child: isSelected
-                                    ? dest.selectedIcon
-                                    : dest.icon,
-                              ),
-                              const SizedBox(height: 4),
-                              AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 200),
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.textMuted,
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                                child: Text(dest.label),
-                              ),
-                            ],
-                          ),
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedIndex = index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      );
-                    }),
-                  ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: isSelected
+                                  ? dest.selectedIcon
+                                  : dest.icon,
+                            ),
+                            const SizedBox(height: 4),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textMuted,
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                              child: Text(dest.label),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
                 ),
+                const Spacer(),
                 // User avatar
                 GestureDetector(
                   onTap: () => _showUserProfile(context),
                   child: Container(
                     margin: const EdgeInsets.all(12),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.primary.withOpacity(0.2),
-                      child: Text(
-                        _getUserInitials(ref),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    child: _buildAvatarWidget(ref),
                   ),
                 ),
               ],
@@ -226,17 +222,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return const ProjectsScreen();
+        return const DashboardScreen();
       case 1:
-        return const TasksScreen();
+        return const ProjectsScreen();
       case 2:
-        return const TimeTrackingScreen();
+        return const TasksScreen();
       case 3:
-        return const CalendarScreen();
+        return const TimeTrackingScreen();
       case 4:
+        return const CalendarScreen();
+      case 5:
         return const GanttScreen();
       default:
-        return const ProjectsScreen();
+        return const DashboardScreen();
     }
   }
 
@@ -248,13 +246,39 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return parts[0].substring(0, parts[0].length > 2 ? 2 : 1).toUpperCase();
   }
 
+  Widget _buildAvatarWidget(WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final avatarUrl = authState.avatarUrl;
+
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 20,
+        backgroundImage: FileImage(File(avatarUrl)),
+        backgroundColor: AppColors.primary.withOpacity(0.2),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: AppColors.primary.withOpacity(0.2),
+      child: Text(
+        _getUserInitials(ref),
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   void _showUserProfile(BuildContext context) {
     final authState = ref.read(authStateProvider);
     final email = authState.email ?? 'Unknown';
+    final avatarUrl = authState.avatarUrl;
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      builder: (dialogContext) => Dialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -265,22 +289,66 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Center(
-                  child: Text(
-                    _getUserInitials(ref),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () => _pickImage(dialogContext),
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        gradient: avatarUrl != null && avatarUrl.isNotEmpty
+                            ? null
+                            : AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(20),
+                        color: avatarUrl != null && avatarUrl.isNotEmpty
+                            ? AppColors.surfaceLight
+                            : null,
+                        image: avatarUrl != null && avatarUrl.isNotEmpty
+                            ? DecorationImage(
+                                image: FileImage(File(avatarUrl)),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                      child: avatarUrl == null || avatarUrl.isEmpty
+                          ? Center(
+                              child: Text(
+                                _getUserInitials(ref),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            )
+                          : null,
                     ),
-                  ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Tap to change avatar',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
                 ),
               ),
               const SizedBox(height: 16),
@@ -308,14 +376,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                 icon: Icons.info_outline,
                 label: 'Version',
-                value: '0.1.0',
+                value: '0.1.1',
               ),
               const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(dialogContext),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textSecondary,
                         side: const BorderSide(color: AppColors.border),
@@ -332,7 +400,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         ref.read(authStateProvider.notifier).signOut();
-                        Navigator.pop(context);
+                        Navigator.pop(dialogContext);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.error,
@@ -352,6 +420,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickImage(BuildContext dialogContext) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      ref.read(authStateProvider.notifier).updateAvatar(pickedFile.path);
+    }
   }
 }
 

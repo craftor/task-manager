@@ -85,13 +85,15 @@ class ProjectsScreen extends ConsumerWidget {
       return _buildEmptyState(context, ref);
     }
 
+    // Sort by sortOrder
+    final sortedProjects = List<Project>.from(projects);
+    sortedProjects.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      itemCount: projects.length,
+      itemCount: sortedProjects.length,
       onReorder: (oldIndex, newIndex) {
-        if (oldIndex < newIndex) newIndex--;
-        // Reorder in provider would need additional implementation
-        // For now, just visual reorder - data order stays same
+        ref.read(projectsProvider.notifier).reorderProjects(oldIndex, newIndex);
       },
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
@@ -109,7 +111,7 @@ class ProjectsScreen extends ConsumerWidget {
         );
       },
       itemBuilder: (context, index) {
-        final project = projects[index];
+        final project = sortedProjects[index];
         return _ProjectCard(
           key: ValueKey(project.id),
           project: project,
@@ -213,6 +215,7 @@ class ProjectsScreen extends ConsumerWidget {
     final descController = TextEditingController(text: project?.description ?? '');
     final isEditing = project != null;
     String selectedColor = project?.color ?? '#00ff9f';
+    String selectedIcon = project?.icon ?? 'folder';
     DateTime? startDate = project?.startDate;
     DateTime? endDate = project?.endDate;
 
@@ -372,6 +375,25 @@ class ProjectsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
+                  'Icon',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                StatefulBuilder(
+                  builder: (context, setIconState) => _IconPicker(
+                    selectedIcon: selectedIcon,
+                    selectedColor: selectedColor,
+                    onIconSelected: (icon) {
+                      setIconState(() => selectedIcon = icon);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
                   'Color',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -414,7 +436,7 @@ class ProjectsScreen extends ConsumerWidget {
                             ref.read(projectsProvider.notifier).createProject(
                               name: nameController.text,
                               color: selectedColor,
-                              icon: 'folder',
+                              icon: selectedIcon,
                             );
                           }
                           Navigator.pop(dialogContext);
@@ -454,6 +476,53 @@ class _ProjectCard extends StatefulWidget {
 class _ProjectCardState extends State<_ProjectCard> {
   bool _isExpanded = false;
 
+  IconData _getProjectIcon(String iconName) {
+    switch (iconName) {
+      case 'folder':
+        return Icons.folder_rounded;
+      case 'work':
+        return Icons.work_rounded;
+      case 'star':
+        return Icons.star_rounded;
+      case 'favorite':
+        return Icons.favorite_rounded;
+      case 'bookmark':
+        return Icons.bookmark_rounded;
+      case 'code':
+        return Icons.code_rounded;
+      case 'build':
+        return Icons.build_rounded;
+      case 'home':
+        return Icons.home_rounded;
+      case 'shopping':
+        return Icons.shopping_cart_rounded;
+      case 'school':
+        return Icons.school_rounded;
+      case 'fitness':
+        return Icons.fitness_center_rounded;
+      case 'travel':
+        return Icons.flight_rounded;
+      case 'music':
+        return Icons.music_note_rounded;
+      case 'photo':
+        return Icons.photo_rounded;
+      case 'movie':
+        return Icons.movie_rounded;
+      case 'game':
+        return Icons.games_rounded;
+      case 'sports':
+        return Icons.sports_soccer_rounded;
+      case 'health':
+        return Icons.health_and_safety_rounded;
+      case 'science':
+        return Icons.science_rounded;
+      case 'business':
+        return Icons.business_center_rounded;
+      default:
+        return Icons.folder_rounded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasksAsync = widget.ref.watch(tasksProvider);
@@ -489,7 +558,7 @@ class _ProjectCardState extends State<_ProjectCard> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        Icons.folder_rounded,
+                        _getProjectIcon(widget.project.icon),
                         color: _projectColor,
                         size: 28,
                       ),
@@ -689,6 +758,124 @@ class _TaskMiniCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}';
+  }
+
+  IconData _getProjectIcon(String iconName) {
+    switch (iconName) {
+      case 'folder':
+        return Icons.folder_rounded;
+      case 'work':
+        return Icons.work_rounded;
+      case 'star':
+        return Icons.star_rounded;
+      case 'favorite':
+        return Icons.favorite_rounded;
+      case 'bookmark':
+        return Icons.bookmark_rounded;
+      case 'code':
+        return Icons.code_rounded;
+      case 'build':
+        return Icons.build_rounded;
+      case 'home':
+        return Icons.home_rounded;
+      case 'shopping':
+        return Icons.shopping_cart_rounded;
+      case 'school':
+        return Icons.school_rounded;
+      case 'fitness':
+        return Icons.fitness_center_rounded;
+      case 'travel':
+        return Icons.flight_rounded;
+      case 'music':
+        return Icons.music_note_rounded;
+      case 'photo':
+        return Icons.photo_rounded;
+      case 'movie':
+        return Icons.movie_rounded;
+      case 'game':
+        return Icons.games_rounded;
+      case 'sports':
+        return Icons.sports_soccer_rounded;
+      case 'health':
+        return Icons.health_and_safety_rounded;
+      case 'science':
+        return Icons.science_rounded;
+      case 'business':
+        return Icons.business_center_rounded;
+      default:
+        return Icons.folder_rounded;
+    }
+  }
+}
+
+class _IconPicker extends StatelessWidget {
+  final String selectedIcon;
+  final String selectedColor;
+  final ValueChanged<String> onIconSelected;
+
+  const _IconPicker({
+    required this.selectedIcon,
+    required this.selectedColor,
+    required this.onIconSelected,
+  });
+
+  static const _icons = [
+    ('folder', Icons.folder_rounded),
+    ('work', Icons.work_rounded),
+    ('star', Icons.star_rounded),
+    ('favorite', Icons.favorite_rounded),
+    ('bookmark', Icons.bookmark_rounded),
+    ('code', Icons.code_rounded),
+    ('build', Icons.build_rounded),
+    ('home', Icons.home_rounded),
+    ('shopping', Icons.shopping_cart_rounded),
+    ('school', Icons.school_rounded),
+    ('fitness', Icons.fitness_center_rounded),
+    ('travel', Icons.flight_rounded),
+    ('music', Icons.music_note_rounded),
+    ('photo', Icons.photo_rounded),
+    ('movie', Icons.movie_rounded),
+    ('game', Icons.games_rounded),
+    ('sports', Icons.sports_soccer_rounded),
+    ('health', Icons.health_and_safety_rounded),
+    ('science', Icons.science_rounded),
+    ('business', Icons.business_center_rounded),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    Color iconColor;
+    try {
+      iconColor = Color(int.parse(selectedColor.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      iconColor = AppColors.primary;
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _icons.map((iconData) {
+        final isSelected = iconData.$1 == selectedIcon;
+        return GestureDetector(
+          onTap: () => onIconSelected(iconData.$1),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isSelected ? iconColor.withOpacity(0.2) : AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected ? Border.all(color: iconColor, width: 2) : null,
+            ),
+            child: Icon(
+              iconData.$2,
+              color: isSelected ? iconColor : AppColors.textMuted,
+              size: 22,
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
