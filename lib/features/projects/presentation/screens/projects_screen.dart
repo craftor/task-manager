@@ -428,6 +428,7 @@ class ProjectsScreen extends ConsumerWidget {
                                 name: nameController.text,
                                 description: descController.text.isEmpty ? null : descController.text,
                                 color: selectedColor,
+                                icon: selectedIcon,
                                 startDate: startDate,
                                 endDate: endDate,
                               ),

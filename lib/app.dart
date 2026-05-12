@@ -120,100 +120,112 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Row(
-        children: [
-          // Navigation Rail
-          Container(
-            width: 88,
-            color: AppColors.surface,
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                // Logo
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.task_alt,
-                    size: 28,
-                    color: AppColors.background,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // Navigation items
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: List.generate(_destinations.length, (index) {
-                    final dest = _destinations[index];
-                    final isSelected = index == _selectedIndex;
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        title: const Text(
+          'Task Manager',
+          style: TextStyle(color: AppColors.textPrimary, fontSize: 20),
+        ),
+        centerTitle: true,
+      ),
+      drawer: _buildDrawer(context),
+      body: _buildBody(),
+    );
+  }
 
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedIndex = index),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.primary.withOpacity(0.15)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: isSelected
-                                  ? dest.selectedIcon
-                                  : dest.icon,
-                            ),
-                            const SizedBox(height: 4),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
-                              style: TextStyle(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : AppColors.textMuted,
-                                fontSize: 11,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                              child: Text(dest.label),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                const Spacer(),
-                // User avatar
-                GestureDetector(
-                  onTap: () => _showUserProfile(context),
-                  child: Container(
-                    margin: const EdgeInsets.all(12),
-                    child: _buildAvatarWidget(ref),
-                  ),
-                ),
-              ],
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      backgroundColor: AppColors.surface,
+      width: 88,
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // Logo
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.task_alt,
+              size: 28,
+              color: AppColors.background,
             ),
           ),
-          // Divider
-          const VerticalDivider(
-            width: 1,
-            thickness: 1,
-            color: AppColors.border,
+          const SizedBox(height: 32),
+          // Navigation items
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: List.generate(_destinations.length, (index) {
+              final dest = _destinations[index];
+              final isSelected = index == _selectedIndex;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedIndex = index);
+                  Navigator.pop(context);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.15)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: isSelected
+                            ? dest.selectedIcon
+                            : dest.icon,
+                      ),
+                      const SizedBox(height: 4),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: TextStyle(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        child: Text(dest.label),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
-          // Content
-          Expanded(
-            child: _buildBody(),
+          const Spacer(),
+          // User avatar
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+              _showUserProfile(context);
+            },
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              child: _buildAvatarWidget(ref),
+            ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -222,7 +234,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return const DashboardScreen();
+        return DashboardScreen(onNavigate: (index) {
+          setState(() => _selectedIndex = index);
+        });
       case 1:
         return const ProjectsScreen();
       case 2:
@@ -234,7 +248,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 5:
         return const GanttScreen();
       default:
-        return const DashboardScreen();
+        return DashboardScreen(onNavigate: (index) {
+          setState(() => _selectedIndex = index);
+        });
     }
   }
 

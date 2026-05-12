@@ -6,11 +6,20 @@ import '../../../../domain/entities/project.dart';
 import '../providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 
-class TasksScreen extends ConsumerWidget {
+enum TaskFilter { all, pending, completed, highPriority, overdue }
+
+class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends ConsumerState<TasksScreen> {
+  TaskFilter _filter = TaskFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider);
 
     return Scaffold(
@@ -20,6 +29,53 @@ class TasksScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
+          PopupMenuButton<TaskFilter>(
+            icon: const Icon(Icons.filter_list, color: AppColors.textPrimary),
+            color: AppColors.surface,
+            onSelected: (filter) => setState(() => _filter = filter),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: TaskFilter.all,
+                child: _FilterMenuItem(
+                  icon: Icons.list,
+                  label: 'All Tasks',
+                  isSelected: _filter == TaskFilter.all,
+                ),
+              ),
+              PopupMenuItem(
+                value: TaskFilter.pending,
+                child: _FilterMenuItem(
+                  icon: Icons.pending_actions,
+                  label: 'Pending',
+                  isSelected: _filter == TaskFilter.pending,
+                ),
+              ),
+              PopupMenuItem(
+                value: TaskFilter.completed,
+                child: _FilterMenuItem(
+                  icon: Icons.check_circle,
+                  label: 'Completed',
+                  isSelected: _filter == TaskFilter.completed,
+                ),
+              ),
+              PopupMenuItem(
+                value: TaskFilter.highPriority,
+                child: _FilterMenuItem(
+                  icon: Icons.priority_high,
+                  label: 'High Priority',
+                  isSelected: _filter == TaskFilter.highPriority,
+                ),
+              ),
+              PopupMenuItem(
+                value: TaskFilter.overdue,
+                child: _FilterMenuItem(
+                  icon: Icons.warning,
+                  label: 'Overdue',
+                  isSelected: _filter == TaskFilter.overdue,
+                ),
+              ),
+            ],
+          ),
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -81,16 +137,33 @@ class TasksScreen extends ConsumerWidget {
     WidgetRef ref,
     List<Task> tasks,
   ) {
-    if (tasks.isEmpty) {
+    // Apply filter
+    final now = DateTime.now();
+    final filteredTasks = tasks.where((t) {
+      switch (_filter) {
+        case TaskFilter.all:
+          return true;
+        case TaskFilter.pending:
+          return t.status != TaskStatus.completed;
+        case TaskFilter.completed:
+          return t.status == TaskStatus.completed;
+        case TaskFilter.highPriority:
+          return t.priority == Priority.high || t.priority == Priority.urgent;
+        case TaskFilter.overdue:
+          return t.dueDate != null && t.dueDate!.isBefore(now) && t.status != TaskStatus.completed;
+      }
+    }).toList();
+
+    if (filteredTasks.isEmpty) {
       return _buildEmptyState(context, ref);
     }
 
     // Sort pending tasks by sortOrder
-    final pendingTasks = tasks.where((t) => t.status != TaskStatus.completed).toList();
+    final pendingTasks = filteredTasks.where((t) => t.status != TaskStatus.completed).toList();
     pendingTasks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     // Sort completed tasks by sortOrder
-    final completedTasks = tasks.where((t) => t.status == TaskStatus.completed).toList();
+    final completedTasks = filteredTasks.where((t) => t.status == TaskStatus.completed).toList();
     completedTasks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     return SingleChildScrollView(
@@ -230,6 +303,25 @@ class TasksScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    String message = 'Create your first task to get started';
+    switch (_filter) {
+      case TaskFilter.all:
+        message = 'Create your first task to get started';
+        break;
+      case TaskFilter.pending:
+        message = 'No pending tasks';
+        break;
+      case TaskFilter.completed:
+        message = 'No completed tasks';
+        break;
+      case TaskFilter.highPriority:
+        message = 'No high priority tasks';
+        break;
+      case TaskFilter.overdue:
+        message = 'No overdue tasks';
+        break;
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -241,8 +333,8 @@ class TasksScreen extends ConsumerWidget {
               color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.task_alt,
+            child: Icon(
+              _getEmptyIcon(),
               size: 64,
               color: AppColors.primary,
             ),
@@ -257,9 +349,9 @@ class TasksScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Create your first task to get started',
-            style: TextStyle(
+          Text(
+            message,
+            style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 16,
             ),
@@ -273,6 +365,21 @@ class TasksScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  IconData _getEmptyIcon() {
+    switch (_filter) {
+      case TaskFilter.all:
+        return Icons.task_alt;
+      case TaskFilter.pending:
+        return Icons.pending_actions;
+      case TaskFilter.completed:
+        return Icons.check_circle;
+      case TaskFilter.highPriority:
+        return Icons.priority_high;
+      case TaskFilter.overdue:
+        return Icons.warning;
+    }
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Task task) {
@@ -932,6 +1039,43 @@ class _PrioritySelector extends StatelessWidget {
       case Priority.urgent:
         return 'Urgent';
     }
+  }
+}
+
+class _FilterMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+
+  const _FilterMenuItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        ),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+        if (isSelected) ...[
+          const Spacer(),
+          const Icon(Icons.check, size: 18, color: AppColors.primary),
+        ],
+      ],
+    );
   }
 }
 
