@@ -5,6 +5,9 @@ on:
     tags:
       - '**'
 
+permissions:
+  contents: write
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -83,3 +86,52 @@ jobs:
         with:
           name: macos-app
           path: build/macos/Build/Products/Release/task_manager-macos.zip
+
+  release:
+    needs: [android, windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+
+      - name: Download Windows EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+
+      - name: Download macOS App
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-app
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: TaskManager v${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          body: |
+            # TaskManager v${{ steps.version.outputs.VERSION }}
+
+            Personal task and time management application.
+
+            ## What's New
+            - Cross-platform sync via Supabase
+            - Time tracking with manual entry and timer
+            - Project management with drag-and-drop
+            - Dashboard with statistics
+            - Calendar and Gantt chart views
+          files: |
+            app-release.apk
+            task_manager.exe
+            task_manager-macos.zip
