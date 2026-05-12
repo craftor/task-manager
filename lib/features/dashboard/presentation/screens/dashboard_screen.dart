@@ -69,12 +69,12 @@ class DashboardScreen extends ConsumerWidget {
 
     // Total time tracked (in minutes)
     int totalTimeMinutes = 0;
-    timeEntriesAsync.whenData((entries) {
-      for (final entry in entries) {
-        final dur = entry.durationMinutes;
-        totalTimeMinutes = totalTimeMinutes + (dur as int? ?? 0);
+    final entries = timeEntriesAsync.valueOrNull;
+    if (entries != null) {
+      for (final e in entries) {
+        totalTimeMinutes += (e.durationMinutes as int?) ?? 0;
       }
-    });
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

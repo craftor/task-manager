@@ -14,6 +14,12 @@ import 'features/gantt/presentation/screens/gantt_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
 import 'features/sync/data/sync_manager.dart';
+import 'core/services/providers/update_provider.dart';
+import 'core/services/update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Breakpoint for desktop layout (sidebar instead of drawer)
+const double kDesktopBreakpoint = 900;
 
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -45,15 +51,9 @@ class AuthWrapper extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.task_alt,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.task_alt, size: 80, color: AppColors.primary),
                 SizedBox(height: 32),
-                CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
+                CircularProgressIndicator(color: AppColors.primary),
               ],
             ),
           ),
@@ -76,6 +76,7 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   int _selectedIndex = 0;
+  bool _sidebarExpanded = true;
 
   @override
   void initState() {
@@ -85,57 +86,32 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
   }
 
-  static const List<NavigationDestination> _destinations = [
-    NavigationDestination(
-      icon: Icon(Icons.dashboard_outlined, size: 26),
-      selectedIcon: Icon(Icons.dashboard, size: 26),
-      label: 'Dashboard',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.folder_outlined, size: 26),
-      selectedIcon: Icon(Icons.folder, size: 26),
-      label: 'Projects',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.task_alt_outlined, size: 26),
-      selectedIcon: Icon(Icons.task_alt, size: 26),
-      label: 'Tasks',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.timer_outlined, size: 26),
-      selectedIcon: Icon(Icons.timer, size: 26),
-      label: 'Time',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.calendar_month_outlined, size: 26),
-      selectedIcon: Icon(Icons.calendar_month, size: 26),
-      label: 'Calendar',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.bar_chart_outlined, size: 26),
-      selectedIcon: Icon(Icons.bar_chart, size: 26),
-      label: 'Gantt',
-    ),
+  static const _navItems = [
+    _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+    _NavItem(Icons.folder_outlined, Icons.folder, 'Projects'),
+    _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
+    _NavItem(Icons.timer_outlined, Icons.timer, 'Time'),
+    _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
+    _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Gantt'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    // Keep SyncManager alive while authenticated
     final syncState = ref.watch(syncStatusProvider);
     ref.listen(syncStatusProvider, (prev, next) {
       final now = next.valueOrNull;
       if (now == null || prev?.valueOrNull?.status == now.status) return;
       if (now.status == SyncStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(children: [
+          const SnackBar(
+            content: Row(children: [
               Icon(Icons.cloud_done, color: Colors.white, size: 18),
               SizedBox(width: 8),
               Text('Sync completed'),
             ]),
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       } else if (now.status == SyncStatus.error) {
@@ -153,6 +129,210 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         );
       }
     });
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= kDesktopBreakpoint;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    } else {
+      return _buildMobileLayout();
+    }
+  }
+
+  // ─── Desktop Layout: fixed sidebar + content ───
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Row(
+        children: [
+          _buildSidebar(),
+          // Content area
+          Expanded(
+            child: Column(
+              children: [
+                // Compact top bar
+                Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Task Manager',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      _buildUpdateBanner(context),
+                    ],
+                  ),
+                ),
+                Expanded(child: _buildBody()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebar() {
+    final width = _sidebarExpanded ? 200.0 : 64.0;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      width: width,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          right: BorderSide(color: AppColors.border, width: 1),
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          // Logo + collapse toggle
+          GestureDetector(
+            onTap: () => setState(() => _sidebarExpanded = !_sidebarExpanded),
+            child: Container(
+              width: 40,
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.task_alt, size: 22, color: AppColors.background),
+            ),
+          ),
+          if (_sidebarExpanded)
+            const Padding(
+              padding: EdgeInsets.only(top: 4, bottom: 16),
+              child: Text(
+                'Task Manager',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 16),
+          // Navigation items
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: List.generate(_navItems.length, (index) {
+                final item = _navItems[index];
+                final isSelected = index == _selectedIndex;
+                final color = isSelected ? AppColors.primary : AppColors.textMuted;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  child: Material(
+                    color: isSelected
+                        ? AppColors.primary.withOpacity(0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => setState(() => _selectedIndex = index),
+                      child: _sidebarExpanded
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected ? item.selected : item.outline,
+                                    color: color,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    item.label,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
+                                      fontSize: 14,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Icon(
+                                isSelected ? item.selected : item.outline,
+                                color: color,
+                                size: 22,
+                              ),
+                            ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          // Bottom: avatar + collapse toggle
+          GestureDetector(
+            onTap: () => _showUserProfile(context),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: _sidebarExpanded
+                  ? Row(
+                      children: [
+                        _buildAvatarWidget(ref),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _getUserInitials(ref),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Center(child: _buildAvatarWidget(ref)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: IconButton(
+              icon: Icon(
+                _sidebarExpanded ? Icons.chevron_left : Icons.chevron_right,
+                color: AppColors.textMuted,
+                size: 22,
+              ),
+              onPressed: () => setState(() => _sidebarExpanded = !_sidebarExpanded),
+              tooltip: _sidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Mobile Layout: drawer ───
+  Widget _buildMobileLayout() {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -170,19 +350,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
         centerTitle: true,
       ),
-      drawer: _buildDrawer(context),
+      drawer: _buildMobileDrawer(),
       body: _buildBody(),
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildMobileDrawer() {
     return Drawer(
       backgroundColor: AppColors.surface,
       width: 88,
       child: Column(
         children: [
           const SizedBox(height: 16),
-          // Logo
           Container(
             width: 56,
             height: 56,
@@ -190,18 +369,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.task_alt,
-              size: 28,
-              color: AppColors.background,
-            ),
+            child: const Icon(Icons.task_alt, size: 28, color: AppColors.background),
           ),
           const SizedBox(height: 32),
-          // Navigation items
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
-            children: List.generate(_destinations.length, (index) {
-              final dest = _destinations[index];
+            children: List.generate(_navItems.length, (index) {
+              final item = _navItems[index];
               final isSelected = index == _selectedIndex;
 
               return GestureDetector(
@@ -222,25 +396,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: isSelected
-                            ? dest.selectedIcon
-                            : dest.icon,
+                      Icon(
+                        isSelected ? item.selected : item.outline,
+                        size: 26,
+                        color: isSelected ? AppColors.primary : AppColors.textMuted,
                       ),
                       const SizedBox(height: 4),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 200),
+                      Text(
+                        item.label,
                         style: TextStyle(
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textMuted,
+                          color: isSelected ? AppColors.primary : AppColors.textMuted,
                           fontSize: 11,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
-                        child: Text(dest.label),
                       ),
                     ],
                   ),
@@ -249,7 +418,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             }),
           ),
           const Spacer(),
-          // User avatar
           GestureDetector(
             onTap: () {
               Navigator.pop(context);
@@ -269,9 +437,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return DashboardScreen(onNavigate: (index) {
-          setState(() => _selectedIndex = index);
-        });
+        return DashboardScreen(
+            onNavigate: (index) => setState(() => _selectedIndex = index));
       case 1:
         return const ProjectsScreen();
       case 2:
@@ -283,9 +450,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 5:
         return const GanttScreen();
       default:
-        return DashboardScreen(onNavigate: (index) {
-          setState(() => _selectedIndex = index);
-        });
+        return DashboardScreen(
+            onNavigate: (index) => setState(() => _selectedIndex = index));
     }
   }
 
@@ -303,20 +469,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return CircleAvatar(
-        radius: 20,
+        radius: 18,
         backgroundImage: FileImage(File(avatarUrl)),
         backgroundColor: AppColors.primary.withOpacity(0.2),
       );
     }
 
     return CircleAvatar(
-      radius: 20,
+      radius: 18,
       backgroundColor: AppColors.primary.withOpacity(0.2),
       child: Text(
         _getUserInitials(ref),
         style: const TextStyle(
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
       ),
     );
@@ -331,9 +498,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       context: context,
       builder: (dialogContext) => Dialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           width: 320,
           padding: const EdgeInsets.all(24),
@@ -367,10 +532,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               child: Text(
                                 _getUserInitials(ref),
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold),
                               ),
                             )
                           : null,
@@ -384,51 +548,35 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          size: 14,
-                          color: Colors.white,
-                        ),
+                        child: const Icon(Icons.camera_alt,
+                            size: 14, color: Colors.white),
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Tap to change avatar',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                ),
-              ),
+              const Text('Tap to change avatar',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
               const SizedBox(height: 16),
-              const Text(
-                'Personal Profile',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const Text('Personal Profile',
+                  style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600)),
               const SizedBox(height: 24),
               _ProfileItem(
-                icon: Icons.email_outlined,
-                label: 'Email',
-                value: email,
-              ),
+                  icon: Icons.email_outlined, label: 'Email', value: email),
               const SizedBox(height: 12),
               _ProfileItem(
-                icon: Icons.badge_outlined,
-                label: 'Nickname',
-                value: email.split('@').first,
-              ),
+                  icon: Icons.badge_outlined,
+                  label: 'Nickname',
+                  value: email.split('@').first),
               const SizedBox(height: 12),
               _ProfileItem(
-                icon: Icons.info_outline,
-                label: 'Version',
-                value: '0.2.5',
-              ),
+                  icon: Icons.info_outline,
+                  label: 'Version',
+                  value: '0.3.0'),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -440,8 +588,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         side: const BorderSide(color: AppColors.border),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Close'),
                     ),
@@ -458,8 +605,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Sign Out'),
                     ),
@@ -473,6 +619,119 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  Widget _buildUpdateBanner(BuildContext context) {
+    final updateAsync = ref.watch(updateInfoProvider);
+    return updateAsync.when(
+      data: (info) {
+        if (info == null) return const SizedBox.shrink();
+        return GestureDetector(
+          onTap: () => _showUpdateDialog(context, info),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.system_update, color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'v${info.version} available',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  void _showUpdateDialog(BuildContext context, UpdateInfo info) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.system_update, color: AppColors.primary, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              'Update Available',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Version ${info.version} is ready.',
+              style: const TextStyle(color: AppColors.textPrimary),
+            ),
+            if (info.body.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  info.body,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Later'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openDownloadUrl(info.downloadUrl);
+            },
+            icon: const Icon(Icons.download, size: 18),
+            label: const Text('Download'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.background,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openDownloadUrl(String url) {
+    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
   Future<void> _pickImage(BuildContext dialogContext) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -482,16 +741,19 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 }
 
+class _NavItem {
+  final IconData outline;
+  final IconData selected;
+  final String label;
+  const _NavItem(this.outline, this.selected, this.label);
+}
+
 class _ProfileItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-
-  const _ProfileItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  const _ProfileItem(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -509,22 +771,15 @@ class _ProfileItem extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                ),
-              ),
+              Text(label,
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 11)),
               const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              Text(value,
+                  style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500)),
             ],
           ),
         ],

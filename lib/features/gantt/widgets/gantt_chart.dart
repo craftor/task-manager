@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/entities/task.dart';
+import '../presentation/providers/gantt_provider.dart';
 
 class GanttChart extends StatelessWidget {
   final List<Task> tasks;
   final DateTime startDate;
   final DateTime endDate;
+  final GanttZoom zoom;
 
   const GanttChart({
     super.key,
     required this.tasks,
     required this.startDate,
     required this.endDate,
+    this.zoom = GanttZoom.month,
   });
 
   @override
@@ -70,7 +73,7 @@ class GanttChartPainter extends CustomPainter {
     // Draw task bars
     for (var i = 0; i < tasks.length; i++) {
       final task = tasks[i];
-      final taskStart = task.createdAt;
+      final taskStart = task.startDate ?? task.createdAt;
       final taskEnd = task.dueDate ?? task.createdAt.add(const Duration(days: 1));
 
       final startDays = taskStart.difference(startDate).inDays.clamp(0, totalDays);

@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../providers/time_tracking_provider.dart';
 import '../../domain/time_entry_entity.dart';
 import '../../../../domain/entities/task.dart' as task_entity;
+import '../../../../domain/entities/task.dart' show Task;
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 
 class TimeTrackingScreen extends ConsumerStatefulWidget {
@@ -340,11 +341,18 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
                 ],
               ),
             ),
-            ...dayEntries.map((entry) => _TimeEntryCard(
-                  entry: entry,
-                  onDelete: () =>
-                      ref.read(timeEntriesProvider.notifier).deleteTimeEntry(entry.id),
-                )),
+            ...dayEntries.map((entry) {
+                  final tasksAsync = ref.read(tasksProvider);
+                  final tasks = tasksAsync.valueOrNull ?? [];
+                  final task = tasks.where((t) => t.id == entry.taskId).firstOrNull;
+                  final taskName = task?.title ?? entry.taskId;
+                  return _TimeEntryCard(
+                    entry: entry,
+                    taskName: taskName,
+                    onDelete: () =>
+                        ref.read(timeEntriesProvider.notifier).deleteTimeEntry(entry.id),
+                  );
+                }),
           ],
         );
       },
@@ -800,10 +808,12 @@ class _DateTimePickerButton extends StatelessWidget {
 
 class _TimeEntryCard extends StatelessWidget {
   final TimeEntry entry;
+  final String taskName;
   final VoidCallback onDelete;
 
   const _TimeEntryCard({
     required this.entry,
+    required this.taskName,
     required this.onDelete,
   });
 
@@ -838,7 +848,7 @@ class _TimeEntryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Task: ${entry.taskId}',
+                  taskName,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 14,

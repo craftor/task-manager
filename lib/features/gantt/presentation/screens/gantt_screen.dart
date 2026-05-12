@@ -21,10 +21,11 @@ class GanttScreen extends ConsumerWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
-          SegmentedButton<GanttViewMode>(
-            selected: {ganttState.viewMode},
+          // Zoom selector
+          SegmentedButton<GanttZoom>(
+            selected: {ganttState.zoom},
             onSelectionChanged: (value) {
-              ref.read(ganttProvider.notifier).setViewMode(value.first);
+              ref.read(ganttProvider.notifier).setZoom(value.first);
             },
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -35,14 +36,10 @@ class GanttScreen extends ConsumerWidget {
               }),
             ),
             segments: const [
-              ButtonSegment(
-                value: GanttViewMode.project,
-                label: Text('Project'),
-              ),
-              ButtonSegment(
-                value: GanttViewMode.personal,
-                label: Text('Personal'),
-              ),
+              ButtonSegment(value: GanttZoom.week, label: Text('W')),
+              ButtonSegment(value: GanttZoom.month, label: Text('M')),
+              ButtonSegment(value: GanttZoom.quarter, label: Text('Q')),
+              ButtonSegment(value: GanttZoom.year, label: Text('Y')),
             ],
           ),
           const SizedBox(width: 16),
@@ -54,18 +51,21 @@ class GanttScreen extends ConsumerWidget {
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (error, stack) => Center(
-          child: Text('Error: $error', style: const TextStyle(color: AppColors.error)),
+          child: Text('Error: $error',
+              style: const TextStyle(color: AppColors.error)),
         ),
       ),
     );
   }
 
-  Widget _buildGanttBody(BuildContext context, List<Task> tasks, GanttState state) {
+  Widget _buildGanttBody(
+      BuildContext context, List<Task> tasks, GanttState state) {
     final visibleTasks = tasks.where((task) {
       if (task.dueDate == null) return false;
       final taskStart = task.createdAt;
       final taskEnd = task.dueDate!;
-      return !taskEnd.isBefore(state.startDate) && !taskStart.isAfter(state.endDate);
+      return !taskEnd.isBefore(state.startDate) &&
+          !taskStart.isAfter(state.endDate);
     }).toList();
 
     if (visibleTasks.isEmpty) {
@@ -78,10 +78,9 @@ class GanttScreen extends ConsumerWidget {
             const Text(
               'No tasks in time range',
               style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
@@ -112,30 +111,22 @@ class GanttScreen extends ConsumerWidget {
               const Spacer(),
               Row(
                 children: [
-                  Container(
-                    width: 12,
-                    height: 2,
-                    color: AppColors.error,
-                  ),
+                  Container(width: 12, height: 2, color: AppColors.error),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Today',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-                  ),
+                  const Text('Today',
+                      style:
+                          TextStyle(color: AppColors.textMuted, fontSize: 11)),
                 ],
               ),
             ],
           ),
         ),
         const Divider(height: 1, color: AppColors.border),
-        // Timeline header
         _buildTimelineHeader(state),
         const Divider(height: 1, color: AppColors.border),
-        // Scrollable chart with task list on left
         Expanded(
           child: Row(
             children: [
-              // Task name column (fixed left)
               Container(
                 width: 120,
                 color: AppColors.surface,
@@ -148,16 +139,15 @@ class GanttScreen extends ConsumerWidget {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+                          bottom: BorderSide(
+                              color: AppColors.border.withValues(alpha: 0.5)),
                         ),
                       ),
                       alignment: Alignment.centerLeft,
                       child: Text(
                         task.title,
                         style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 12,
-                        ),
+                            color: AppColors.textPrimary, fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -165,7 +155,6 @@ class GanttScreen extends ConsumerWidget {
                   },
                 ),
               ),
-              // Chart area (scrollable)
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -175,6 +164,7 @@ class GanttScreen extends ConsumerWidget {
                       tasks: visibleTasks,
                       startDate: state.startDate,
                       endDate: state.endDate,
+                      zoom: state.zoom,
                     ),
                   ),
                 ),
@@ -187,13 +177,27 @@ class GanttScreen extends ConsumerWidget {
   }
 
   double _calculateChartWidth(GanttState state) {
-    final days = state.endDate.difference(state.startDate).inDays.clamp(1, 365);
-    return days * 30.0; // 30 pixels per day
+    final days =
+        state.endDate.difference(state.startDate).inDays.clamp(1, 365);
+    final ppd = _pixelsPerDay(state.zoom);
+    return days * ppd;
+  }
+
+  double _pixelsPerDay(GanttZoom zoom) {
+    switch (zoom) {
+      case GanttZoom.week:
+        return 50.0;
+      case GanttZoom.month:
+        return 30.0;
+      case GanttZoom.quarter:
+        return 12.0;
+      case GanttZoom.year:
+        return 3.5;
+    }
   }
 
   Widget _buildTimelineHeader(GanttState state) {
     final days = state.endDate.difference(state.startDate).inDays;
-    final weeks = (days / 7).ceil();
 
     return Container(
       height: 40,
@@ -203,44 +207,194 @@ class GanttScreen extends ConsumerWidget {
           Container(
             width: 120,
             padding: const EdgeInsets.all(8),
-            child: const Text(
-              'Task',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text('Task',
+                style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600)),
           ),
           Expanded(
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: weeks,
-              itemBuilder: (context, index) {
-                final weekStart = state.startDate.add(Duration(days: index * 7));
-                return Container(
-                  width: 100,
-                  padding: const EdgeInsets.all(8),
-                  child: Text(
-                    '${weekStart.day}/${weekStart.month}',
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: _buildHeaderCells(state),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildHeaderCells(GanttState state) {
+    final ppd = _pixelsPerDay(state.zoom);
+    final start = state.startDate;
+
+    switch (state.zoom) {
+      case GanttZoom.week:
+        // Daily headers for week view
+        final dayCount =
+            state.endDate.difference(start).inDays.clamp(1, 7);
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: dayCount,
+          itemBuilder: (context, i) {
+            final d = start.add(Duration(days: i));
+            final isToday = d.day == DateTime.now().day &&
+                d.month == DateTime.now().month &&
+                d.year == DateTime.now().year;
+            return Container(
+              width: ppd,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: isToday
+                    ? AppColors.primary.withOpacity(0.08)
+                    : Colors.transparent,
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    _weekday(d.weekday),
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 10),
+                  ),
+                  Text(
+                    '${d.day}',
+                    style: TextStyle(
+                      color: isToday
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight:
+                          isToday ? FontWeight.w700 : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+      case GanttZoom.month:
+        // Weekly headers
+        final dayCount = state.endDate.difference(start).inDays;
+        final weekCount = (dayCount / 7).ceil();
+        final ppd7 = ppd * 7;
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: weekCount,
+          itemBuilder: (context, i) {
+            final ws = start.add(Duration(days: i * 7));
+            return Container(
+              width: ppd7,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                ),
+              ),
+              child: Text(
+                '${ws.day}/${ws.month}',
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: 11),
+              ),
+            );
+          },
+        );
+
+      case GanttZoom.quarter:
+        // Monthly headers
+        final monthCount = ((state.endDate.year - start.year) * 12 +
+                state.endDate.month -
+                start.month +
+                1)
+            .clamp(1, 4);
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: monthCount,
+          itemBuilder: (context, i) {
+            final m = DateTime(start.year, start.month + i, 1);
+            final daysInMonth = DateTime(m.year, m.month + 1, 0).day;
+            return Container(
+              width: ppd * daysInMonth,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                ),
+              ),
+              child: Text(
+                _monthName(m.month),
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: 11),
+              ),
+            );
+          },
+        );
+
+      case GanttZoom.year:
+        // Monthly headers for year view
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: 12,
+          itemBuilder: (context, i) {
+            final m = DateTime(start.year, i + 1, 1);
+            final daysInMonth = DateTime(m.year, m.month + 1, 0).day;
+            return Container(
+              width: ppd * daysInMonth,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                _monthAbbr(m.month),
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: 10),
+              ),
+            );
+          },
+        );
+    }
+  }
+
+  String _weekday(int day) {
+    switch (day) {
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
+    }
+  }
+
+  String _monthName(int m) {
+    const names = [
+      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return names[m];
+  }
+
+  String _monthAbbr(int m) {
+    const abbr = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return abbr[m];
   }
 }
 
 class _LegendItem extends StatelessWidget {
   final Color color;
   final String label;
-
   const _LegendItem({required this.color, required this.label});
 
   @override
@@ -257,10 +411,9 @@ class _LegendItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-        ),
+        Text(label,
+            style:
+                const TextStyle(color: AppColors.textMuted, fontSize: 11)),
       ],
     );
   }

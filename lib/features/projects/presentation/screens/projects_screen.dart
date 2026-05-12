@@ -6,6 +6,32 @@ import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../providers/projects_provider.dart';
 
+const _projectIconMap = {
+  'folder': Icons.folder_rounded,
+  'work': Icons.work_rounded,
+  'star': Icons.star_rounded,
+  'favorite': Icons.favorite_rounded,
+  'bookmark': Icons.bookmark_rounded,
+  'code': Icons.code_rounded,
+  'build': Icons.build_rounded,
+  'home': Icons.home_rounded,
+  'shopping': Icons.shopping_cart_rounded,
+  'school': Icons.school_rounded,
+  'fitness': Icons.fitness_center_rounded,
+  'travel': Icons.flight_rounded,
+  'music': Icons.music_note_rounded,
+  'photo': Icons.photo_rounded,
+  'movie': Icons.movie_rounded,
+  'game': Icons.games_rounded,
+  'sports': Icons.sports_soccer_rounded,
+  'health': Icons.health_and_safety_rounded,
+  'science': Icons.science_rounded,
+  'business': Icons.business_center_rounded,
+};
+
+IconData getProjectIcon(String iconName) =>
+    _projectIconMap[iconName] ?? Icons.folder_rounded;
+
 class ProjectsScreen extends ConsumerWidget {
   const ProjectsScreen({super.key});
 
@@ -480,53 +506,6 @@ class _ProjectCard extends StatefulWidget {
 class _ProjectCardState extends State<_ProjectCard> {
   bool _isExpanded = false;
 
-  IconData _getProjectIcon(String iconName) {
-    switch (iconName) {
-      case 'folder':
-        return Icons.folder_rounded;
-      case 'work':
-        return Icons.work_rounded;
-      case 'star':
-        return Icons.star_rounded;
-      case 'favorite':
-        return Icons.favorite_rounded;
-      case 'bookmark':
-        return Icons.bookmark_rounded;
-      case 'code':
-        return Icons.code_rounded;
-      case 'build':
-        return Icons.build_rounded;
-      case 'home':
-        return Icons.home_rounded;
-      case 'shopping':
-        return Icons.shopping_cart_rounded;
-      case 'school':
-        return Icons.school_rounded;
-      case 'fitness':
-        return Icons.fitness_center_rounded;
-      case 'travel':
-        return Icons.flight_rounded;
-      case 'music':
-        return Icons.music_note_rounded;
-      case 'photo':
-        return Icons.photo_rounded;
-      case 'movie':
-        return Icons.movie_rounded;
-      case 'game':
-        return Icons.games_rounded;
-      case 'sports':
-        return Icons.sports_soccer_rounded;
-      case 'health':
-        return Icons.health_and_safety_rounded;
-      case 'science':
-        return Icons.science_rounded;
-      case 'business':
-        return Icons.business_center_rounded;
-      default:
-        return Icons.folder_rounded;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tasksAsync = widget.ref.watch(tasksProvider);
@@ -562,7 +541,7 @@ class _ProjectCardState extends State<_ProjectCard> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        _getProjectIcon(widget.project.icon),
+                        getProjectIcon(widget.project.icon),
                         color: _projectColor,
                         size: 28,
                       ),
@@ -776,28 +755,7 @@ class _IconPicker extends StatelessWidget {
     required this.onIconSelected,
   });
 
-  static const _icons = [
-    ('folder', Icons.folder_rounded),
-    ('work', Icons.work_rounded),
-    ('star', Icons.star_rounded),
-    ('favorite', Icons.favorite_rounded),
-    ('bookmark', Icons.bookmark_rounded),
-    ('code', Icons.code_rounded),
-    ('build', Icons.build_rounded),
-    ('home', Icons.home_rounded),
-    ('shopping', Icons.shopping_cart_rounded),
-    ('school', Icons.school_rounded),
-    ('fitness', Icons.fitness_center_rounded),
-    ('travel', Icons.flight_rounded),
-    ('music', Icons.music_note_rounded),
-    ('photo', Icons.photo_rounded),
-    ('movie', Icons.movie_rounded),
-    ('game', Icons.games_rounded),
-    ('sports', Icons.sports_soccer_rounded),
-    ('health', Icons.health_and_safety_rounded),
-    ('science', Icons.science_rounded),
-    ('business', Icons.business_center_rounded),
-  ];
+  static final _icons = _projectIconMap.entries.toList();
 
   @override
   Widget build(BuildContext context) {
@@ -812,9 +770,10 @@ class _IconPicker extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: _icons.map((iconData) {
-        final isSelected = iconData.$1 == selectedIcon;
+        final isSelected = iconData.key == selectedIcon;
+
         return GestureDetector(
-          onTap: () => onIconSelected(iconData.$1),
+          onTap: () => onIconSelected(iconData.key),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 44,
@@ -825,7 +784,7 @@ class _IconPicker extends StatelessWidget {
               border: isSelected ? Border.all(color: iconColor, width: 2) : null,
             ),
             child: Icon(
-              iconData.$2,
+              iconData.value,
               color: isSelected ? iconColor : AppColors.textMuted,
               size: 22,
             ),

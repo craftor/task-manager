@@ -71,9 +71,23 @@ GitHub Actions workflows configured for:
 
 ## Version
 
-Current version: 0.2.5
+Current version: 0.3.0
 
 ## Changelog
+
+### 0.3.0
+- Desktop: fixed sidebar with collapse/expand, avatar at bottom
+- Desktop: login/register width constrained to 480px
+- Gantt: zoom levels W/M/Q/Y with adaptive time headers
+- Time Tracking: task name display instead of UUID
+- Auto-update: GitHub Release checker with banner + dialog
+- macOS platform support
+- GitHub Release CI with APK/EXE/App artifacts
+- App icon, display name "TaskManager"
+- Fix: Gantt uses startDate, not createdAt
+- Fix: project sync fields, pendingSync flags
+- Fix: Riverpod self-invalidation, time rounding
+- Refactor: version constant, icon map dedup, Dashboard type fix
 
 ### 0.2.1
 - Fix project sync: pendingSync flag, missing Supabase fields (description, dates, sort_order)

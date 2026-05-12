@@ -111,6 +111,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
       }
     });
 
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -133,7 +135,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
           opacity: _fadeAnimation,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Column(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 480 : double.infinity,
+                ),
+                child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
@@ -263,6 +270,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   textAlign: TextAlign.center,
                 ),
               ],
+                ),
+              ),
             ),
           ),
         ),
