@@ -71,7 +71,7 @@ GitHub Actions workflows configured for:
 
 ## Version
 
-Current version: 0.2.2
+Current version: 0.2.5
 
 ## Changelog
 
