@@ -16,6 +16,22 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    afterEvaluate {
+        // Inject namespace for plugins that don't declare it (AGP 8.x requirement)
+        if (hasProperty("android")) {
+            try {
+                val androidExt = this.extensions.getByName("android")
+                val nsMethod = androidExt.javaClass.getMethod("getNamespace")
+                val namespace = nsMethod.invoke(androidExt) as? String
+                if (namespace.isNullOrEmpty()) {
+                    androidExt.javaClass.getMethod("setNamespace", String::class.java)
+                        .invoke(androidExt, project.group.toString())
+                }
+            } catch (_: Exception) {
+                // Fallback: namespace injection failed — not all plugins support it
+            }
+        }
+    }
     project.evaluationDependsOn(":app")
 }
 
