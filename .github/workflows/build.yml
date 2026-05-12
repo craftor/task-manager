@@ -52,11 +52,17 @@ jobs:
         run: flutter build windows --release
         shell: powershell
 
+      - name: Package Windows release
+        shell: powershell
+        run: |
+          cd build/windows/x64/runner/Release
+          Compress-Archive -Path * -DestinationPath task_manager-windows.zip
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
-          path: build/windows/x64/runner/Release/task_manager.exe
+          name: windows-zip
+          path: build/windows/x64/runner/Release/task_manager-windows.zip
 
   macos:
     runs-on: macos-latest
@@ -103,10 +109,10 @@ jobs:
         with:
           name: android-apk
 
-      - name: Download Windows EXE
+      - name: Download Windows zip
         uses: actions/download-artifact@v4
         with:
-          name: windows-exe
+          name: windows-zip
 
       - name: Download macOS App
         uses: actions/download-artifact@v4
@@ -133,5 +139,5 @@ jobs:
             - Calendar and Gantt chart views
           files: |
             app-release.apk
-            task_manager.exe
+            task_manager-windows.zip
             task_manager-macos.zip
