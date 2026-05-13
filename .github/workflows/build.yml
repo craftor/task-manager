@@ -81,13 +81,11 @@ jobs:
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
 
-      - name: Rename assets
-        run: |
-          VER="v${{ steps.version.outputs.VERSION }}"
-          mv app-release.apk "TaskManager_${VER}_Android.apk" 2>/dev/null || true
-          mv app-release.apk/app-release.apk "TaskManager_${VER}_Android.apk" 2>/dev/null || true
-          ls -la
+      - name: List artifacts
+        run: ls -la
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -100,24 +98,13 @@ jobs:
             # TaskManager v${{ steps.version.outputs.VERSION }}
 
             Personal task and time management application.
-
             ## Downloads
             | Platform | File |
             |----------|------|
-            | Android | TaskManager_${{ github.ref_name }}_Android.apk |
+            | Android | app-release.apk |
             | Windows | task_manager-windows.zip |
             | macOS | task_manager-macos.zip |
-            ## Features
-            - Cross-platform sync via Supabase
-            - Time tracking with manual entry and timer
-            - Project management with drag-and-drop
-            - Calendar with mood tracking
-            - Journal / quick notes
-            - Special days tracker with 12-month grid
-            - Dashboard with statistics
-            - Gantt chart with zoom levels
-            - Auto-update checker
           files: |
-            app-release.apk
-            task_manager-windows.zip
-            task_manager-macos.zip
+            app-release.apk*
+            task_manager-windows.zip*
+            task_manager-macos.zip*
