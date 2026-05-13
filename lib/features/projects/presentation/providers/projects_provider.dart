@@ -30,7 +30,8 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
   Future<void> ensureDefaultProject() async {
     final repository = ref.read(projectRepositoryProvider);
     final projects = await repository.getAllProjects();
-    final hasDefault = projects.any((p) => p.isDefault);
+    // Check by fixed ID, or by name/isDefault for legacy
+    final hasDefault = projects.any((p) => p.id == defaultProjectId || p.isDefault || p.name == 'Default');
     if (!hasDefault) {
       final defaultProject = Project(
         id: defaultProjectId,
@@ -40,7 +41,7 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
         icon: 'folder',
         createdAt: DateTime.now(),
         isDefault: true,
-        sortOrder: -1, // Default project always first
+        sortOrder: -1,
       );
       await repository.createProject(defaultProject);
     }

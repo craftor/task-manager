@@ -49,6 +49,10 @@ class SyncManager {
           );
         }
       }
+      // Clean up duplicate default projects in local DB
+      await _localDb.customStatement(
+        'DELETE FROM projects WHERE (name = \'Default\' OR is_default = 1) AND id != \'00000000-0000-0000-0000-000000000001\'',
+      );
       debugPrint('SyncManager: triggering initial sync');
       syncAll();
     });

@@ -632,13 +632,13 @@ class _TaskCard extends StatelessWidget {
   String get _priorityLabel {
     switch (task.priority) {
       case Priority.low:
-        return 'L';
+        return 'Low';
       case Priority.medium:
-        return 'M';
+        return 'Medium';
       case Priority.high:
-        return 'H';
+        return 'High';
       case Priority.urgent:
-        return 'U';
+        return 'Urgent';
     }
   }
 
@@ -666,7 +666,7 @@ class _TaskCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -730,7 +730,7 @@ class _TaskCard extends StatelessWidget {
                       icon: Icons.folder,
                       label: projectName,
                       color: AppColors.primary,
-                      fontSize: 9,
+                      fontSize: 11,
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -743,7 +743,7 @@ class _TaskCard extends StatelessWidget {
                         _priorityLabel,
                         style: TextStyle(
                           color: _priorityColor,
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -754,7 +754,7 @@ class _TaskCard extends StatelessWidget {
                         icon: Icons.play_arrow,
                         label: _formatDateTime(task.startDate!),
                         color: AppColors.secondary,
-                        fontSize: 9,
+                        fontSize: 11,
                       ),
                     ],
                     if (task.dueDate != null) ...[
@@ -763,7 +763,7 @@ class _TaskCard extends StatelessWidget {
                         icon: Icons.schedule,
                         label: _formatDateTime(task.dueDate!),
                         color: _isOverdue ? AppColors.error : AppColors.textMuted,
-                        fontSize: 9,
+                        fontSize: 11,
                       ),
                     ],
                   ],
@@ -1003,7 +1003,7 @@ class _PrioritySelector extends StatelessWidget {
                     _getPriorityLabel(priority),
                     style: TextStyle(
                       color: isSelected ? color : AppColors.textMuted,
-                      fontSize: 9,
+                      fontSize: 11,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
@@ -1032,13 +1032,13 @@ class _PrioritySelector extends StatelessWidget {
   String _getPriorityLabel(Priority priority) {
     switch (priority) {
       case Priority.low:
-        return 'L';
+        return 'Low';
       case Priority.medium:
-        return 'M';
+        return 'Medium';
       case Priority.high:
-        return 'H';
+        return 'High';
       case Priority.urgent:
-        return 'U';
+        return 'Urgent';
     }
   }
 }
