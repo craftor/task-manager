@@ -21,6 +21,8 @@ class AuthService {
       return AuthResult.success(response.user);
     } on AuthException catch (e) {
       return AuthResult.failure(e.message);
+    } catch (e) {
+      return AuthResult.failure('Network error: ${e.toString()}');
     }
   }
 
@@ -33,6 +35,8 @@ class AuthService {
       return AuthResult.success(response.user);
     } on AuthException catch (e) {
       return AuthResult.failure(e.message);
+    } catch (e) {
+      return AuthResult.failure('Network error: ${e.toString()}');
     }
   }
 

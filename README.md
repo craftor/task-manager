@@ -62,9 +62,14 @@ GitHub Actions release workflow builds and publishes artifacts for **Android**, 
 
 ## Version
 
-Current version: 0.6.2
+Current version: 0.6.3
 
 ## Changelog
+
+### 0.6.3
+- Android: add INTERNET permission + network_security_config for Supabase connectivity
+- Auth: improve error handling with detailed network error messages
+- CI: fix release artifact upload with merge-multiple
 
 ### 0.6.2
 - Dashboard: add Weekly Completion, Project Progress, Time Overview cards
