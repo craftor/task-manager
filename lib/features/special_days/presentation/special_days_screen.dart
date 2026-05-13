@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../special_days/special_days_provider.dart';
 import '../../special_days/special_days_service.dart';
+import '../../sync/data/sync_manager.dart';
+import '../../sync/presentation/providers/sync_status_provider.dart';
 
 class SpecialDaysScreen extends ConsumerStatefulWidget {
   const SpecialDaysScreen({super.key});
@@ -15,14 +18,29 @@ class SpecialDaysScreen extends ConsumerStatefulWidget {
 class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   late int _year;
 
+  SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
+
   @override
   void initState() {
     super.initState();
     _year = DateTime.now().year;
+    // Force fresh load from SharedPreferences on screen entry
+    Future.microtask(() {
+      ref.invalidate(specialDaysProvider);
+      ref.invalidate(specialDaysSortedProvider);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Invalidate on each sync success (SyncManager writes to SharedPreferences)
+    ref.listen(syncStatusProvider, (prev, next) {
+      final now = next.valueOrNull;
+      if (now != null && now.status == SyncStatus.success) {
+        ref.invalidate(specialDaysProvider);
+        ref.invalidate(specialDaysSortedProvider);
+      }
+    });
     final specialDaysAsync = ref.watch(specialDaysProvider);
     final now = DateTime.now();
 
@@ -132,9 +150,13 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                         }
 
                         return GestureDetector(
-                          onTap: isSpecial
-                              ? () => _showDayInfo(key, data!, _year, month, day)
-                              : null,
+                          onTap: () {
+                            if (isSpecial) {
+                              _showDayInfo(key, data!, _year, month, day);
+                            } else {
+                              _showAddDialogForDate(DateTime(_year, month, day));
+                            }
+                          },
                           onLongPress: isSpecial
                               ? () => _showLongPressMenu(key, data!, _year, month, day)
                               : null,
@@ -251,7 +273,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
           ElevatedButton.icon(
             onPressed: () {
-              ref.read(specialDaysServiceProvider).removeDay(key);
+              if (_remote != null) ref.read(specialDaysServiceProvider).removeDay(_remote!, key);
               ref.invalidate(specialDaysProvider);
               ref.invalidate(specialDaysSortedProvider);
               Navigator.pop(ctx);
@@ -378,7 +400,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                 ElevatedButton(
                   onPressed: () {
                     final desc = descController.text.trim().isEmpty ? null : descController.text.trim();
-                    ref.read(specialDaysServiceProvider).setDay(key, selectedColor, desc);
+                    if (_remote != null) ref.read(specialDaysServiceProvider).setDay(_remote!, key, selectedColor, desc);
                     ref.invalidate(specialDaysProvider);
                     ref.invalidate(specialDaysSortedProvider);
                     Navigator.pop(ctx);
@@ -408,7 +430,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              ref.read(specialDaysServiceProvider).removeDay(key);
+              if (_remote != null) ref.read(specialDaysServiceProvider).removeDay(_remote!, key);
               ref.invalidate(specialDaysProvider);
               ref.invalidate(specialDaysSortedProvider);
               Navigator.pop(ctx);
@@ -421,8 +443,12 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
     );
   }
 
-  void _showAddDialog() {
-    DateTime selectedDate = DateTime.now();
+  void _showAddDialogForDate(DateTime date) {
+    _showAddDialog(initialDate: date);
+  }
+
+  void _showAddDialog({DateTime? initialDate}) {
+    DateTime selectedDate = initialDate ?? DateTime.now();
     int selectedColor = 0;
     final descController = TextEditingController();
 
@@ -501,7 +527,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                   onPressed: () {
                     final key = DateFormat('yyyy-MM-dd').format(selectedDate);
                     final desc = descController.text.trim().isEmpty ? null : descController.text.trim();
-                    ref.read(specialDaysServiceProvider).setDay(key, selectedColor, desc);
+                    if (_remote != null) ref.read(specialDaysServiceProvider).setDay(_remote!, key, selectedColor, desc);
                     ref.invalidate(specialDaysProvider);
                     ref.invalidate(specialDaysSortedProvider);
                     Navigator.pop(ctx);

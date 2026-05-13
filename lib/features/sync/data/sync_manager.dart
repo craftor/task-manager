@@ -6,6 +6,7 @@ import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../../../domain/entities/project.dart' as entity;
 import '../../../../domain/entities/task.dart' as task_entity;
 import '../../../../domain/entities/time_entry.dart' as time_entity;
+import '../../special_days/special_days_cache_helper.dart';
 
 enum SyncStatus { idle, syncing, success, error }
 
@@ -55,7 +56,7 @@ class SyncManager {
 
   void _initPeriodicSync() {
     _periodicSync = Timer.periodic(
-      const Duration(minutes: 5),
+      const Duration(minutes: 1),
       (_) => syncAll(),
     );
   }
@@ -174,6 +175,17 @@ class SyncManager {
     final remoteTimeEntries = await _remoteDs.fetchTimeEntries();
     for (final e in remoteTimeEntries) {
       await _localDb.upsertTimeEntryFromRemote(e);
+    }
+
+    // Special Days (stored in Supabase, cached in SharedPreferences)
+    try {
+      final specialDaysRaw = await _remoteDs.fetchSpecialDays();
+      if (specialDaysRaw.isNotEmpty) {
+        debugPrint('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
+        SpecialDaysCacheHelper.mergeRemoteData(specialDaysRaw);
+      }
+    } catch (e) {
+      debugPrint('SyncManager._pullRemoteChanges: special days sync failed — $e');
     }
   }
 

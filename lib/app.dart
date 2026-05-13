@@ -6,8 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/projects/presentation/providers/projects_provider.dart';
-import 'features/projects/presentation/screens/projects_screen.dart';
-import 'features/tasks/presentation/screens/tasks_screen.dart';
+import 'features/projects/presentation/tasks_projects_screen.dart';
 import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
@@ -92,7 +91,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   static const _navItems = [
     _NavItem(Icons.edit_note_outlined, Icons.edit_note, 'Journal'),
     _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
-    _NavItem(Icons.folder_outlined, Icons.folder, 'Projects'),
     _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
     _NavItem(Icons.timer_outlined, Icons.timer, 'Time'),
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
@@ -448,18 +446,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         return DashboardScreen(
             onNavigate: (index) => setState(() => _selectedIndex = index));
       case 2:
-        return const ProjectsScreen();
+        return const TasksProjectsScreen();
       case 3:
-        return const TasksScreen();
-      case 4:
         return const TimeTrackingScreen();
-      case 5:
+      case 4:
         return const CalendarScreen();
-      case 6:
+      case 5:
         return const GanttScreen();
-      case 7:
+      case 6:
         return const MoodStatsScreen();
-      case 8:
+      case 7:
         return const SpecialDaysScreen();
       default:
         return const JournalScreen();
@@ -587,7 +583,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.4.1'),
+                  value: '0.5.0'),
               const SizedBox(height: 24),
               Row(
                 children: [

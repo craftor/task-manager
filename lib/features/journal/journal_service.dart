@@ -1,47 +1,93 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+class JournalEntry {
+  final String id;
+  final DateTime createdAt;
+  final String content;
+
+  const JournalEntry({
+    required this.id,
+    required this.createdAt,
+    required this.content,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'created_at': createdAt.toIso8601String(),
+    'content': content,
+  };
+
+  factory JournalEntry.fromJson(Map<String, dynamic> json) => JournalEntry(
+    id: json['id'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String),
+    content: json['content'] as String,
+  );
+}
 
 class JournalService {
-  static const String _key = 'journal_notes';
+  static const String _keyPrefix = 'journal_';
 
-  Future<Map<String, String>> getAllNotes() async {
+  Future<List<JournalEntry>> getEntries(String dateKey) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null) return {};
-    final decoded = json.decode(raw) as Map<String, dynamic>;
-    return decoded.map((k, v) => MapEntry(k, v as String));
-  }
-
-  Future<String?> getNote(String dateKey) async {
-    final notes = await getAllNotes();
-    return notes[dateKey];
-  }
-
-  Future<void> saveNote(String dateKey, String content) async {
-    final notes = await getAllNotes();
-    if (content.trim().isEmpty) {
-      notes.remove(dateKey);
-    } else {
-      notes[dateKey] = content.trim();
+    final raw = prefs.getString('$_keyPrefix$dateKey');
+    if (raw == null) return [];
+    try {
+      final list = json.decode(raw) as List<dynamic>;
+      return list.map((e) => JournalEntry.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
     }
-    await _save(notes);
   }
 
-  Future<void> deleteNote(String dateKey) async {
-    final notes = await getAllNotes();
-    notes.remove(dateKey);
-    await _save(notes);
+  Future<void> addEntry(String dateKey, String content) async {
+    final entries = await getEntries(dateKey);
+    entries.insert(0, JournalEntry(
+      id: const Uuid().v4(),
+      createdAt: DateTime.now(),
+      content: content.trim(),
+    ));
+    await _save(dateKey, entries);
   }
 
-  Future<List<MapEntry<String, String>>> getRecentNotes(int limit) async {
-    final notes = await getAllNotes();
-    final entries = notes.entries.toList()
-      ..sort((a, b) => b.key.compareTo(a.key));
-    return entries.take(limit).toList();
+  Future<void> updateEntry(String dateKey, String entryId, String content) async {
+    final entries = await getEntries(dateKey);
+    final idx = entries.indexWhere((e) => e.id == entryId);
+    if (idx == -1) return;
+    entries[idx] = JournalEntry(
+      id: entryId,
+      createdAt: entries[idx].createdAt,
+      content: content.trim(),
+    );
+    await _save(dateKey, entries);
   }
 
-  Future<void> _save(Map<String, String> notes) async {
+  Future<void> deleteEntry(String dateKey, String entryId) async {
+    final entries = await getEntries(dateKey);
+    entries.removeWhere((e) => e.id == entryId);
+    await _save(dateKey, entries);
+  }
+
+  /// Get all dates that have entries, sorted newest first.
+  Future<List<String>> getAllDates() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, json.encode(notes));
+    final keys = prefs.getKeys();
+    return keys
+        .where((k) => k.startsWith(_keyPrefix))
+        .map((k) => k.substring(_keyPrefix.length))
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+  }
+
+  /// Get total entry count for a date
+  Future<int> getEntryCount(String dateKey) async {
+    final entries = await getEntries(dateKey);
+    return entries.length;
+  }
+
+  Future<void> _save(String dateKey, List<JournalEntry> entries) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('$_keyPrefix$dateKey', json.encode(entries.map((e) => e.toJson()).toList()));
   }
 }

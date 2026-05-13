@@ -111,4 +111,31 @@ class SupabaseDatasource {
   Future<void> deleteTimeEntry(String id) async {
     await _client.from('time_entries').delete().eq('id', id);
   }
+
+  // Special Days
+  Future<List<Map<String, dynamic>>> fetchSpecialDays() async {
+    final response = await _client
+        .from('special_days')
+        .select()
+        .eq('user_id', userId)
+        .order('date_key');
+    return response;
+  }
+
+  Future<void> upsertSpecialDay(String dateKey, String data) async {
+    await _client.from('special_days').upsert({
+      'id': '${userId}_$dateKey',
+      'user_id': userId,
+      'date_key': dateKey,
+      'data': data,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> deleteSpecialDay(String dateKey) async {
+    await _client
+        .from('special_days')
+        .delete()
+        .eq('id', '${userId}_$dateKey');
+  }
 }

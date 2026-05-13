@@ -1,58 +1,79 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/datasources/remote/supabase_datasource.dart';
 
-const specialDayColors = const [
-  0xFFE91E63,
-  0xFFFF5722,
-  0xFF4CAF50,
-  0xFF2196F3,
-  0xFFFF9800,
-  0xFF9C27B0,
+/// Colors for the 6 special day categories
+const specialDayColors = [
+  0xFFE91E63, // pink
+  0xFFFF5722, // orange
+  0xFF4CAF50, // green
+  0xFF2196F3, // blue
+  0xFFFF9800, // amber
+  0xFF9C27B0, // purple
 ];
 
 class SpecialDaysService {
-  static const String _key = 'special_days_map';
+  static const String _cacheKey = 'special_days_cache';
 
-  /// Get all special days as Map<dateKey, json encoded {color, desc}>
-  Future<Map<String, Map<String, String>>> getAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw == null) return {};
-    final decoded = json.decode(raw) as Map<String, dynamic>;
-    return decoded.map((k, v) => MapEntry(k,
-        (v as Map<String, dynamic>).map((k2, v2) => MapEntry(k2, v2 as String))));
+  /// Get all special days from SharedPreferences (always fresh).
+  /// Falls back to remote if cache is empty.
+  Future<Map<String, Map<String, String>>> getAll(SupabaseDatasource? remote) async {
+    final cached = await _loadFromCache();
+
+    if (cached.isEmpty && remote != null) {
+      await _pullFromRemote(remote);
+      return await _loadFromCache();
+    }
+
+    return cached;
   }
 
-  /// Get parsed color index for a date, or null
-  Future<int?> getColorIndex(String dateKey) async {
-    final all = await getAll();
-    final data = all[dateKey];
-    if (data == null) return null;
-    return int.tryParse(data['color'] ?? '0');
+  /// Get data for a specific date
+  Future<Map<String, String>?> getDay(String dateKey) async {
+    final all = await _loadFromCache();
+    return all[dateKey];
   }
 
-  Future<String?> getDescription(String dateKey) async {
-    final all = await getAll();
-    return all[dateKey]?['desc'];
+  /// Mark a day as special. Writes to remote + cache.
+  Future<void> setDay(SupabaseDatasource remote, String dateKey, int colorIndex, String? desc) async {
+    // Build data map
+    final data = <String, String>{'color': colorIndex.toString()};
+    if (desc != null && desc.isNotEmpty) data['desc'] = desc;
+    final dataJson = json.encode(data);
+
+    // Update local SharedPreferences FIRST so UI updates immediately
+    final all = await _loadFromCache();
+    all[dateKey] = data;
+    await _saveCache(all);
+
+    // Write to remote (fire-and-forget for responsiveness)
+    remote.upsertSpecialDay(dateKey, dataJson).catchError((e) {
+      debugPrint('SpecialDaysService.setDay: remote write failed - $e');
+    });
   }
 
-  Future<void> setDay(String dateKey, int colorIndex, String? description) async {
-    final all = await getAll();
-    all[dateKey] = {
-      'color': colorIndex.toString(),
-      if (description != null && description.isNotEmpty) 'desc': description,
-    };
-    await _save(all);
-  }
-
-  Future<void> removeDay(String dateKey) async {
-    final all = await getAll();
+  /// Remove a special day. Deletes from remote + cache.
+  Future<void> removeDay(SupabaseDatasource remote, String dateKey) async {
+    // Update local SharedPreferences FIRST
+    final all = await _loadFromCache();
     all.remove(dateKey);
-    await _save(all);
+    await _saveCache(all);
+
+    // Delete from remote (fire-and-forget)
+    remote.deleteSpecialDay(dateKey).catchError((e) {
+      debugPrint('SpecialDaysService.removeDay: remote delete failed - $e');
+    });
   }
 
+  /// Pull all special days from remote and merge into SharedPreferences.
+  Future<void> pullFromRemote(SupabaseDatasource remote) async {
+    await _pullFromRemote(remote);
+  }
+
+  /// Get sorted list of special dates from cache
   Future<List<DateTime>> getSortedDates() async {
-    final all = await getAll();
+    final all = await _loadFromCache();
     final dates = all.keys
         .map((d) => DateTime.tryParse(d))
         .whereType<DateTime>()
@@ -61,8 +82,49 @@ class SpecialDaysService {
     return dates;
   }
 
-  Future<void> _save(Map<String, Map<String, String>> data) async {
+  // ── Private ──
+
+  Future<Map<String, Map<String, String>>> _loadFromCache() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, json.encode(data));
+    final raw = prefs.getString(_cacheKey);
+    if (raw == null) return {};
+    try {
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded.map((k, v) {
+        final inner = v as Map<String, dynamic>?;
+        if (inner == null) return MapEntry(k, <String, String>{});
+        return MapEntry(k, inner.map((ik, iv) => MapEntry(ik, iv.toString())));
+      });
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> _saveCache(Map<String, Map<String, String>> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cacheKey, json.encode(data));
+  }
+
+  Future<void> _pullFromRemote(SupabaseDatasource remote) async {
+    try {
+      final rows = await remote.fetchSpecialDays();
+      final map = <String, Map<String, String>>{};
+      for (final row in rows) {
+        final key = row['date_key'] as String?;
+        final dataStr = row['data'] as String?;
+        if (key != null && dataStr != null) {
+          try {
+            final data = json.decode(dataStr) as Map<String, dynamic>;
+            map[key] = data.map((k, v) => MapEntry(k, v.toString()));
+          } catch (_) {
+            map[key] = {'color': '0'};
+          }
+        }
+      }
+      await _saveCache(map);
+      debugPrint('SpecialDaysService: pulled ${map.length} special days from remote');
+    } catch (e) {
+      debugPrint('SpecialDaysService.pullFromRemote: failed - $e');
+    }
   }
 }
