@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'Task Manager';
-  static const String appVersion = '0.6.3';
+  static const String appVersion = '0.6.4';
   static const String dbName = 'task_manager.db';
 
   // Responsive breakpoints

@@ -225,17 +225,18 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Intervals', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
-        Row(children: [
-          _Chip(label: 'Total', value: '$total', color: AppColors.primary),
-          const SizedBox(width: 12),
-          _Chip(label: 'Avg Interval', value: '${avg.toStringAsFixed(1)}d', color: AppColors.secondary),
-        ]),
-        const SizedBox(height: 10),
-        Row(children: [
-          _Chip(label: 'Since last', value: daysSince != null ? '${daysSince}d' : '-', color: AppColors.textMuted),
-          const SizedBox(width: 12),
-          _Chip(label: 'Until next', value: daysUntil != null ? '${daysUntil}d' : '-', color: AppColors.warning),
-        ]),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            _Chip(label: 'Total', value: '$total', color: AppColors.primary),
+            const SizedBox(width: 6),
+            _Chip(label: 'Avg', value: '${avg.toStringAsFixed(1)}d', color: AppColors.secondary),
+            const SizedBox(width: 6),
+            _Chip(label: 'Since', value: daysSince != null ? '${daysSince}d' : '-', color: AppColors.textMuted),
+            const SizedBox(width: 6),
+            _Chip(label: 'Until', value: daysUntil != null ? '${daysUntil}d' : '-', color: AppColors.warning),
+          ]),
+        ),
       ]),
     );
   }
