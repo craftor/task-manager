@@ -11,7 +11,10 @@ import 'features/tasks/presentation/screens/tasks_screen.dart';
 import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
+import 'features/journal/presentation/journal_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'features/mood/presentation/mood_stats_screen.dart';
+import 'features/special_days/presentation/special_days_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
 import 'features/sync/data/sync_manager.dart';
 import 'core/services/providers/update_provider.dart';
@@ -87,12 +90,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   static const _navItems = [
+    _NavItem(Icons.edit_note_outlined, Icons.edit_note, 'Journal'),
     _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.folder_outlined, Icons.folder, 'Projects'),
     _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
     _NavItem(Icons.timer_outlined, Icons.timer, 'Time'),
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
     _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Gantt'),
+    _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
+    _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Dates'),
   ];
 
   @override
@@ -437,21 +443,26 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return DashboardScreen(
-            onNavigate: (index) => setState(() => _selectedIndex = index));
+        return const JournalScreen();
       case 1:
-        return const ProjectsScreen();
-      case 2:
-        return const TasksScreen();
-      case 3:
-        return const TimeTrackingScreen();
-      case 4:
-        return const CalendarScreen();
-      case 5:
-        return const GanttScreen();
-      default:
         return DashboardScreen(
             onNavigate: (index) => setState(() => _selectedIndex = index));
+      case 2:
+        return const ProjectsScreen();
+      case 3:
+        return const TasksScreen();
+      case 4:
+        return const TimeTrackingScreen();
+      case 5:
+        return const CalendarScreen();
+      case 6:
+        return const GanttScreen();
+      case 7:
+        return const MoodStatsScreen();
+      case 8:
+        return const SpecialDaysScreen();
+      default:
+        return const JournalScreen();
     }
   }
 
@@ -576,7 +587,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.3.0'),
+                  value: '0.4.0'),
               const SizedBox(height: 24),
               Row(
                 children: [

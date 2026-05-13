@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "task_manager",
-      "version": "0.2.5",
+      "version": "0.3.0",
       "dependencies": [
         "connectivity_plus",
         "drift",

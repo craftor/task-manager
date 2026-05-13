@@ -56,24 +56,31 @@ flutter build apk --debug
 flutter build apk --release
 ```
 
+## CI/CD
+
+GitHub Actions release workflow builds and publishes artifacts for **Android**, **Windows**, **macOS**, and **Linux** on every tag push.
+
+## Version
+
+Current version: 0.4.0
+
 ## Platforms
 
 - **Android** (APK)
 - **Windows** (EXE)
 - **macOS** (App)
-
-## CI/CD
-
-GitHub Actions workflows configured for:
-- **Android**: Release APK build on tag push
-- **Windows**: Release build on tag push
-- **macOS**: Release build on tag push
-
-## Version
-
-Current version: 0.3.0
+- **Linux** (App)
 
 ## Changelog
+
+### 0.4.0
+- CI: matrix build for Android/Windows/macOS/Linux, streamlined release
+- Journal / quick notes page with daily entry + history
+- Mood stats page with month/year views and distribution charts
+- Special days tracker: 12×31 grid with intervals, year switching
+- Calendar: mood emoji picker, go-to-today button
+- Desktop: fixed sidebar with collapse/expand
+- Dashboard: remove time/mood cards, keep priority + recent tasks
 
 ### 0.3.0
 - Desktop: fixed sidebar with collapse/expand, avatar at bottom

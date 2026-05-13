@@ -4,6 +4,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
+import '../../../mood/mood_provider.dart';
+import '../../../mood/mood_service.dart';
 import '../../../../domain/entities/task.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -133,9 +135,6 @@ class DashboardScreen extends ConsumerWidget {
               )),
             ],
           ),
-          const SizedBox(height: 24),
-          // Time tracking summary
-          _TimeSummaryCard(totalMinutes: totalTimeMinutes),
           const SizedBox(height: 16),
           // Priority distribution
           _PriorityDistributionCard(tasks: tasks),
@@ -453,6 +452,80 @@ class _PriorityBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MoodStatsCard extends ConsumerWidget {
+  const _MoodStatsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final distAsync = ref.watch(weeklyMoodDistributionProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(children: [
+            Text('😊', style: TextStyle(fontSize: 20)),
+            SizedBox(width: 8),
+            Text('This Week\'s Mood',
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          ]),
+          const SizedBox(height: 16),
+          distAsync.when(
+            data: (dist) {
+              if (dist.isEmpty) {
+                return const Text('No moods recorded this week.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13));
+              }
+              final entries = dist.entries.toList()
+                ..sort((a, b) => b.value.compareTo(a.value));
+              final total = entries.fold<int>(0, (s, e) => s + e.value);
+
+              return Column(
+                children: entries.map((e) {
+                  final pct = total > 0 ? e.value / total : 0.0;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(children: [
+                      Text(e.key, style: const TextStyle(fontSize: 20)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            minHeight: 18,
+                            backgroundColor: AppColors.border,
+                            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 40,
+                        child: Text('${e.value}d',
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            textAlign: TextAlign.right),
+                      ),
+                    ]),
+                  );
+                }).toList(),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 }
