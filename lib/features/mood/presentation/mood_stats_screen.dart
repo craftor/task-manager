@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../sync/data/sync_manager.dart';
+import '../../sync/presentation/providers/sync_status_provider.dart' show syncStatusProvider, supabaseDatasourceProvider;
+import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../mood/mood_provider.dart';
 import '../../mood/mood_service.dart';
 
@@ -17,6 +20,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
   bool _yearlyMode = false;
   int _year = DateTime.now().year;
   int _month = DateTime.now().month;
+  DateTime? _lastSyncTime;
 
   void _prevMonth() {
     setState(() {
@@ -34,6 +38,18 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Auto-refresh after sync completes
+    final syncState = ref.watch(syncStatusProvider);
+    final lastSync = syncState.valueOrNull?.lastSyncTime;
+    if (lastSync != null && lastSync != _lastSyncTime) {
+      _lastSyncTime = lastSync;
+      // Schedule invalidation after build to avoid modifying during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(allMoodsProvider);
+        ref.invalidate(weeklyMoodDistributionProvider);
+      });
+    }
+
     final moodsAsync = ref.watch(allMoodsProvider);
     final now = DateTime.now();
 
@@ -305,7 +321,8 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
               if (current.isNotEmpty)
                 TextButton(onPressed: () {
-                  ref.read(moodServiceProvider).removeMoods(dateKey);
+                  final remote = ref.read(supabaseDatasourceProvider);
+                  if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, dateKey);
                   ref.invalidate(allMoodsProvider);
                   ref.invalidate(weeklyMoodDistributionProvider);
                   Navigator.pop(ctx);
@@ -314,7 +331,8 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
               const SizedBox(width: 8),
               ElevatedButton(onPressed: () {
-                ref.read(moodServiceProvider).setMoods(dateKey, selected.toList());
+                final remote = ref.read(supabaseDatasourceProvider);
+                if (remote != null) ref.read(moodServiceProvider).setMoods(remote, dateKey, selected.toList());
                 ref.invalidate(allMoodsProvider);
                 ref.invalidate(weeklyMoodDistributionProvider);
                 Navigator.pop(ctx);

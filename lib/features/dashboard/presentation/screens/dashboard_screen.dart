@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
+import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
 import '../../../../domain/entities/task.dart';
+import '../../../../domain/entities/project.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final Function(int)? onNavigate;
@@ -125,8 +127,17 @@ class DashboardScreen extends ConsumerWidget {
           // Priority distribution
           _PriorityDistributionCard(tasks: tasks),
           const SizedBox(height: 16),
+          // Weekly completion stats
+          _WeeklyCompletionCard(tasks: tasks),
+          const SizedBox(height: 16),
+          // Per-project completion percentages
+          _ProjectCompletionCard(tasks: tasks, projectsAsync: projectsAsync),
+          const SizedBox(height: 16),
+          // Total time overview
+          _TimeOverviewCard(),
+          const SizedBox(height: 16),
           // Task completion time stats
-          _TaskTimeStatsCard(tasks: tasks),
+          _TaskTimeStatsCard(),
           const SizedBox(height: 16),
           // Recent tasks
           _RecentTasksCard(tasks: tasks),
@@ -445,86 +456,212 @@ class _PriorityBar extends StatelessWidget {
   }
 }
 
-class _TaskTimeStatsCard extends StatelessWidget {
+// ─── Weekly Completion ───
+class _WeeklyCompletionCard extends StatelessWidget {
   final List<Task> tasks;
-
-  const _TaskTimeStatsCard({required this.tasks});
+  const _WeeklyCompletionCard({required this.tasks});
 
   @override
   Widget build(BuildContext context) {
-    // Completed tasks that have both createdAt and updatedAt
-    final completed = tasks.where((t) => t.status == TaskStatus.completed).toList();
-    final durations = <int>[];
-    for (final t in completed) {
-      final diff = t.updatedAt.difference(t.createdAt).inMinutes;
-      if (diff > 0) durations.add(diff);
-    }
-    if (durations.isEmpty) return const SizedBox.shrink();
-
-    final avg = durations.reduce((a, b) => a + b) ~/ durations.length;
-
-    String _fmt(int m) {
-      final h = m ~/ 60;
-      final mins = m % 60;
-      final d = h ~/ 24;
-      if (d > 0) return '${d}d ${h % 24}h';
-      if (h > 0) return '${h}h ${mins}m';
-      return '${mins}m';
-    }
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 6));
+    final thisWeekCreated = tasks.where((t) => t.createdAt.isAfter(weekAgo)).length;
+    final thisWeekCompleted = tasks.where((t) => t.status == TaskStatus.completed && t.updatedAt.isAfter(weekAgo)).length;
+    final completionRate = thisWeekCreated > 0 ? (thisWeekCompleted / thisWeekCreated * 100).toStringAsFixed(0) : '—';
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(children: [
-            Icon(Icons.speed, color: AppColors.primary, size: 20),
-            SizedBox(width: 8),
-            Text('Task Completion',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          ]),
-          const SizedBox(height: 16),
-          Row(children: [
-            _StatChip(label: 'Completed', value: '${completed.length}', color: AppColors.success),
-            const SizedBox(width: 12),
-            _StatChip(label: 'Avg Time', value: _fmt(avg), color: AppColors.primary),
-          ]),
-          if (durations.length >= 2) ...[
-            const SizedBox(height: 10),
-            Row(children: [
-              _StatChip(label: 'Fastest', value: _fmt(durations.reduce((a, b) => a < b ? a : b)), color: AppColors.success),
-              const SizedBox(width: 12),
-              _StatChip(label: 'Slowest', value: _fmt(durations.reduce((a, b) => a > b ? a : b)), color: AppColors.warning),
-            ]),
-          ],
-        ],
-      ),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [Icon(Icons.date_range, color: AppColors.primary, size: 18), SizedBox(width: 8), Text('This Week', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600))]),
+        const SizedBox(height: 16),
+        Row(children: [
+          _MiniStat(label: 'Created', value: '$thisWeekCreated', color: AppColors.primary),
+          const SizedBox(width: 12),
+          _MiniStat(label: 'Completed', value: '$thisWeekCompleted', color: AppColors.success),
+          const SizedBox(width: 12),
+          _MiniStat(label: 'Rate', value: '$completionRate%', color: AppColors.warning),
+        ]),
+      ]),
     );
   }
 }
 
-class _StatChip extends StatelessWidget {
+class _MiniStat extends StatelessWidget {
   final String label, value;
   final Color color;
-  const _StatChip({required this.label, required this.value, required this.color});
+  const _MiniStat({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.2))),
+        child: Column(children: [
+          Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─── Per-Project Completion ───
+class _ProjectCompletionCard extends StatelessWidget {
+  final List<Task> tasks;
+  final AsyncValue<List<dynamic>> projectsAsync;
+  const _ProjectCompletionCard({required this.tasks, required this.projectsAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    final projects = projectsAsync.valueOrNull;
+    if (projects == null || projects.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [Icon(Icons.folder_copy, color: AppColors.primary, size: 18), SizedBox(width: 8), Text('Project Progress', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600))]),
+        const SizedBox(height: 16),
+        ...projects.take(5).map((p) {
+          final name = (p as dynamic).name as String? ?? 'Unknown';
+          final pid = (p as dynamic).id as String? ?? '';
+          final isDefault = (p as dynamic).isDefault == true || name.toLowerCase() == 'default';
+          final projectTasks = tasks.where((t) => t.projectId == pid || (isDefault && (t.projectId == 'default-project' || t.projectId == '00000000-0000-0000-0000-000000000001'))).toList();
+          final total = projectTasks.length;
+          final done = projectTasks.where((t) => t.status == TaskStatus.completed).length;
+          final pct = total > 0 ? done / total : 0.0;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(children: [
+              SizedBox(width: 80, child: Text(name, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 8),
+              Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 16, backgroundColor: AppColors.border, valueColor: AlwaysStoppedAnimation(pct >= 1 ? AppColors.success : AppColors.primary)))),
+              const SizedBox(width: 8),
+              SizedBox(width: 40, child: Text('$done/$total', style: const TextStyle(color: AppColors.textMuted, fontSize: 11), textAlign: TextAlign.right)),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
+}
+
+// ─── Total Time Overview ───
+class _TimeOverviewCard extends ConsumerWidget {
+  const _TimeOverviewCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesAsync = ref.watch(timeEntriesProvider);
+    return entriesAsync.when(data: (entries) {
+      if (entries.isEmpty) return const SizedBox.shrink();
+      final totalMinutes = entries.where((e) => e.durationMinutes != null).fold<int>(0, (s, e) => s + e.durationMinutes!);
+      if (totalMinutes == 0) return const SizedBox.shrink();
+      final h = totalMinutes ~/ 60;
+      final m = totalMinutes % 60;
+      final d = h ~/ 24;
+      final sessions = entries.length;
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [Icon(Icons.timer, color: AppColors.primary, size: 18), SizedBox(width: 8), Text('Time Overview', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600))]),
+          const SizedBox(height: 16),
+          Row(children: [
+            _MiniStat(label: 'Total', value: d > 0 ? '${d}d ${h % 24}h' : '${h}h ${m}m', color: AppColors.primary),
+            const SizedBox(width: 12),
+            _MiniStat(label: 'Sessions', value: '$sessions', color: AppColors.secondary),
+            const SizedBox(width: 12),
+            _MiniStat(label: 'Avg / Session', value: sessions > 0 ? '${(totalMinutes / sessions).round()}m' : '—', color: AppColors.warning),
+          ]),
+        ]),
+      );
+    }, loading: () => const SizedBox.shrink(), error: (_, __) => const SizedBox.shrink());
+  }
+}
+
+class _TaskTimeStatsCard extends ConsumerWidget {
+  const _TaskTimeStatsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entriesAsync = ref.watch(timeEntriesProvider);
+
+    return entriesAsync.when(
+      data: (entries) {
+        if (entries.isEmpty) return const SizedBox.shrink();
+        final completed = entries.where((e) => e.endTime != null).toList();
+        if (completed.isEmpty) return const SizedBox.shrink();
+
+        final durations = completed.map((e) => e.durationMinutes ?? 0).where((d) => d > 0).toList();
+        if (durations.isEmpty) return const SizedBox.shrink();
+
+        final avg = durations.reduce((a, b) => a + b) ~/ durations.length;
+        final fastest = durations.reduce((a, b) => a < b ? a : b);
+        final slowest = durations.reduce((a, b) => a > b ? a : b);
+
+        String _fmt(int m) => m >= 60 ? '${m ~/ 60}h ${m % 60}m' : '${m}m';
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(children: [
+                Icon(Icons.speed, color: AppColors.primary, size: 18),
+                SizedBox(width: 8),
+                Text('Task Completion Time',
+                    style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+              ]),
+              const SizedBox(height: 16),
+              Row(children: [
+                _StatChip(icon: Icons.trending_up, label: 'Average', value: _fmt(avg), color: AppColors.primary),
+                const SizedBox(width: 12),
+                _StatChip(icon: Icons.speed, label: 'Fastest', value: _fmt(fastest), color: AppColors.success),
+                const SizedBox(width: 12),
+                _StatChip(icon: Icons.hourglass_bottom, label: 'Slowest', value: _fmt(slowest), color: AppColors.warning),
+              ]),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  const _StatChip({required this.icon, required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color.withOpacity(0.2)),
         ),
         child: Column(children: [
-          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700)),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
           Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
         ]),

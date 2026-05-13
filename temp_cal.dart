@@ -7,8 +7,6 @@ import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../mood/mood_provider.dart';
 import '../../../mood/mood_service.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
-import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
 import '../providers/calendar_provider.dart';
 
 class CalendarScreen extends ConsumerWidget {
@@ -195,110 +193,60 @@ class CalendarScreen extends ConsumerWidget {
     final selected = Set<String>.from(currentMoods);
     showDialog(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSt) {
-            return Dialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Container(
-                width: 320,
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      DateFormat('MMM d, yyyy').format(day),
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text('Tap to toggle \u00b7 Max 3 moods',
-                        style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: moodEmojis.map((e) {
-                        final isSel = selected.contains(e);
-                        return GestureDetector(
-                          onTap: () {
-                            setSt(() {
-                              if (isSel) {
-                                selected.remove(e);
-                              } else if (selected.length < 3) {
-                                selected.add(e);
-                              }
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: isSel ? AppColors.primary.withOpacity(0.2) : AppColors.background,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: isSel ? AppColors.primary : AppColors.border,
-                                width: isSel ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(e, style: const TextStyle(fontSize: 28)),
-                                const SizedBox(height: 2),
-                                Text(
-                                  moodLabels[e] ?? '',
-                                  style: TextStyle(
-                                    color: isSel ? AppColors.primary : AppColors.textMuted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (currentMoods.isNotEmpty)
-                          TextButton(
-                            onPressed: () async {
-                              final remote = ref.read(supabaseDatasourceProvider);
-                              if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, key);
-                              ref.invalidate(allMoodsProvider);
-                              ref.invalidate(weeklyMoodDistributionProvider);
-                              Navigator.pop(ctx);
-                            },
-                            child: const Text('Clear', style: TextStyle(color: AppColors.error)),
-                          ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            final remote = ref.read(supabaseDatasourceProvider);
-                            if (remote != null) ref.read(moodServiceProvider).setMoods(remote, key, selected.toList());
-                            ref.invalidate(allMoodsProvider);
-                            ref.invalidate(weeklyMoodDistributionProvider);
-                            Navigator.pop(ctx);
-                          },
-                          child: const Text('Save'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSt) => Dialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(width: 320, padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(DateFormat('MMM d, yyyy').format(day),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            const Text('Tap to toggle · Max 3 moods', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            const SizedBox(height: 16),
+            Wrap(spacing: 10, runSpacing: 10, children: moodEmojis.map((e) {
+              final isSel = selected.contains(e);
+              return GestureDetector(
+                onTap: () => setSt(() {
+                  if (isSel) { selected.remove(e); }
+                  else if (selected.length < 3) { selected.add(e); }
+                }),
+                child: Container(padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSel ? AppColors.primary.withOpacity(0.2) : AppColors.background,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: isSel ? AppColors.primary : AppColors.border, width: isSel ? 2 : 1)),
+                  child: Column(children: [
+                    Text(e, style: const TextStyle(fontSize: 28)),
+                    const SizedBox(height: 2),
+                    Text(moodLabels[e] ?? '', style: TextStyle(color: isSel ? AppColors.primary : AppColors.textMuted, fontSize: 10)),
+                  ]))),
+            }).toList()),
+            const SizedBox(height: 20),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+              if (currentMoods.isNotEmpty)
+                TextButton(onPressed: () async {
+                  await ref.read(moodServiceProvider).removeMoods(key);
+                  ref.invalidate(allMoodsProvider);
+                  ref.invalidate(weeklyMoodDistributionProvider);
+                  Navigator.pop(ctx);
+                }, child: const Text('Clear', style: TextStyle(color: AppColors.error))),
+              const SizedBox(width: 8),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              const SizedBox(width: 8),
+              ElevatedButton(onPressed: () {
+                ref.read(moodServiceProvider).setMoods(key, selected.toList());
+                ref.invalidate(allMoodsProvider);
+                ref.invalidate(weeklyMoodDistributionProvider);
+                Navigator.pop(ctx);
+              }, child: const Text('Save')),
+            ]),
+          ],
+        ),
+      )),
+    ),
     );
   }
+
   Color _getPriorityColor(Priority priority) {
     switch (priority) {
       case Priority.low: return AppColors.secondary;

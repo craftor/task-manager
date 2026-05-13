@@ -62,7 +62,25 @@ GitHub Actions release workflow builds and publishes artifacts for **Android**, 
 
 ## Version
 
-Current version: 0.4.0
+Current version: 0.6.2
+
+## Changelog
+
+### 0.6.2
+- Dashboard: add Weekly Completion, Project Progress, Time Overview cards
+- Mood: Supabase sync with auto-refresh after pull
+- Desktop sidebar: avatar at bottom, version/update banner in top bar
+
+### 0.6.0
+- All data synced bidirectionally (tasks, projects, time entries, journal, special days, moods)
+- Dashboard: Weekly Completion, Project Progress, Time Overview stats
+- Sidebar: Journal → Tasks → Dashboard → Calendar → Gantt → Mood → Dates
+- Desktop fixed sidebar with collapse/expand, unified responsive breakpoints
+- Mood: multi-emoji (max 3/day), month navigation fix, tap calendar to edit
+- Calendar: mood emoji picker, go-to-today button
+- Journal: multi-entry per day with timestamps, Supabase sync
+- Special Days: 12x31 grid, 6-color categories, long-press edit/delete
+- CI: matrix build for Android/Windows/macOS, GitHub Release on tag
 
 ## Platforms
 

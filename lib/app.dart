@@ -15,7 +15,7 @@ import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/mood/presentation/mood_stats_screen.dart';
 import 'features/special_days/presentation/special_days_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
-import 'features/sync/data/sync_manager.dart';
+import 'features/sync/data/sync_manager.dart' show SyncStatus;
 import 'core/services/providers/update_provider.dart';
 import 'core/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -576,7 +576,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.6.1'),
+                  value: '0.6.2'),
               const SizedBox(height: 24),
               Row(
                 children: [

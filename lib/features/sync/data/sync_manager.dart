@@ -8,6 +8,7 @@ import '../../../../domain/entities/task.dart' as task_entity;
 import '../../../../domain/entities/time_entry.dart' as time_entity;
 import '../../special_days/special_days_cache_helper.dart';
 import '../../journal/journal_cache_helper.dart';
+import '../../mood/mood_service.dart';
 
 enum SyncStatus { idle, syncing, success, error }
 
@@ -228,6 +229,17 @@ class SyncManager {
       }
     } catch (e) {
       debugPrint('SyncManager._pullRemoteChanges: journal sync failed — $e');
+    }
+
+    // Moods (stored in Supabase, cached in SharedPreferences)
+    try {
+      final moodsRaw = await _remoteDs.fetchMoods();
+      if (moodsRaw.isNotEmpty) {
+        debugPrint('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');
+        MoodService.mergeRemoteData(moodsRaw);
+      }
+    } catch (e) {
+      debugPrint('SyncManager._pullRemoteChanges: moods sync failed — $e');
     }
   }
 

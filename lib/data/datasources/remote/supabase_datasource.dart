@@ -133,6 +133,33 @@ class SupabaseDatasource {
         .eq('id', '${userId}_$dateKey');
   }
 
+  // Moods
+  Future<List<Map<String, dynamic>>> fetchMoods() async {
+    final response = await _client
+        .from('moods')
+        .select()
+        .eq('user_id', userId)
+        .order('date_key');
+    return response;
+  }
+
+  Future<void> upsertMood(String dateKey, String data) async {
+    await _client.from('moods').upsert({
+      'id': '${userId}_$dateKey',
+      'user_id': userId,
+      'date_key': dateKey,
+      'data': data,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> deleteMood(String dateKey) async {
+    await _client
+        .from('moods')
+        .delete()
+        .eq('id', '${userId}_$dateKey');
+  }
+
   // Journal Entries
   Future<List<Map<String, dynamic>>> fetchJournalEntries() async {
     final response = await _client
