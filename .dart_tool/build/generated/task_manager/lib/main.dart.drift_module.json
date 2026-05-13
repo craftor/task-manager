@@ -1,9 +1,0 @@
-{
-  "elements": {},
-  "imports": [
-    "package:flutter/material.dart",
-    "package:flutter_riverpod/flutter_riverpod.dart",
-    "package:task_manager/core/supabase/supabase_client.dart",
-    "package:task_manager/app.dart"
-  ]
-}

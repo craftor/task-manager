@@ -1,45 +1,59 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const specialDayColors = const [
+  0xFFE91E63,
+  0xFFFF5722,
+  0xFF4CAF50,
+  0xFF2196F3,
+  0xFFFF9800,
+  0xFF9C27B0,
+];
+
 class SpecialDaysService {
-  static const String _key = 'special_days';
+  static const String _key = 'special_days_map';
 
-  /// Get all special date strings (yyyy-MM-dd)
-  Future<Set<String>> getSpecialDays() async {
+  /// Get all special days as Map<dateKey, json encoded {color, desc}>
+  Future<Map<String, Map<String, String>>> getAll() async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_key);
+    final raw = prefs.getString(_key);
     if (raw == null) return {};
-    return raw.toSet();
+    final decoded = json.decode(raw) as Map<String, dynamic>;
+    return decoded.map((k, v) => MapEntry(k,
+        (v as Map<String, dynamic>).map((k2, v2) => MapEntry(k2, v2 as String))));
   }
 
-  /// Toggle a date as special
-  Future<void> toggleDay(String dateKey) async {
-    final days = await getSpecialDays();
-    if (days.contains(dateKey)) {
-      days.remove(dateKey);
-    } else {
-      days.add(dateKey);
-    }
-    await _save(days);
+  /// Get parsed color index for a date, or null
+  Future<int?> getColorIndex(String dateKey) async {
+    final all = await getAll();
+    final data = all[dateKey];
+    if (data == null) return null;
+    return int.tryParse(data['color'] ?? '0');
   }
 
-  /// Check if a date is special
-  Future<bool> isSpecial(String dateKey) async {
-    final days = await getSpecialDays();
-    return days.contains(dateKey);
+  Future<String?> getDescription(String dateKey) async {
+    final all = await getAll();
+    return all[dateKey]?['desc'];
   }
 
-  /// Get special days for a specific year
-  Future<Set<String>> getSpecialDaysForYear(int year) async {
-    final days = await getSpecialDays();
-    final prefix = '$year-';
-    return days.where((d) => d.startsWith(prefix)).toSet();
+  Future<void> setDay(String dateKey, int colorIndex, String? description) async {
+    final all = await getAll();
+    all[dateKey] = {
+      'color': colorIndex.toString(),
+      if (description != null && description.isNotEmpty) 'desc': description,
+    };
+    await _save(all);
   }
 
-  /// Get sorted list of special dates
+  Future<void> removeDay(String dateKey) async {
+    final all = await getAll();
+    all.remove(dateKey);
+    await _save(all);
+  }
+
   Future<List<DateTime>> getSortedDates() async {
-    final days = await getSpecialDays();
-    final dates = days
+    final all = await getAll();
+    final dates = all.keys
         .map((d) => DateTime.tryParse(d))
         .whereType<DateTime>()
         .toList();
@@ -47,19 +61,8 @@ class SpecialDaysService {
     return dates;
   }
 
-  /// Get intervals between special days in chronological order
-  Future<List<Duration>> getIntervals() async {
-    final dates = await getSortedDates();
-    if (dates.length < 2) return [];
-    final intervals = <Duration>[];
-    for (var i = 1; i < dates.length; i++) {
-      intervals.add(dates[i].difference(dates[i - 1]));
-    }
-    return intervals;
-  }
-
-  Future<void> _save(Set<String> days) async {
+  Future<void> _save(Map<String, Map<String, String>> data) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_key, days.toList());
+    await prefs.setString(_key, json.encode(data));
   }
 }
