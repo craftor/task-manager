@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
-import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
-import '../../../mood/mood_provider.dart';
-import '../../../mood/mood_service.dart';
 import '../../../../domain/entities/task.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -17,7 +14,6 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksAsync = ref.watch(tasksProvider);
     final projectsAsync = ref.watch(projectsProvider);
-    final timeEntriesAsync = ref.watch(timeEntriesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -27,7 +23,7 @@ class DashboardScreen extends ConsumerWidget {
         elevation: 0,
       ),
       body: tasksAsync.when(
-        data: (tasks) => _buildDashboard(context, ref, tasks, projectsAsync, timeEntriesAsync),
+        data: (tasks) => _buildDashboard(context, ref, tasks, projectsAsync),
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
@@ -47,7 +43,6 @@ class DashboardScreen extends ConsumerWidget {
     WidgetRef ref,
     List<Task> tasks,
     AsyncValue<List<dynamic>> projectsAsync,
-    AsyncValue<List<dynamic>> timeEntriesAsync,
   ) {
     final totalTasks = tasks.length;
     final pendingTasks = tasks.where((t) => t.status != TaskStatus.completed).length;
@@ -68,15 +63,6 @@ class DashboardScreen extends ConsumerWidget {
 
     // Total projects
     final totalProjects = projectsAsync.valueOrNull?.length ?? 0;
-
-    // Total time tracked (in minutes)
-    int totalTimeMinutes = 0;
-    final entries = timeEntriesAsync.valueOrNull;
-    if (entries != null) {
-      for (final e in entries) {
-        totalTimeMinutes += (e.durationMinutes as int?) ?? 0;
-      }
-    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -138,6 +124,9 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           // Priority distribution
           _PriorityDistributionCard(tasks: tasks),
+          const SizedBox(height: 16),
+          // Task completion time stats
+          _TaskTimeStatsCard(tasks: tasks),
           const SizedBox(height: 16),
           // Recent tasks
           _RecentTasksCard(tasks: tasks),
@@ -456,12 +445,32 @@ class _PriorityBar extends StatelessWidget {
   }
 }
 
-class _MoodStatsCard extends ConsumerWidget {
-  const _MoodStatsCard();
+class _TaskTimeStatsCard extends StatelessWidget {
+  final List<Task> tasks;
+
+  const _TaskTimeStatsCard({required this.tasks});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final distAsync = ref.watch(weeklyMoodDistributionProvider);
+  Widget build(BuildContext context) {
+    // Completed tasks that have both createdAt and updatedAt
+    final completed = tasks.where((t) => t.status == TaskStatus.completed).toList();
+    final durations = <int>[];
+    for (final t in completed) {
+      final diff = t.updatedAt.difference(t.createdAt).inMinutes;
+      if (diff > 0) durations.add(diff);
+    }
+    if (durations.isEmpty) return const SizedBox.shrink();
+
+    final avg = durations.reduce((a, b) => a + b) ~/ durations.length;
+
+    String _fmt(int m) {
+      final h = m ~/ 60;
+      final mins = m % 60;
+      final d = h ~/ 24;
+      if (d > 0) return '${d}d ${h % 24}h';
+      if (h > 0) return '${h}h ${mins}m';
+      return '${mins}m';
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -474,57 +483,51 @@ class _MoodStatsCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(children: [
-            Text('😊', style: TextStyle(fontSize: 20)),
+            Icon(Icons.speed, color: AppColors.primary, size: 20),
             SizedBox(width: 8),
-            Text('This Week\'s Mood',
+            Text('Task Completion',
                 style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
           ]),
           const SizedBox(height: 16),
-          distAsync.when(
-            data: (dist) {
-              if (dist.isEmpty) {
-                return const Text('No moods recorded this week.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 13));
-              }
-              final entries = dist.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value));
-              final total = entries.fold<int>(0, (s, e) => s + e.value);
-
-              return Column(
-                children: entries.map((e) {
-                  final pct = total > 0 ? e.value / total : 0.0;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(children: [
-                      Text(e.key, style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: pct,
-                            minHeight: 18,
-                            backgroundColor: AppColors.border,
-                            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 40,
-                        child: Text('${e.value}d',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                            textAlign: TextAlign.right),
-                      ),
-                    ]),
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
+          Row(children: [
+            _StatChip(label: 'Completed', value: '${completed.length}', color: AppColors.success),
+            const SizedBox(width: 12),
+            _StatChip(label: 'Avg Time', value: _fmt(avg), color: AppColors.primary),
+          ]),
+          if (durations.length >= 2) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              _StatChip(label: 'Fastest', value: _fmt(durations.reduce((a, b) => a < b ? a : b)), color: AppColors.success),
+              const SizedBox(width: 12),
+              _StatChip(label: 'Slowest', value: _fmt(durations.reduce((a, b) => a > b ? a : b)), color: AppColors.warning),
+            ]),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  const _StatChip({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(children: [
+          Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+        ]),
       ),
     );
   }

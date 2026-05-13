@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../data/datasources/remote/supabase_datasource.dart';
+import '../../sync/data/sync_manager.dart';
+import '../../sync/presentation/providers/sync_status_provider.dart';
 import '../../journal/journal_provider.dart';
 import '../../journal/journal_service.dart';
 
@@ -17,6 +20,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   final _todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
   bool _hasUnsaved = false;
 
+  SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
+
   @override
   void dispose() {
     _controller.dispose();
@@ -30,7 +35,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _saveToday() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    await ref.read(journalServiceProvider).addEntry(_todayKey, text);
+    if (_remote != null) await ref.read(journalServiceProvider).addEntry(_remote!, _todayKey, text);
     _controller.clear();
     ref.invalidate(journalEntriesProvider(_todayKey));
     ref.invalidate(journalDatesProvider);
@@ -39,6 +44,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Invalidate on each sync success
+    ref.listen(syncStatusProvider, (prev, next) {
+      final now = next.valueOrNull;
+      if (now != null && now.status == SyncStatus.success) {
+        ref.invalidate(journalEntriesProvider(_todayKey));
+        ref.invalidate(journalDatesProvider);
+      }
+    });
     final entriesAsync = ref.watch(journalEntriesProvider(_todayKey));
     final datesAsync = ref.watch(journalDatesProvider);
 
@@ -143,7 +156,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       entry: entry,
                       onEdit: () => _editEntry(entry),
                       onDelete: () async {
-                        await ref.read(journalServiceProvider).deleteEntry(_todayKey, entry.id);
+                        if (_remote != null) await ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, entry.id);
                         ref.invalidate(journalEntriesProvider(_todayKey));
                         ref.invalidate(journalDatesProvider);
                       },
@@ -198,7 +211,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _controller.text = entry.content;
     setState(() => _hasUnsaved = true);
     // Delete old and save as new on next save
-    ref.read(journalServiceProvider).deleteEntry(_todayKey, entry.id);
+    if (_remote != null) ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, entry.id);
     ref.invalidate(journalEntriesProvider(_todayKey));
     ref.invalidate(journalDatesProvider);
   }

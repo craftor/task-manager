@@ -418,7 +418,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     final descController = TextEditingController(text: task?.description ?? '');
     final isEditing = task != null;
     Priority selectedPriority = task?.priority ?? Priority.medium;
-    DateTime? startDate = task?.startDate;
+    DateTime? startDate = task?.startDate ?? DateTime.now();
     DateTime? dueDate = task?.dueDate;
     String selectedProjectId = task?.projectId ?? 'default-project';
 

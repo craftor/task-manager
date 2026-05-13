@@ -60,18 +60,12 @@ class SupabaseDatasource {
       'id': task.id,
       'user_id': userId,
       'project_id': task.projectId,
-      'parent_task_id': task.parentTaskId,
       'title': task.title,
       'description': task.description,
       'priority': task.priority.index,
       'status': task.status.index,
       'start_date': task.startDate?.toIso8601String(),
       'due_date': task.dueDate?.toIso8601String(),
-      'tags': task.tags.join(','),
-      'estimated_minutes': task.estimatedMinutes,
-      'actual_minutes': task.actualMinutes,
-      'is_recurring': task.isRecurring,
-      'recurring_rule': task.recurringRule,
       'created_at': task.createdAt.toIso8601String(),
       'updated_at': task.updatedAt.toIso8601String(),
     });
@@ -137,5 +131,33 @@ class SupabaseDatasource {
         .from('special_days')
         .delete()
         .eq('id', '${userId}_$dateKey');
+  }
+
+  // Journal Entries
+  Future<List<Map<String, dynamic>>> fetchJournalEntries() async {
+    final response = await _client
+        .from('journal_entries')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return response;
+  }
+
+  Future<void> upsertJournalEntry(String dateKey, Map<String, dynamic> entry) async {
+    await _client.from('journal_entries').upsert({
+      'id': entry['id'],
+      'user_id': userId,
+      'date_key': dateKey,
+      'content': entry['content'],
+      'created_at': entry['created_at'],
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> deleteJournalEntry(String entryId) async {
+    await _client
+        .from('journal_entries')
+        .delete()
+        .eq('id', entryId);
   }
 }

@@ -7,7 +7,6 @@ import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/projects/presentation/providers/projects_provider.dart';
 import 'features/projects/presentation/tasks_projects_screen.dart';
-import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
 import 'features/gantt/presentation/screens/gantt_screen.dart';
 import 'features/journal/presentation/journal_screen.dart';
@@ -90,9 +89,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   static const _navItems = [
     _NavItem(Icons.edit_note_outlined, Icons.edit_note, 'Journal'),
-    _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
-    _NavItem(Icons.timer_outlined, Icons.timer, 'Time'),
+    _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
     _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Gantt'),
     _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
@@ -443,19 +441,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 0:
         return const JournalScreen();
       case 1:
+        return const TasksProjectsScreen();
+      case 2:
         return DashboardScreen(
             onNavigate: (index) => setState(() => _selectedIndex = index));
-      case 2:
-        return const TasksProjectsScreen();
       case 3:
-        return const TimeTrackingScreen();
-      case 4:
         return const CalendarScreen();
-      case 5:
+      case 4:
         return const GanttScreen();
-      case 6:
+      case 5:
         return const MoodStatsScreen();
-      case 7:
+      case 6:
         return const SpecialDaysScreen();
       default:
         return const JournalScreen();
@@ -583,7 +579,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.5.0'),
+                  value: '0.6.0'),
               const SizedBox(height: 24),
               Row(
                 children: [
