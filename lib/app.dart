@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'core/theme/app_theme.dart';
+import 'core/constants/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/projects/presentation/providers/projects_provider.dart';
@@ -18,10 +19,6 @@ import 'features/sync/data/sync_manager.dart';
 import 'core/services/providers/update_provider.dart';
 import 'core/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-/// Breakpoint for desktop layout (sidebar instead of drawer)
-const double kDesktopBreakpoint = 900;
-
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
 
@@ -133,7 +130,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     });
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= kDesktopBreakpoint;
+    final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
 
     if (isDesktop) {
       return _buildDesktopLayout();

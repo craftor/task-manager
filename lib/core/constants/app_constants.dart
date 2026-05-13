@@ -3,6 +3,10 @@ class AppConstants {
   static const String appVersion = '0.6.1';
   static const String dbName = 'task_manager.db';
 
+  // Responsive breakpoints
+  static const double sidebarBreakpoint = 900;  // sidebar vs drawer
+  static const double compactBreakpoint = 600;  // compact card layouts
+
   // Spacing
   static const double spacing4 = 4.0;
   static const double spacing8 = 8.0;
