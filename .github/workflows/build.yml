@@ -29,11 +29,6 @@ jobs:
             upload-artifact: task_manager-macos.zip
             upload-path: build/macos/Build/Products/Release/task_manager-macos.zip
 
-          - target: linux
-            os: ubuntu-latest
-            upload-artifact: task_manager-linux.zip
-            upload-path: build/linux/x64/release/bundle/task_manager-linux.zip
-
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -44,16 +39,6 @@ jobs:
         with:
           flutter-version: '3.41.9'
           channel: 'stable'
-
-      - name: Install Linux dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
-
-      - name: Enable Linux desktop
-        if: matrix.target == 'linux'
-        run: flutter config --enable-linux-desktop
 
       - name: Install dependencies
         run: flutter pub get
@@ -76,13 +61,6 @@ jobs:
           flutter build macos --release
           cd build/macos/Build/Products/Release
           zip -r task_manager-macos.zip task_manager.app
-
-      - name: Build Linux
-        if: matrix.target == 'linux'
-        run: |
-          flutter build linux --release
-          cd build/linux/x64/release/bundle
-          zip -r task_manager-linux.zip *
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -129,8 +107,6 @@ jobs:
             | Android | TaskManager_${{ github.ref_name }}_Android.apk |
             | Windows | task_manager-windows.zip |
             | macOS | task_manager-macos.zip |
-            | Linux | task_manager-linux.zip |
-
             ## Features
             - Cross-platform sync via Supabase
             - Time tracking with manual entry and timer
@@ -145,4 +121,3 @@ jobs:
             app-release.apk
             task_manager-windows.zip
             task_manager-macos.zip
-            task_manager-linux.zip

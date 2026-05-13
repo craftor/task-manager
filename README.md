@@ -58,7 +58,7 @@ flutter build apk --release
 
 ## CI/CD
 
-GitHub Actions release workflow builds and publishes artifacts for **Android**, **Windows**, **macOS**, and **Linux** on every tag push.
+GitHub Actions release workflow builds and publishes artifacts for **Android**, **Windows**, and **macOS** on every tag push.
 
 ## Version
 
@@ -69,8 +69,6 @@ Current version: 0.4.0
 - **Android** (APK)
 - **Windows** (EXE)
 - **macOS** (App)
-- **Linux** (App)
-
 ## Changelog
 
 ### 0.4.0
