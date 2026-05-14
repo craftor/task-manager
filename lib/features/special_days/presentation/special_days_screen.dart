@@ -202,7 +202,6 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               ),
             );
           }),
-          ],
           const SizedBox(height: 12),
           // Color legend
           Padding(
@@ -225,6 +224,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               }),
             ),
           ),
+        ],
       ),
     );
   }
