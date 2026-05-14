@@ -900,7 +900,7 @@ class _AppLockWrapper extends ConsumerStatefulWidget {
 }
 
 class _AppLockWrapperState extends ConsumerState<_AppLockWrapper> with WidgetsBindingObserver {
-  bool _needsUnlock = false;
+  bool _needsUnlock = true;
 
   @override
   void initState() {
@@ -918,7 +918,7 @@ class _AppLockWrapperState extends ConsumerState<_AppLockWrapper> with WidgetsBi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.resumed) {
       _needsUnlock = true;
     }
   }

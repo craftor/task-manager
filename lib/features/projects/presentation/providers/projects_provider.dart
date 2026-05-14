@@ -103,10 +103,9 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
   Future<void> deleteProject(String id) async {
     final repository = ref.read(projectRepositoryProvider);
     final projects = await repository.getAllProjects();
-    final project = projects.firstWhere((p) => p.id == id, orElse: () => throw Exception('Project not found'));
-    if (project.isDefault) {
-      return; // Cannot delete default project
-    }
+    final project = projects.cast<Project?>().firstWhere((p) => p?.id == id, orElse: () => null);
+    if (project == null) return;
+    if (project.isDefault) return;
     await repository.deleteProject(id);
   }
 }

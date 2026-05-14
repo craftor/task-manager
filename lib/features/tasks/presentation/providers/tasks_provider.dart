@@ -18,11 +18,7 @@ final tasksProvider = StreamNotifierProvider<TasksNotifier, List<Task>>(
 class TasksNotifier extends StreamNotifier<List<Task>> {
   @override
   Stream<List<Task>> build() {
-    final stream = ref.watch(taskRepositoryProvider).watchAllTasks();
-    stream.listen((tasks) {
-      debugPrint('TasksNotifier stream received: ${tasks.length} tasks');
-    });
-    return stream;
+    return ref.watch(taskRepositoryProvider).watchAllTasks();
   }
 
   Future<void> createTask({
@@ -38,7 +34,6 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
     bool isRecurring = false,
     String? recurringRule,
   }) async {
-    debugPrint('TasksNotifier.createTask called: $title');
     final repository = ref.read(taskRepositoryProvider);
     final now = DateTime.now();
     final task = Task(
@@ -59,21 +54,17 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       updatedAt: now,
     );
     await repository.createTask(task);
-    debugPrint('TasksNotifier.createTask done, invalidating');
-    ref.invalidateSelf();
   }
 
   Future<void> updateTask(Task task) async {
     final repository = ref.read(taskRepositoryProvider);
     final updatedTask = task.copyWith(updatedAt: DateTime.now());
     await repository.updateTask(updatedTask);
-    ref.invalidateSelf();
   }
 
   Future<void> deleteTask(String id) async {
     final repository = ref.read(taskRepositoryProvider);
     await repository.deleteTask(id);
-    ref.invalidateSelf();
   }
 
   Future<void> toggleTaskStatus(String id) async {
@@ -88,7 +79,6 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
         updatedAt: DateTime.now(),
       );
       await repository.updateTask(updatedTask);
-      ref.invalidateSelf();
     }
   }
 
@@ -105,6 +95,5 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       final updated = tasks[i].copyWith(sortOrder: i);
       await repository.updateTask(updated);
     }
-    ref.invalidateSelf();
   }
 }

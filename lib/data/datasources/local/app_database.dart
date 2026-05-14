@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/constants/app_constants.dart';
@@ -16,8 +17,9 @@ class TagsConverter extends TypeConverter<List<String>, String> {
     if (fromDb.isEmpty) return [];
     try {
       return List<String>.from(json.decode(fromDb));
-    } catch (_) {
-      return fromDb.split(',');
+    } catch (e) {
+      debugPrint('TagsConverter.fromSql: failed to decode JSON "$fromDb" — $e');
+      return fromDb.isNotEmpty ? fromDb.split(',') : [];
     }
   }
 
@@ -215,6 +217,32 @@ class AppDatabase extends _$AppDatabase {
   Future<void> markTimeEntrySynced(String id) async {
     await (update(timeEntries)..where((e) => e.id.equals(id)))
         .write(const TimeEntriesCompanion(pendingSync: Value(false)));
+  }
+
+  // Migration: fix legacy default-project references
+  Future<void> fixLegacyTaskProject(String taskId) async {
+    await (update(tasks)..where((t) => t.id.equals(taskId)))
+        .write(const TasksCompanion(
+      projectId: Value('00000000-0000-0000-0000-000000000001'),
+      pendingSync: Value(true),
+    ));
+  }
+
+  // Migration: clean up duplicate default projects
+  Future<void> cleanupDuplicateDefaultProjects() async {
+    await (delete(projects)
+          ..where((p) => p.id.isNotValue('00000000-0000-0000-0000-000000000001'))
+          ..where((p) => p.name.equals('Default') | p.isDefault.equals(true)))
+        .go();
+  }
+
+  // Parametrized delete to replace customStatement SQL
+  Future<void> deleteProjectById(String id) async {
+    await (delete(projects)..where((p) => p.id.equals(id))).go();
+  }
+
+  Future<void> deleteTaskById(String id) async {
+    await (delete(tasks)..where((t) => t.id.equals(id))).go();
   }
 
   Future<void> upsertTimeEntryFromRemote(Map<String, dynamic> data) async {

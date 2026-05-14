@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/auth_service.dart';
@@ -43,6 +44,7 @@ final authStateProvider =
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
+  StreamSubscription? _authSubscription;
 
   AuthNotifier(this._authService) : super(const AuthState()) {
     _loadAvatar();
@@ -69,7 +71,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
 
-    _authService.onAuthStateChange.listen((event) {
+    _authSubscription = _authService.onAuthStateChange.listen((event) {
       final user = event.session?.user;
       if (user != null) {
         state = AuthState(
@@ -81,6 +83,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> signIn(String email, String password) async {

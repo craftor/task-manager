@@ -12,6 +12,7 @@ import '../../mood/mood_service.dart';
 
 enum SyncStatus { idle, syncing, success, error }
 
+@immutable
 class SyncState {
   final SyncStatus status;
   final String? errorMessage;
@@ -45,15 +46,11 @@ class SyncManager {
       final tasks = await _localDb.getAllTasks();
       for (final t in tasks) {
         if (t.projectId == 'default-project') {
-          await _localDb.customStatement(
-            'UPDATE tasks SET project_id = \'00000000-0000-0000-0000-000000000001\', pending_sync = 1 WHERE id = \'${t.id}\'',
-          );
+          await _localDb.fixLegacyTaskProject(t.id);
         }
       }
       // Clean up duplicate default projects in local DB
-      await _localDb.customStatement(
-        'DELETE FROM projects WHERE (name = \'Default\' OR is_default = 1) AND id != \'00000000-0000-0000-0000-000000000001\'',
-      );
+      await _localDb.cleanupDuplicateDefaultProjects();
       debugPrint('SyncManager: triggering initial sync');
       syncAll();
     });
@@ -206,7 +203,7 @@ class SyncManager {
       if (local.pendingSync) continue;
       if (!remoteProjectIds.contains(local.id)) {
         debugPrint('SyncManager: pruning locally deleted project ${local.id}');
-        await _localDb.customStatement('DELETE FROM projects WHERE id = \'${local.id}\'');
+        await _localDb.deleteProjectById(local.id);
       }
     }
 
@@ -222,7 +219,7 @@ class SyncManager {
       if (local.pendingSync) continue; // skip unsynced local creates
       if (!remoteTaskIds.contains(local.id)) {
         debugPrint('SyncManager: pruning locally deleted task ${local.id}');
-        await _localDb.customStatement('DELETE FROM tasks WHERE id = \'${local.id}\'');
+        await _localDb.deleteTaskById(local.id);
       }
     }
 
@@ -235,10 +232,9 @@ class SyncManager {
     // Special Days (stored in Supabase, cached in SharedPreferences)
     try {
       final specialDaysRaw = await _remoteDs.fetchSpecialDays();
-      if (specialDaysRaw.isNotEmpty) {
-        debugPrint('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
-        SpecialDaysCacheHelper.mergeRemoteData(specialDaysRaw);
-      }
+      debugPrint('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
+      // Always merge to ensure deletions on other devices are reflected
+      SpecialDaysCacheHelper.mergeRemoteData(specialDaysRaw);
     } catch (e) {
       debugPrint('SyncManager._pullRemoteChanges: special days sync failed — $e');
     }
@@ -246,10 +242,9 @@ class SyncManager {
     // Journal Entries (stored in Supabase, cached in SharedPreferences)
     try {
       final journalRaw = await _remoteDs.fetchJournalEntries();
-      if (journalRaw.isNotEmpty) {
-        debugPrint('SyncManager._pullRemoteChanges: ${journalRaw.length} journal entries from remote');
-        JournalCacheHelper.mergeRemoteData(journalRaw);
-      }
+      debugPrint('SyncManager._pullRemoteChanges: ${journalRaw.length} journal entries from remote');
+      // Always merge to ensure deletions on other devices are reflected
+      JournalCacheHelper.mergeRemoteData(journalRaw);
     } catch (e) {
       debugPrint('SyncManager._pullRemoteChanges: journal sync failed — $e');
     }
@@ -257,10 +252,9 @@ class SyncManager {
     // Moods (stored in Supabase, cached in SharedPreferences)
     try {
       final moodsRaw = await _remoteDs.fetchMoods();
-      if (moodsRaw.isNotEmpty) {
-        debugPrint('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');
-        MoodService.mergeRemoteData(moodsRaw);
-      }
+      debugPrint('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');
+      // Always merge to ensure deletions on other devices are reflected
+      MoodService.mergeRemoteData(moodsRaw);
     } catch (e) {
       debugPrint('SyncManager._pullRemoteChanges: moods sync failed — $e');
     }

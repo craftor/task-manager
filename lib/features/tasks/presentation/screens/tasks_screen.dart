@@ -367,8 +367,11 @@ class _DateTimePickerField extends StatelessWidget {
         builder: (context, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: const ColorScheme.dark(primary: AppColors.primary, surface: AppColors.surface)), child: child!));
 
       if (pickedTime != null) {
-        final adjustedMinute = _roundToHalfHour(pickedTime.minute);
-        final adjustedHour = pickedTime.minute >= 45 ? pickedTime.hour + 1 : pickedTime.hour;
+        int adjustedHour = pickedTime.hour;
+        int adjustedMinute = _roundToHalfHour(pickedTime.minute);
+        if (adjustedMinute == 0 && pickedTime.minute >= 45) {
+          adjustedHour = (adjustedHour + 1) % 24;
+        }
         onChanged(DateTime(pickedDate.year, pickedDate.month, pickedDate.day, adjustedHour, adjustedMinute));
       } else {
         onChanged(pickedDate);
