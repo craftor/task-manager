@@ -4,6 +4,7 @@ import '../../../../data/datasources/local/app_database.dart' show AppDatabase;
 import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';
+import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
 
 /// Fixed UUID for the default project so it's consistent across all devices.
 const String defaultProjectId = '00000000-0000-0000-0000-000000000001';
@@ -13,7 +14,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 });
 
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
-  return ProjectRepositoryImpl(ref.watch(databaseProvider));
+  return ProjectRepositoryImpl(ref.watch(databaseProvider), ref.watch(supabaseDatasourceProvider));
 });
 
 final projectsProvider =

@@ -20,8 +20,8 @@ class SupabaseDatasource {
     return response;
   }
 
-  Future<void> upsertProject(Project project) async {
-    await _client.from('projects').upsert({
+  Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
+    final data = <String, dynamic>{
       'id': project.id,
       'user_id': userId,
       'parent_id': project.parentId,
@@ -35,13 +35,17 @@ class SupabaseDatasource {
       'updated_at': DateTime.now().toIso8601String(),
       'sort_order': project.sortOrder,
       'is_default': project.isDefault,
-    });
+    };
+    if (deletedAt != null) {
+      data['deleted_at'] = deletedAt.toIso8601String();
+    }
+    await _client.from('projects').upsert(data);
   }
 
   Future<void> deleteProject(String id) async {
     await _client.from('projects').update({
       'deleted_at': DateTime.now().toIso8601String(),
-    }).eq('id', id);
+    }).eq('id', id).eq('user_id', userId);
   }
 
   // Tasks
@@ -55,8 +59,8 @@ class SupabaseDatasource {
     return response;
   }
 
-  Future<void> upsertTask(Task task) async {
-    await _client.from('tasks').upsert({
+  Future<void> upsertTask(Task task, {DateTime? deletedAt}) async {
+    final data = <String, dynamic>{
       'id': task.id,
       'user_id': userId,
       'project_id': task.projectId,
@@ -68,13 +72,17 @@ class SupabaseDatasource {
       'due_date': task.dueDate?.toIso8601String(),
       'created_at': task.createdAt.toIso8601String(),
       'updated_at': task.updatedAt.toIso8601String(),
-    });
+    };
+    if (deletedAt != null) {
+      data['deleted_at'] = deletedAt.toIso8601String();
+    }
+    await _client.from('tasks').upsert(data);
   }
 
   Future<void> deleteTask(String id) async {
     await _client.from('tasks').update({
       'deleted_at': DateTime.now().toIso8601String(),
-    }).eq('id', id);
+    }).eq('id', id).eq('user_id', userId);
   }
 
   // Time Entries

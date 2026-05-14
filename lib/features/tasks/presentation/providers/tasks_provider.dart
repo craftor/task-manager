@@ -5,9 +5,10 @@ import '../../../../data/repositories/task_repository_impl.dart';
 import '../../../../domain/entities/task.dart' show Task, Priority, TaskStatus;
 import '../../../../domain/repositories/task_repository.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
+import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
 
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return TaskRepositoryImpl(ref.watch(databaseProvider));
+  return TaskRepositoryImpl(ref.watch(databaseProvider), ref.watch(supabaseDatasourceProvider));
 });
 
 final tasksProvider = StreamNotifierProvider<TasksNotifier, List<Task>>(

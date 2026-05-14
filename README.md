@@ -62,9 +62,18 @@ GitHub Actions release workflow builds and publishes artifacts for **Android**, 
 
 ## Version
 
-Current version: 0.6.3
+Current version: 0.7.0
 
 ## Changelog
+
+### 0.7.0
+- Sync: immediate push on all CRUD (tasks, projects, moods, special days, journal)
+- Sync: remote-wins reconciliation — local stale data auto-pruned
+- Sync: delete via upsert + deleted_at (bypasses RLS UPDATE restrictions)
+- App Lock: fingerprint/biometric + 4-digit PIN with background lock
+- Removed Gantt chart page
+- UI: Special Days Intervals in single row, desktop sidebar polish
+- Android: FlutterFragmentActivity + AppCompat theme for biometric support
 
 ### 0.6.3
 - Android: add INTERNET permission + network_security_config for Supabase connectivity

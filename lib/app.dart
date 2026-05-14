@@ -6,10 +6,11 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/auth/presentation/screens/app_lock_screen.dart';
+import 'features/auth/presentation/providers/app_lock_provider.dart';
 import 'features/projects/presentation/providers/projects_provider.dart';
 import 'features/projects/presentation/tasks_projects_screen.dart';
 import 'features/calendar/presentation/screens/calendar_screen.dart';
-import 'features/gantt/presentation/screens/gantt_screen.dart';
 import 'features/journal/presentation/journal_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/mood/presentation/mood_stats_screen.dart';
@@ -39,6 +40,12 @@ class AuthWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final lockEnabled = ref.watch(appLockEnabledProvider).valueOrNull ?? false;
+
+    // If authenticated but lock is enabled, show lock screen
+    if (authState.status == AuthStatus.authenticated && lockEnabled) {
+      return const _AppLockWrapper(child: MainScreen());
+    }
 
     switch (authState.status) {
       case AuthStatus.initial:
@@ -57,6 +64,7 @@ class AuthWrapper extends ConsumerWidget {
           ),
         );
       case AuthStatus.authenticated:
+        // Handled above with lock wrapper
         return const MainScreen();
       case AuthStatus.unauthenticated:
       case AuthStatus.error:
@@ -89,7 +97,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
     _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
-    _NavItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Gantt'),
     _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
     _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Dates'),
   ];
@@ -445,10 +452,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 3:
         return const CalendarScreen();
       case 4:
-        return const GanttScreen();
-      case 5:
         return const MoodStatsScreen();
-      case 6:
+      case 5:
         return const SpecialDaysScreen();
       default:
         return const JournalScreen();
@@ -576,7 +581,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.6.4'),
+                  value: '0.7.0'),
+              const SizedBox(height: 16),
+              // App Lock toggle
+              _buildLockToggle(dialogContext),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -616,6 +624,121 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLockToggle(BuildContext dialogContext) {
+    final lockAsync = ref.watch(appLockEnabledProvider);
+    return lockAsync.when(
+      data: (locked) {
+        final icon = locked ? Icons.lock : Icons.lock_open;
+        final label = locked ? 'App Lock: ON' : 'App Lock: OFF';
+        return GestureDetector(
+          onTap: () => _showPinSetupDialog(dialogContext),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: locked ? AppColors.primary.withOpacity(0.1) : AppColors.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(children: [
+              Icon(icon, color: locked ? AppColors.primary : AppColors.textMuted, size: 20),
+              const SizedBox(width: 12),
+              Expanded(child: Text(label, style: TextStyle(color: locked ? AppColors.primary : AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500))),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+            ]),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  void _showPinSetupDialog(BuildContext parentCtx) {
+    final pinController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setD) {
+        final existingPin = ref.read(appLockEnabledProvider).valueOrNull ?? false;
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(existingPin ? 'Change PIN' : 'Set App Lock PIN',
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: pinController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              decoration: InputDecoration(
+                hintText: '4-digit PIN',
+                hintStyle: const TextStyle(color: AppColors.textMuted),
+                filled: true, fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                counterText: '',
+              ),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, letterSpacing: 10),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              decoration: InputDecoration(
+                hintText: 'Confirm PIN',
+                hintStyle: const TextStyle(color: AppColors.textMuted),
+                filled: true, fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
+                counterText: '',
+              ),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, letterSpacing: 10),
+              textAlign: TextAlign.center,
+            ),
+          ]),
+          actions: [
+            if (existingPin)
+              TextButton(
+                onPressed: () {
+                  ref.read(appLockProvider.notifier).disableLock();
+                  ref.invalidate(appLockEnabledProvider);
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Disable', style: TextStyle(color: AppColors.error)),
+              ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                final pin = pinController.text;
+                final confirm = confirmController.text;
+                if (pin.length != 4 || confirm.length != 4) return;
+                if (pin != confirm) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PINs do not match'), backgroundColor: AppColors.error),
+                  );
+                  return;
+                }
+                ref.read(appLockProvider.notifier).setPin(pin);
+                ref.invalidate(appLockEnabledProvider);
+                Navigator.pop(ctx);
+                Navigator.pop(parentCtx); // close profile dialog too
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('App Lock PIN set'), backgroundColor: AppColors.success),
+                );
+              },
+              child: const Text('Set PIN'),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -738,6 +861,63 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (pickedFile != null) {
       ref.read(authStateProvider.notifier).updateAvatar(pickedFile.path);
     }
+  }
+}
+
+// ─── App Lock Wrapper ───
+class _AppLockWrapper extends ConsumerStatefulWidget {
+  final Widget child;
+  const _AppLockWrapper({required this.child});
+
+  @override
+  ConsumerState<_AppLockWrapper> createState() => _AppLockWrapperState();
+}
+
+class _AppLockWrapperState extends ConsumerState<_AppLockWrapper> with WidgetsBindingObserver {
+  bool _needsUnlock = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Require unlock immediately on first load
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showLock());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed || state == AppLifecycleState.inactive) {
+      _needsUnlock = true;
+    }
+  }
+
+  Future<void> _showLock() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AppLockScreen()),
+    );
+    if (result == true && mounted) {
+      setState(() => _needsUnlock = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (_needsUnlock)
+          const Positioned.fill(
+            child: ColoredBox(color: AppColors.background),
+          ),
+      ],
+    );
   }
 }
 

@@ -1,7 +1,7 @@
 name: task_manager
 description: Personal task and time management application
 publish_to: 'none'
-version: 0.6.4
+version: 0.7.0
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -22,6 +22,8 @@ dependencies:
   shared_preferences: ^2.2.0
   table_calendar: ^3.1.0
   image_picker: ^1.0.4
+  local_auth: ^2.1.0
+  url_launcher: ^6.2.0
 
 dev_dependencies:
   flutter_test:

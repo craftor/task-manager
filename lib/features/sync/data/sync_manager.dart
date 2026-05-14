@@ -178,6 +178,7 @@ class SyncManager {
     debugPrint('SyncManager._pullRemoteChanges: ${remoteProjects.length} remote projects');
     // Only keep one default project (prefer the fixed UUID)
     final List<Map<String, dynamic>> filtered = [];
+    final remoteProjectIds = <String>{};
     bool hasFixedDefault = false;
     for (final p in remoteProjects) {
       final isDefault = (p['name'] as String?)?.toLowerCase() == 'default' || (p['is_default'] as bool?) == true;
@@ -185,22 +186,44 @@ class SyncManager {
         if (p['id'] == '00000000-0000-0000-0000-000000000001') {
           hasFixedDefault = true;
           filtered.add(p);
+          remoteProjectIds.add(p['id'] as String);
         } else if (!hasFixedDefault) {
           filtered.add(p);
+          remoteProjectIds.add(p['id'] as String);
           hasFixedDefault = true;
         }
       } else {
         filtered.add(p);
+        remoteProjectIds.add(p['id'] as String);
       }
     }
     for (final p in filtered) {
       await _localDb.upsertProjectFromRemote(p);
     }
+    // Purge synced local projects not on remote
+    final localSyncedProjects = await _localDb.getAllProjects();
+    for (final local in localSyncedProjects) {
+      if (local.pendingSync) continue;
+      if (!remoteProjectIds.contains(local.id)) {
+        debugPrint('SyncManager: pruning locally deleted project ${local.id}');
+        await _localDb.customStatement('DELETE FROM projects WHERE id = \'${local.id}\'');
+      }
+    }
 
     final remoteTasks = await _remoteDs.fetchTasks();
     debugPrint('SyncManager._pullRemoteChanges: ${remoteTasks.length} remote tasks');
+    final remoteTaskIds = remoteTasks.map((t) => t['id'] as String).toSet();
     for (final t in remoteTasks) {
       await _localDb.upsertTaskFromRemote(t);
+    }
+    // Purge synced local tasks that are no longer on remote (were deleted remotely)
+    final localSyncedTasks = await _localDb.getAllTasks();
+    for (final local in localSyncedTasks) {
+      if (local.pendingSync) continue; // skip unsynced local creates
+      if (!remoteTaskIds.contains(local.id)) {
+        debugPrint('SyncManager: pruning locally deleted task ${local.id}');
+        await _localDb.customStatement('DELETE FROM tasks WHERE id = \'${local.id}\'');
+      }
     }
 
     final remoteTimeEntries = await _remoteDs.fetchTimeEntries();
