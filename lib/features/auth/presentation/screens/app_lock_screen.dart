@@ -61,7 +61,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   }
 
   void _onDigit(String digit) {
-    if (_pinController.text.length < 6) {
+    if (_pinController.text.length < 4) {
       _pinController.text += digit;
       setState(() => _errorText = null);
       if (_pinController.text.length == 4) _verifyPin();

@@ -48,7 +48,9 @@
       "Bash(awk BEGIN{depth=0} NR>=405 && NR<=415 {for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\(\"||c==\"[\"||c==\"{\"\\) depth++; if\\(c==\"\\)\"||c==\"]\"||c==\"}\"\\) depth--} print NR, depth, $0} *)",
       "Bash(awk BEGIN{depth=0} NR>=330 && NR<=345 {for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\(\"||c==\"[\"||c==\"{\"\\) depth++; if\\(c==\"\\)\"||c==\"]\"||c==\"}\"\\) depth--} print NR, depth, $0} *)",
       "Bash(flutter config *)",
-      "Bash(git tag *)"
+      "Bash(git tag *)",
+      "Bash(gh run *)",
+      "Bash(where gh *)"
     ]
   }
 }

@@ -677,7 +677,9 @@ class _RecentTasksCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final recentTasks = tasks.take(5).toList();
+    final recentTasks = [...tasks]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final displayTasks = recentTasks.take(5).toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -704,7 +706,7 @@ class _RecentTasksCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (recentTasks.isEmpty)
+          if (displayTasks.isEmpty)
             const Center(
               child: Text(
                 'No tasks yet',
@@ -712,7 +714,7 @@ class _RecentTasksCard extends StatelessWidget {
               ),
             )
           else
-            ...recentTasks.map((task) => _RecentTaskItem(task: task)),
+            ...displayTasks.map((task) => _RecentTaskItem(task: task)),
         ],
       ),
     );

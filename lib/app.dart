@@ -17,6 +17,8 @@ import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/mood/presentation/mood_stats_screen.dart';
 import 'features/special_days/presentation/special_days_screen.dart';
 import 'features/settings/presentation/screens/import_export_screen.dart';
+import 'features/gantt/presentation/screens/gantt_screen.dart';
+import 'features/time_tracking/presentation/screens/time_tracking_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
 import 'features/sync/data/sync_manager.dart' show SyncStatus;
 import 'core/services/providers/update_provider.dart';
@@ -101,6 +103,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
     _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
     _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Dates'),
+    _NavItem(Icons.show_chart, Icons.show_chart, 'Gantt'),
+    _NavItem(Icons.timer_outlined, Icons.timer, 'Time'),
     _NavItem(Icons.settings_outlined, Icons.settings, 'Settings'),
     _NavItem(Icons.person_outline, Icons.person, 'Profile'),
   ];
@@ -462,8 +466,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 5:
         return const SpecialDaysScreen();
       case 6:
-        return const ImportExportScreen();
+        return const GanttScreen();
       case 7:
+        return const TimeTrackingScreen();
+      case 8:
+        return const ImportExportScreen();
+      case 9:
         return const ProfileScreen();
       default:
         return const JournalScreen();

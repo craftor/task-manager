@@ -28,7 +28,8 @@ final syncManagerProvider = Provider<SyncManager?>((ref) {
 });
 
 final syncStatusProvider = StreamProvider<SyncState>((ref) {
-  final manager = ref.watch(syncManagerProvider);
+  // Read (not watch) to avoid creating new manager instances on each access
+  final manager = ref.read(syncManagerProvider);
   if (manager == null) return const Stream.empty();
   return manager.syncStateStream;
 });

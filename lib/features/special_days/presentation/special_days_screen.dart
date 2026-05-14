@@ -17,6 +17,7 @@ class SpecialDaysScreen extends ConsumerStatefulWidget {
 
 class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   late int _year;
+  bool _isUnlocked = false;
 
   SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
 
@@ -24,12 +25,14 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   void initState() {
     super.initState();
     _year = DateTime.now().year;
-    // Force fresh load from SharedPreferences on screen entry
     Future.microtask(() {
       ref.invalidate(specialDaysProvider);
       ref.invalidate(specialDaysSortedProvider);
     });
   }
+
+  bool get _isCurrentYear => _year == DateTime.now().year;
+  bool get _isLocked => !_isCurrentYear && !_isUnlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -51,14 +54,30 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: AppColors.primary),
-            onPressed: () => _showAddDialog(),
-            tooltip: 'Add special day',
-          ),
+          if (_isLocked)
+            IconButton(
+              icon: const Icon(Icons.lock_outline, color: AppColors.warning),
+              onPressed: () => setState(() => _isUnlocked = true),
+              tooltip: 'Unlock to edit past year',
+            ),
+          if (!_isLocked && !_isCurrentYear)
+            IconButton(
+              icon: const Icon(Icons.lock_open, color: AppColors.primary),
+              onPressed: () => setState(() => _isUnlocked = false),
+              tooltip: 'Lock past year',
+            ),
+          if (!_isLocked && _isCurrentYear)
+            IconButton(
+              icon: const Icon(Icons.add, color: AppColors.primary),
+              onPressed: () => _showAddDialog(),
+              tooltip: 'Add special day',
+            ),
           IconButton(
             icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary),
-            onPressed: () => setState(() => _year--),
+            onPressed: () => setState(() {
+              _year--;
+              _isUnlocked = false;
+            }),
           ),
           Text(
             '$_year',
@@ -66,7 +85,10 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right, color: AppColors.textPrimary),
-            onPressed: () => setState(() => _year++),
+            onPressed: () => setState(() {
+              _year++;
+              _isUnlocked = false;
+            }),
           ),
           const SizedBox(width: 8),
         ],
@@ -91,11 +113,6 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    final sortedDates = specialDays.keys
-        .map((d) => DateTime.tryParse(d))
-        .whereType<DateTime>()
-        .toList()
-      ..sort();
     final todayKey = DateFormat('yyyy-MM-dd').format(now);
 
     return SingleChildScrollView(
@@ -103,10 +120,6 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_year == now.year && sortedDates.length >= 2)
-            _buildIntervalsCard(sortedDates),
-          if (_year == now.year && sortedDates.length >= 2)
-            const SizedBox(height: 16),
           ...List.generate(12, (m) {
             final month = m + 1;
             final daysInMonth = DateTime(_year, month + 1, 0).day;
@@ -151,23 +164,29 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
 
                         return GestureDetector(
                           onTap: () {
+                            if (_isLocked) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1)),
+                              );
+                              return;
+                            }
                             if (isSpecial) {
                               _showDayInfo(key, data!, _year, month, day);
                             } else {
                               _showAddDialogForDate(DateTime(_year, month, day));
                             }
                           },
-                          onLongPress: isSpecial
+                          onLongPress: _isLocked ? null : (isSpecial
                               ? () => _showLongPressMenu(key, data!, _year, month, day)
-                              : null,
+                              : null),
                           child: Container(
                             width: 20, height: 18,
                             decoration: BoxDecoration(
-                              color: bgColor,
+                              color: _isLocked && isSpecial ? bgColor.withOpacity(0.4) : bgColor,
                               borderRadius: BorderRadius.circular(3),
                               border: isToday && !isSpecial
                                   ? Border.all(color: AppColors.primary, width: 1.5)
-                                  : null,
+                                  : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withOpacity(0.5), width: 1) : null),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -183,61 +202,30 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               ),
             );
           }),
-          const SizedBox(height: 24),
-          // Legend
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            for (var i = 0; i < 6; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Container(width: 14, height: 14,
-                    decoration: BoxDecoration(color: _colorFor(i), borderRadius: BorderRadius.circular(3))),
-              ),
-          ]),
-        ],
+          ],
+          const SizedBox(height: 12),
+          // Color legend
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(6, (i) {
+                final labels = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(children: [
+                    Container(
+                      width: 10, height: 10,
+                      decoration: BoxDecoration(color: _colorFor(i), borderRadius: BorderRadius.circular(2)),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(labels[i], style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                  ]),
+                );
+              }),
+            ),
+          ),
       ),
-    );
-  }
-
-  Widget _buildIntervalsCard(List<DateTime> sortedDates) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    DateTime? nextSpecial, lastSpecial;
-    for (final d in sortedDates) {
-      if (d.isAfter(today) || d == today) { nextSpecial = d; break; }
-      lastSpecial = d;
-    }
-    if (nextSpecial == null) nextSpecial = lastSpecial;
-
-    final total = sortedDates.length;
-    final daysSince = lastSpecial != null ? today.difference(lastSpecial).inDays : null;
-    final daysUntil = nextSpecial != null ? nextSpecial.difference(today).inDays : null;
-
-    double avg = 0;
-    if (sortedDates.length >= 2) {
-      avg = sortedDates.last.difference(sortedDates.first).inDays / (sortedDates.length - 1);
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Intervals', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(children: [
-            _Chip(label: 'Total', value: '$total', color: AppColors.primary),
-            const SizedBox(width: 6),
-            _Chip(label: 'Avg', value: '${avg.toStringAsFixed(1)}d', color: AppColors.secondary),
-            const SizedBox(width: 6),
-            _Chip(label: 'Since', value: daysSince != null ? '${daysSince}d' : '-', color: AppColors.textMuted),
-            const SizedBox(width: 6),
-            _Chip(label: 'Until', value: daysUntil != null ? '${daysUntil}d' : '-', color: AppColors.warning),
-          ]),
-        ),
-      ]),
     );
   }
 
@@ -540,26 +528,6 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final String label, value;
-  final Color color;
-  const _Chip({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
-        const SizedBox(height: 2),
-        Text(value, style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w700)),
-      ]),
     );
   }
 }

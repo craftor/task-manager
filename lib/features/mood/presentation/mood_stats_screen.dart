@@ -212,21 +212,46 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
       ],
       const Text('Monthly Breakdown', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
       const SizedBox(height: 12),
-      ...List.generate(12, (i) {
-        final m = i + 1;
-        final dist = monthly[m];
-        final count = dist?.values.fold<int>(0, (a, b) => a + b) ?? 0;
-        return Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [
-          SizedBox(width: 36, child: Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 13))),
-          Expanded(child: Container(height: 22, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)), clipBehavior: Clip.hardEdge,
-            child: Row(children: dist?.entries.map((e) {
-              final pct = count > 0 ? e.value / count : 0.0;
-              return Expanded(flex: (pct * 100).round().clamp(1, 100), child: Container(color: _moodColor(e.key).withOpacity(0.7)));
-            }).toList() ?? []))),
-          const SizedBox(width: 8),
-          SizedBox(width: 150, child: Text(dist?.entries.map((e) => '${e.key}×${e.value}').join('  ') ?? '', style: const TextStyle(color: AppColors.textMuted, fontSize: 11), overflow: TextOverflow.ellipsis)),
-        ]));
-      }),
+      GridView.count(
+        crossAxisCount: 4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.1,
+        children: List.generate(12, (i) {
+          final m = i + 1;
+          final dist = monthly[m] ?? {};
+          final count = dist.values.fold<int>(0, (a, b) => a + b);
+          return Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              if (count == 0)
+                const Expanded(child: Center(child: Text('-', style: TextStyle(color: AppColors.textMuted, fontSize: 14))))
+              else
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: dist.entries.map((e) {
+                      return Row(children: [
+                        Text(e.key, style: const TextStyle(fontSize: 12)),
+                        const SizedBox(width: 2),
+                        Text('×${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                      ]);
+                    }).toList(),
+                  ),
+                ),
+            ]),
+          );
+        }),
+      ),
     ]));
   }
 

@@ -19,6 +19,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   final _controller = TextEditingController();
   final _todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
   bool _hasUnsaved = false;
+  String? _editingEntryId;
 
   SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
 
@@ -35,6 +36,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _saveToday() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    if (_remote != null && _editingEntryId != null) {
+      await ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, _editingEntryId!);
+      _editingEntryId = null;
+    }
     if (_remote != null) await ref.read(journalServiceProvider).addEntry(_remote!, _todayKey, text);
     _controller.clear();
     ref.invalidate(journalEntriesProvider(_todayKey));
@@ -209,11 +214,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   void _editEntry(JournalEntry entry) {
     _controller.text = entry.content;
-    setState(() => _hasUnsaved = true);
-    // Delete old and save as new on next save
-    if (_remote != null) ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, entry.id);
-    ref.invalidate(journalEntriesProvider(_todayKey));
-    ref.invalidate(journalDatesProvider);
+    setState(() { _hasUnsaved = true; _editingEntryId = entry.id; });
   }
 }
 
