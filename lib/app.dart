@@ -7,6 +7,7 @@ import 'core/constants/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/app_lock_screen.dart';
+import 'features/auth/presentation/screens/profile_screen.dart';
 import 'features/auth/presentation/providers/app_lock_provider.dart';
 import 'features/projects/presentation/providers/projects_provider.dart';
 import 'features/projects/presentation/tasks_projects_screen.dart';
@@ -15,6 +16,7 @@ import 'features/journal/presentation/journal_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/mood/presentation/mood_stats_screen.dart';
 import 'features/special_days/presentation/special_days_screen.dart';
+import 'features/settings/presentation/screens/import_export_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
 import 'features/sync/data/sync_manager.dart' show SyncStatus;
 import 'core/services/providers/update_provider.dart';
@@ -99,6 +101,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
     _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
     _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Dates'),
+    _NavItem(Icons.settings_outlined, Icons.settings, 'Settings'),
+    _NavItem(Icons.person_outline, Icons.person, 'Profile'),
   ];
 
   @override
@@ -295,31 +299,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               }),
             ),
           ),
-          // Bottom: avatar + collapse toggle
-          GestureDetector(
-            onTap: () => _showUserProfile(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: _sidebarExpanded
-                  ? Row(
-                      children: [
-                        _buildAvatarWidget(ref),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _getUserInitials(ref),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Center(child: _buildAvatarWidget(ref)),
-            ),
-          ),
+          // Bottom: collapse toggle
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: IconButton(
@@ -453,7 +433,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           GestureDetector(
             onTap: () {
               Navigator.pop(context);
-              _showUserProfile(context);
+              setState(() => _selectedIndex = 7);
             },
             child: Container(
               margin: const EdgeInsets.all(12),
@@ -481,6 +461,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         return const MoodStatsScreen();
       case 5:
         return const SpecialDaysScreen();
+      case 6:
+        return const ImportExportScreen();
+      case 7:
+        return const ProfileScreen();
       default:
         return const JournalScreen();
     }
@@ -517,254 +501,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           fontSize: 13,
         ),
       ),
-    );
-  }
-
-  void _showUserProfile(BuildContext context) {
-    final authState = ref.read(authStateProvider);
-    final email = authState.email ?? 'Unknown';
-    final avatarUrl = authState.avatarUrl;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: 320,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                onTap: () => _pickImage(dialogContext),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: avatarUrl != null && avatarUrl.isNotEmpty
-                            ? null
-                            : AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
-                        color: avatarUrl != null && avatarUrl.isNotEmpty
-                            ? AppColors.surfaceLight
-                            : null,
-                        image: avatarUrl != null && avatarUrl.isNotEmpty
-                            ? DecorationImage(
-                                image: FileImage(File(avatarUrl)),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: avatarUrl == null || avatarUrl.isEmpty
-                          ? Center(
-                              child: Text(
-                                _getUserInitials(ref),
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.camera_alt,
-                            size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('Tap to change avatar',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-              const SizedBox(height: 16),
-              const Text('Personal Profile',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600)),
-              const SizedBox(height: 24),
-              _ProfileItem(
-                  icon: Icons.email_outlined, label: 'Email', value: email),
-              const SizedBox(height: 12),
-              _ProfileItem(
-                  icon: Icons.badge_outlined,
-                  label: 'Nickname',
-                  value: email.split('@').first),
-              const SizedBox(height: 12),
-              _ProfileItem(
-                  icon: Icons.info_outline,
-                  label: 'Version',
-                  value: AppConstants.appVersion),
-              const SizedBox(height: 16),
-              // App Lock toggle
-              _buildLockToggle(dialogContext),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Close'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        ref.read(authStateProvider.notifier).signOut();
-                        Navigator.pop(dialogContext);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Sign Out'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLockToggle(BuildContext dialogContext) {
-    final lockAsync = ref.watch(appLockEnabledProvider);
-    return lockAsync.when(
-      data: (locked) {
-        final icon = locked ? Icons.lock : Icons.lock_open;
-        final label = locked ? 'App Lock: ON' : 'App Lock: OFF';
-        return GestureDetector(
-          onTap: () => _showPinSetupDialog(dialogContext),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: locked ? AppColors.primary.withOpacity(0.1) : AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(children: [
-              Icon(icon, color: locked ? AppColors.primary : AppColors.textMuted, size: 20),
-              const SizedBox(width: 12),
-              Expanded(child: Text(label, style: TextStyle(color: locked ? AppColors.primary : AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500))),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
-            ]),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  void _showPinSetupDialog(BuildContext parentCtx) {
-    final pinController = TextEditingController();
-    final confirmController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setD) {
-        final existingPin = ref.read(appLockEnabledProvider).valueOrNull ?? false;
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(existingPin ? 'Change PIN' : 'Set App Lock PIN',
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: pinController,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: InputDecoration(
-                hintText: '4-digit PIN',
-                hintStyle: const TextStyle(color: AppColors.textMuted),
-                filled: true, fillColor: AppColors.background,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
-                counterText: '',
-              ),
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, letterSpacing: 10),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: confirmController,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              decoration: InputDecoration(
-                hintText: 'Confirm PIN',
-                hintStyle: const TextStyle(color: AppColors.textMuted),
-                filled: true, fillColor: AppColors.background,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
-                counterText: '',
-              ),
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, letterSpacing: 10),
-              textAlign: TextAlign.center,
-            ),
-          ]),
-          actions: [
-            if (existingPin)
-              TextButton(
-                onPressed: () {
-                  ref.read(appLockProvider.notifier).disableLock();
-                  ref.invalidate(appLockEnabledProvider);
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Disable', style: TextStyle(color: AppColors.error)),
-              ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                final pin = pinController.text;
-                final confirm = confirmController.text;
-                if (pin.length != 4 || confirm.length != 4) return;
-                if (pin != confirm) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('PINs do not match'), backgroundColor: AppColors.error),
-                  );
-                  return;
-                }
-                ref.read(appLockProvider.notifier).setPin(pin);
-                ref.invalidate(appLockEnabledProvider);
-                Navigator.pop(ctx);
-                Navigator.pop(parentCtx); // close profile dialog too
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('App Lock PIN set'), backgroundColor: AppColors.success),
-                );
-              },
-              child: const Text('Set PIN'),
-            ),
-          ],
-        );
-      }),
     );
   }
 
@@ -880,14 +616,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void _openDownloadUrl(String url) {
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
-
-  Future<void> _pickImage(BuildContext dialogContext) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      ref.read(authStateProvider.notifier).updateAvatar(pickedFile.path);
-    }
-  }
 }
 
 // ─── App Lock Wrapper ───
@@ -954,42 +682,3 @@ class _NavItem {
   const _NavItem(this.outline, this.selected, this.label);
 }
 
-class _ProfileItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  const _ProfileItem(
-      {required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 20),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 11)),
-              const SizedBox(height: 2),
-              Text(value,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
