@@ -581,7 +581,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               _ProfileItem(
                   icon: Icons.info_outline,
                   label: 'Version',
-                  value: '0.7.0'),
+                  value: AppConstants.appVersion),
               const SizedBox(height: 16),
               // App Lock toggle
               _buildLockToggle(dialogContext),
