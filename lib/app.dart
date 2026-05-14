@@ -339,6 +339,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   // ─── Mobile Layout: drawer ───
   Widget _buildMobileLayout() {
+    final updateAsync = ref.watch(updateInfoProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -355,6 +356,31 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           style: TextStyle(color: AppColors.textPrimary, fontSize: 20),
         ),
         centerTitle: true,
+        actions: [
+          updateAsync.when(
+            data: (info) => info != null
+                ? GestureDetector(
+                    onTap: () => _showUpdateDialog(context, info),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.system_update, color: AppColors.primary, size: 14),
+                        const SizedBox(width: 4),
+                        Text('v${info.version}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+        ],
       ),
       drawer: _buildMobileDrawer(),
       body: _buildBody(),
