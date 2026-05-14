@@ -43,6 +43,11 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=https://ozbxlqffizhllybonfpu.supabase.co" > .env
+          echo "SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96YnhscWZmaXpobGx5Ym9uZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTM2MTUsImV4cCI6MjA5MzI4OTYxNX0.pGWSJo-GMI_U8DYk9D0rw7PcgFYFR8aXMR_rYCJnt1M" >> .env
+
       - name: Build Android
         if: matrix.target == 'android'
         run: flutter build apk --release
