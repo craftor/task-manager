@@ -50,7 +50,9 @@
       "Bash(flutter config *)",
       "Bash(git tag *)",
       "Bash(gh run *)",
-      "Bash(where gh *)"
+      "Bash(where gh *)",
+      "Bash(keytool -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")"
     ]
   }
 }
