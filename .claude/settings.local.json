@@ -52,7 +52,27 @@
       "Bash(gh run *)",
       "Bash(where gh *)",
       "Bash(keytool -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")",
-      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")"
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")",
+      "Bash(rm -f task-manager-release.keystore)",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool.exe\" -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")",
+      "Bash(git -C \"E:\\\\01-AI-Proj\\\\task-manager\" tag --list)",
+      "Bash(git *)",
+      "Bash(keytool -genkey -v -keystore task-manager-release.keystore -alias taskmanager -keyalg RSA -keysize 2048 -sigalg SHA256withRSA -validity 10000 -storepass taskmanager123 -keypass taskmanager123 -storetype JKS -storealg SHA256 -dname \"CN=TaskManager, OU=Dev, O=Craftor, L=Beijing, ST=Beijing, C=CN\")",
+      "Bash(powershell.exe *)",
+      "Bash(cp task-manager-release.keystore task-manager-release.keystore.bak)",
+      "Bash(openssl req *)",
+      "Bash(cat)",
+      "Bash(bash /tmp/gen_cert.sh)",
+      "Bash(rm -f key.pem cert.pem)",
+      "Bash(/mingw64/bin/openssl req *)",
+      "Bash(/mingw64/bin/openssl x509 *)",
+      "Bash(/mingw64/bin/openssl pkcs12 *)",
+      "Bash(/mingw64/bin/openssl genrsa *)",
+      "Bash(rm -f key.pem cert.pem task-manager-release.keystore)",
+      "Bash(printf \"[ req ]\\\\ndistinguished_name = req_distinguished_name\\\\n[ req_distinguished_name ]\\\\nCN = TaskManager\\\\nOU = Dev\\\\nO = Craftor\\\\nL = Beijing\\\\nST = Beijing\\\\nC = CN\\\\n\")",
+      "Bash(GIT_DISCOVERY_ACCEPT_TIMEOUT=0 git config --local prefix)",
+      "Bash(git config *)",
+      "Bash(cmd.exe *)"
     ]
   }
 }

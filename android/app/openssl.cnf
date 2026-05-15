@@ -1,0 +1,9 @@
+[ req ]
+distinguished_name = req_distinguished_name
+[ req_distinguished_name ]
+CN = TaskManager
+OU = Dev
+O = Craftor
+L = Beijing
+ST = Beijing
+C = CN
