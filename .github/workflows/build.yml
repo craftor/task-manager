@@ -16,18 +16,18 @@ jobs:
         include:
           - target: android
             os: ubuntu-latest
-            extension: apk
-            upload-path: build/app/outputs/flutter-apk/app-release.apk
+            artifact-name: TaskManager_android
+            artifact-path: build/app/outputs/flutter-apk/app-release.apk
 
           - target: windows
             os: windows-latest
-            extension: zip
-            upload-path: build/windows/x64/runner/Release/task_manager-windows.zip
+            artifact-name: TaskManager_windows
+            artifact-path: build/windows/x64/runner/Release/TaskManager_windows.zip
 
           - target: macos
             os: macos-latest
-            extension: zip
-            upload-path: build/macos/Build/Products/Release/task_manager-macos.zip
+            artifact-name: TaskManager_macos
+            artifact-path: build/macos/Build/Products/Release/task_manager-macos.zip
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -39,10 +39,6 @@ jobs:
         with:
           flutter-version: '3.41.9'
           channel: 'stable'
-
-      - name: Get version
-        id: version
-        run: echo "VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: flutter pub get
@@ -61,7 +57,9 @@ jobs:
 
       - name: Build Android
         if: matrix.target == 'android'
-        run: flutter build apk --release
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          flutter build apk --release --dart-define=APP_VERSION=$VERSION
 
       - name: Build Windows
         if: matrix.target == 'windows'
@@ -69,35 +67,20 @@ jobs:
         run: |
           flutter build windows --release
           cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip
+          Compress-Archive -Path * -DestinationPath TaskManager_windows.zip
 
       - name: Build macOS
         if: matrix.target == 'macos'
         run: |
           flutter build macos --release
           cd build/macos/Build/Products/Release
-          zip -r TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip task_manager.app
+          zip -r TaskManager_macos.zip task_manager.app
 
-      - name: Upload Android artifact
-        if: matrix.target == 'android'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Upload Windows artifact
-        if: matrix.target == 'windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows
-          path: build/windows/x64/runner/Release/TaskManager_windows.zip
-
-      - name: Upload macOS artifact
-        if: matrix.target == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: build/macos/Build/Products/Release/TaskManager_macos.zip
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
 
   release:
     needs: build
@@ -112,8 +95,7 @@ jobs:
           path: build
 
       - name: List artifacts
-        run: |
-          find build -type f | head -20
+        run: find build -type f
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -126,7 +108,3 @@ jobs:
             # TaskManager ${{ github.ref_name }}
 
             Personal task and time management application.
-          files: |
-            build/android/app-release.apk
-            build/windows/TaskManager_windows.zip
-            build/macos/TaskManager_macos.zip
