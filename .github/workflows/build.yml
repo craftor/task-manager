@@ -16,17 +16,17 @@ jobs:
         include:
           - target: android
             os: ubuntu-latest
-            upload-artifact: app-release.apk
+            extension: apk
             upload-path: build/app/outputs/flutter-apk/app-release.apk
 
           - target: windows
             os: windows-latest
-            upload-artifact: task_manager-windows.zip
+            extension: zip
             upload-path: build/windows/x64/runner/Release/task_manager-windows.zip
 
           - target: macos
             os: macos-latest
-            upload-artifact: task_manager-macos.zip
+            extension: zip
             upload-path: build/macos/Build/Products/Release/task_manager-macos.zip
 
     runs-on: ${{ matrix.os }}
@@ -39,6 +39,10 @@ jobs:
         with:
           flutter-version: '3.41.9'
           channel: 'stable'
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}')" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: flutter pub get
@@ -58,19 +62,27 @@ jobs:
         run: |
           flutter build windows --release
           cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath task_manager-windows.zip
+          Compress-Archive -Path * -DestinationPath TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip
 
       - name: Build macOS
         if: matrix.target == 'macos'
         run: |
           flutter build macos --release
           cd build/macos/Build/Products/Release
-          zip -r task_manager-macos.zip task_manager.app
+          zip -r TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip task_manager.app
 
       - name: Upload artifact
+        if: matrix.target != 'android'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.upload-artifact }}
+          name: TaskManager_${{ steps.version.outputs.VERSION }}_${{ matrix.target }}
+          path: ${{ matrix.upload-path }}
+
+      - name: Upload Android artifact
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskManager_${{ steps.version.outputs.VERSION }}_android.${{ matrix.extension }}
           path: ${{ matrix.upload-path }}
 
   release:
@@ -106,10 +118,10 @@ jobs:
             ## Downloads
             | Platform | File |
             |----------|------|
-            | Android | app-release.apk |
-            | Windows | task_manager-windows.zip |
-            | macOS | task_manager-macos.zip |
+            | Android | TaskManager_${{ steps.version.outputs.VERSION }}_android.apk |
+            | Windows | TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip |
+            | macOS | TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip |
           files: |
-            app-release.apk*
-            task_manager-windows.zip*
-            task_manager-macos.zip*
+            TaskManager_${{ steps.version.outputs.VERSION }}_android.apk
+            TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip
+            TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip
