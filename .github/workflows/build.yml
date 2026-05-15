@@ -78,19 +78,14 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip task_manager.app
 
-      - name: Upload artifact
-        if: matrix.target != 'android'
+      - name: Upload all artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TaskManager_${{ steps.version.outputs.VERSION }}_${{ matrix.target }}
-          path: ${{ matrix.upload-path }}
-
-      - name: Upload Android artifact
-        if: matrix.target == 'android'
-        uses: actions/upload-artifact@v4
-        with:
-          name: TaskManager_${{ steps.version.outputs.VERSION }}_android.${{ matrix.extension }}
-          path: ${{ matrix.upload-path }}
+          name: all-platforms
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/windows/x64/runner/Release/TaskManager_windows.zip
+            build/macos/Build/Products/Release/TaskManager_macos.zip
 
   release:
     needs: build
@@ -99,14 +94,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get version
-        id: version
-        run: echo "VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}')" >> $GITHUB_OUTPUT
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
 
       - name: List artifacts
         run: ls -la
@@ -115,20 +104,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: TaskManager v${{ steps.version.outputs.VERSION }}
+          name: TaskManager ${{ github.ref_name }}
           draft: false
           prerelease: false
           body: |
-            # TaskManager v${{ steps.version.outputs.VERSION }}
+            # TaskManager ${{ github.ref_name }}
 
             Personal task and time management application.
-            ## Downloads
-            | Platform | File |
-            |----------|------|
-            | Android | TaskManager_${{ steps.version.outputs.VERSION }}_android.apk |
-            | Windows | TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip |
-            | macOS | TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip |
           files: |
-            TaskManager_${{ steps.version.outputs.VERSION }}_android.apk
-            TaskManager_${{ steps.version.outputs.VERSION }}_windows.zip
-            TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip
+            build/app/outputs/flutter-apk/app-release.apk
+            build/windows/x64/runner/Release/TaskManager_windows.zip
+            build/macos/Build/Products/Release/TaskManager_macos.zip
