@@ -78,14 +78,26 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r TaskManager_${{ steps.version.outputs.VERSION }}_macos.zip task_manager.app
 
-      - name: Upload all artifacts
+      - name: Upload Android artifact
+        if: matrix.target == 'android'
         uses: actions/upload-artifact@v4
         with:
-          name: all-platforms
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/windows/x64/runner/Release/TaskManager_windows.zip
-            build/macos/Build/Products/Release/TaskManager_macos.zip
+          name: android
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Upload Windows artifact
+        if: matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/windows/x64/runner/Release/TaskManager_windows.zip
+
+      - name: Upload macOS artifact
+        if: matrix.target == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: build/macos/Build/Products/Release/TaskManager_macos.zip
 
   release:
     needs: build
@@ -96,9 +108,12 @@ jobs:
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: build
 
       - name: List artifacts
-        run: ls -la
+        run: |
+          find build -type f | head -20
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -112,6 +127,6 @@ jobs:
 
             Personal task and time management application.
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/windows/x64/runner/Release/TaskManager_windows.zip
-            build/macos/Build/Products/Release/TaskManager_macos.zip
+            build/android/app-release.apk
+            build/windows/TaskManager_windows.zip
+            build/macos/TaskManager_macos.zip
