@@ -85,6 +85,12 @@ jobs:
           cd build/macos/Build/Products/Release
           zip -r artifacts/${APP_NAME}_${VERSION}_macos.zip task_manager.app
 
+      - name: Install Linux dependencies
+        if: matrix.target == 'linux'
+        run: |
+          apt-get update
+          apt-get install -y libgtk-3-dev pkg-config cmake ninja-build libgtk-3-dev
+
       - name: Build Linux
         if: matrix.target == 'linux'
         run: |
