@@ -16,20 +16,25 @@ jobs:
         include:
           - target: android
             os: ubuntu-latest
-            artifact-name: TaskManager_android
-            artifact-path: build/app/outputs/flutter-apk/app-release.apk
+            artifact-source: build/app/outputs/flutter-apk/app-release.apk
 
           - target: windows
             os: windows-latest
-            artifact-name: TaskManager_windows
-            artifact-path: build/windows/x64/runner/Release/TaskManager_windows.zip
+            artifact-source: build/windows/x64/runner/Release/TaskManager_windows.zip
 
           - target: macos
             os: macos-latest
-            artifact-name: TaskManager_macos
-            artifact-path: build/macos/Build/Products/Release/task_manager-macos.zip
+            artifact-source: build/macos/Build/Products/Release/task_manager-macos.zip
+
+          - target: linux
+            os: ubuntu-latest
+            artifact-source: build/linux/x64/release/bundle/TaskManager
 
     runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ github.ref_name }}
+      APP_NAME: TaskManager
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,29 +63,41 @@ jobs:
       - name: Build Android
         if: matrix.target == 'android'
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          flutter build apk --release --dart-define=APP_VERSION=$VERSION
+          flutter build apk --release --dart-define=APP_VERSION=${VERSION#v}
 
       - name: Build Windows
         if: matrix.target == 'windows'
         shell: powershell
         run: |
           flutter build windows --release
-          cd build/windows/x64/runner/Release
-          Compress-Archive -Path * -DestinationPath TaskManager_windows.zip
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ${APP_NAME}_${VERSION}_windows.zip
 
       - name: Build macOS
         if: matrix.target == 'macos'
         run: |
           flutter build macos --release
           cd build/macos/Build/Products/Release
-          zip -r TaskManager_macos.zip task_manager.app
+          zip -r ${APP_NAME}_${VERSION}_macos.zip task_manager.app
+
+      - name: Build Linux
+        if: matrix.target == 'linux'
+        run: |
+          flutter build linux --release
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p artifacts
+          if [ "${{ matrix.target }}" == "linux" ]; then
+            tar -czf artifacts/${APP_NAME}_${VERSION}_linux.tar.gz -C build/linux/x64/release/bundle .
+          elif [ "${{ matrix.target }}" != "windows" ] && [ "${{ matrix.target }}" != "macos" ]; then
+            cp "${{ matrix.artifact-source }}" "artifacts/${APP_NAME}_${VERSION}_${{ matrix.target }}.apk"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact-name }}
-          path: ${{ matrix.artifact-path }}
+          name: ${{ matrix.target }}-artifact
+          path: artifacts/*
 
   release:
     needs: build
