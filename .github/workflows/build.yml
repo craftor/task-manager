@@ -104,6 +104,7 @@ jobs:
           name: TaskManager ${{ github.ref_name }}
           draft: false
           prerelease: false
+          files: build/**/*
           body: |
             # TaskManager ${{ github.ref_name }}
 
