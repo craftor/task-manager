@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'Task Manager';
-  static const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '0.7.20');
+  static const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '0.7.27');
   static const String dbName = 'task_manager.db';
 
   // Responsive breakpoints

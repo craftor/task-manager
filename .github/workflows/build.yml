@@ -32,8 +32,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     env:
-      VERSION: ${{ github.ref_name }}
       APP_NAME: TaskManager
+      # Extract version from lib/version.dart at runtime
+      VERSION: ${{ github.ref_name }}
 
     steps:
       - name: Checkout
