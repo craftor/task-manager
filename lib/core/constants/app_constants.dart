@@ -1,6 +1,8 @@
 class AppConstants {
   static const String appName = 'Task Manager';
-  static const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '0.7.27');
+  // Single source of truth for app version - import lib/version.dart for actual value
+  // Build system may override via --dart-define=APP_VERSION
+  static const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '0.7.33');
   static const String dbName = 'task_manager.db';
 
   // Responsive breakpoints
