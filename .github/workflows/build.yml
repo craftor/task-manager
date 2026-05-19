@@ -69,6 +69,8 @@ jobs:
         if: matrix.target == 'android'
         run: |
           flutter build apk --release --dart-define=APP_VERSION=${VERSION#v}
+          mkdir -p artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk artifacts/${APP_NAME}_${VERSION#v}.apk
 
       - name: Build Windows
         if: matrix.target == 'windows'
