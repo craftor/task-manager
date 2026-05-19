@@ -7,20 +7,24 @@ class AppSupabaseClient {
   static final _secureCredentials = SecureCredentialsService();
 
   static Future<void> initialize() async {
-    // Try secure storage first
+    // First try secure storage (primary source after first launch)
     var url = await _secureCredentials.getSupabaseUrl();
     var anonKey = await _secureCredentials.getSupabaseAnonKey();
 
-    // Fall back to .env for initial setup, then migrate to secure storage
+    // If secure storage is empty, try loading from .env (for initial setup)
     if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
-      await dotenv.load(fileName: '.env');
-      url = dotenv.env['SUPABASE_URL'] ?? url;
-      anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? anonKey;
+      try {
+        await dotenv.load(fileName: '.env');
+        url = dotenv.env['SUPABASE_URL'] ?? url;
+        anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? anonKey;
 
-      // Migrate to secure storage for future runs
-      if (url != null && url.isNotEmpty && anonKey != null && anonKey.isNotEmpty) {
-        await _secureCredentials.saveSupabaseUrl(url);
-        await _secureCredentials.saveSupabaseAnonKey(anonKey);
+        // Migrate to secure storage for future runs
+        if (url != null && url.isNotEmpty && anonKey != null && anonKey.isNotEmpty) {
+          await _secureCredentials.saveSupabaseUrl(url);
+          await _secureCredentials.saveSupabaseAnonKey(anonKey);
+        }
+      } catch (e) {
+        // .env loading failed - will fall through to error check
       }
     }
 

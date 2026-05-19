@@ -5,7 +5,28 @@ import 'app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppSupabaseClient.initialize();
+  try {
+    await AppSupabaseClient.initialize();
+  } catch (e) {
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Failed to initialize: $e', textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ));
+    return;
+  }
   runApp(
     const ProviderScope(
       child: TaskManagerApp(),

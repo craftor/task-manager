@@ -38,5 +38,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # assets:
-  #   - .env  # REMOVED: .env contains credentials that should not be bundled
+  assets:
+    - .env
