@@ -90,7 +90,7 @@ jobs:
         if: matrix.target == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev pkg-config cmake ninja-build libgtk-3-dev
+          sudo apt-get install -y libgtk-3-dev pkg-config cmake ninja-build libsecret-1-dev
 
       - name: Build Linux
         if: matrix.target == 'linux'
