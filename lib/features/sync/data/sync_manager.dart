@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show immutable;
+import '../../../core/utils/logger.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/sync/sync_queue.dart';
 import '../../../../data/datasources/local/app_database.dart';
 import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../../../domain/entities/project.dart' as entity;
@@ -37,22 +40,26 @@ class SyncManager {
   Stream<SyncState> get syncStateStream => _syncStateController.stream;
 
   SyncManager(this._localDb, this._remoteDs) {
-    debugPrint('SyncManager: created, initializing listeners');
+    Logger.d('SyncManager: created, initializing listeners');
     _initConnectivityListener();
     _initPeriodicSync();
     // Trigger initial sync after a short delay to let auth settle
     Future.delayed(const Duration(seconds: 1), () async {
-      // Fix legacy tasks: re-map projectId and re-mark for sync
-      final tasks = await _localDb.getAllTasks();
-      for (final t in tasks) {
-        if (t.projectId == 'default-project') {
-          await _localDb.fixLegacyTaskProject(t.id);
+      try {
+        // Fix legacy tasks: re-map projectId and re-mark for sync
+        final tasks = await _localDb.getAllTasks();
+        for (final t in tasks) {
+          if (t.projectId == AppConstants.legacyDefaultProjectId) {
+            await _localDb.fixLegacyTaskProject(t.id);
+          }
         }
+        // Clean up duplicate default projects in local DB
+        await _localDb.cleanupDuplicateDefaultProjects();
+        Logger.d('SyncManager: triggering initial sync');
+        syncAll();
+      } catch (e, st) {
+        Logger.e('SyncManager: initial sync setup failed', error: e, stackTrace: st);
       }
-      // Clean up duplicate default projects in local DB
-      await _localDb.cleanupDuplicateDefaultProjects();
-      debugPrint('SyncManager: triggering initial sync');
-      syncAll();
     });
   }
 
@@ -74,18 +81,18 @@ class SyncManager {
   }
 
   Future<void> syncAll() async {
-    debugPrint('SyncManager.syncAll: starting');
+    Logger.d('SyncManager.syncAll: starting');
     _syncStateController.add(const SyncState(status: SyncStatus.syncing));
     try {
       await _syncPendingChanges();
       await _pullRemoteChanges();
-      debugPrint('SyncManager.syncAll: completed successfully');
+      Logger.d('SyncManager.syncAll: completed successfully');
       _syncStateController.add(SyncState(
         status: SyncStatus.success,
         lastSyncTime: DateTime.now(),
       ));
     } catch (e) {
-      debugPrint('SyncManager.syncAll: error - $e');
+      Logger.d('SyncManager.syncAll: error - $e');
       _syncStateController.add(SyncState(
         status: SyncStatus.error,
         errorMessage: e.toString(),
@@ -96,11 +103,11 @@ class SyncManager {
   Future<void> _syncPendingChanges() async {
     // Sync pending projects (skip the non-UUID default project from old installs)
     final pendingProjects = await _localDb.getPendingProjects();
-    debugPrint('SyncManager._syncPendingChanges: ${pendingProjects.length} pending projects');
+    Logger.d('SyncManager._syncPendingChanges: ${pendingProjects.length} pending projects');
     for (final driftProject in pendingProjects) {
       // Skip legacy default project with non-UUID id
-      if (driftProject.id == 'default-project') {
-        debugPrint('SyncManager: skipping legacy default project');
+      if (driftProject.id == AppConstants.legacyDefaultProjectId) {
+        Logger.d('SyncManager: skipping legacy default project');
         await _localDb.markProjectSynced(driftProject.id);
         continue;
       }
@@ -123,11 +130,11 @@ class SyncManager {
 
     // Sync pending tasks
     final pendingTasks = await _localDb.getPendingTasks();
-    debugPrint('SyncManager._syncPendingChanges: ${pendingTasks.length} pending tasks');
+    Logger.d('SyncManager._syncPendingChanges: ${pendingTasks.length} pending tasks');
     for (final driftTask in pendingTasks) {
       // Remap legacy default-project to fixed UUID
-      final fixedProjectId = driftTask.projectId == 'default-project'
-          ? '00000000-0000-0000-0000-000000000001'
+      final fixedProjectId = driftTask.projectId == AppConstants.legacyDefaultProjectId
+          ? AppConstants.defaultProjectId
           : driftTask.projectId;
       final domainTask = task_entity.Task(
         id: driftTask.id,
@@ -154,7 +161,7 @@ class SyncManager {
 
     // Sync pending time entries
     final pendingTimeEntries = await _localDb.getPendingTimeEntries();
-    debugPrint('SyncManager._syncPendingChanges: ${pendingTimeEntries.length} pending time entries');
+    Logger.d('SyncManager._syncPendingChanges: ${pendingTimeEntries.length} pending time entries');
     for (final driftEntry in pendingTimeEntries) {
       final domainEntry = time_entity.TimeEntry(
         id: driftEntry.id,
@@ -172,7 +179,7 @@ class SyncManager {
 
   Future<void> _pullRemoteChanges() async {
     final remoteProjects = await _remoteDs.fetchProjects();
-    debugPrint('SyncManager._pullRemoteChanges: ${remoteProjects.length} remote projects');
+    Logger.d('SyncManager._pullRemoteChanges: ${remoteProjects.length} remote projects');
     // Only keep one default project (prefer the fixed UUID)
     final List<Map<String, dynamic>> filtered = [];
     final remoteProjectIds = <String>{};
@@ -180,7 +187,7 @@ class SyncManager {
     for (final p in remoteProjects) {
       final isDefault = (p['name'] as String?)?.toLowerCase() == 'default' || (p['is_default'] as bool?) == true;
       if (isDefault) {
-        if (p['id'] == '00000000-0000-0000-0000-000000000001') {
+        if (p['id'] == AppConstants.defaultProjectId) {
           hasFixedDefault = true;
           filtered.add(p);
           remoteProjectIds.add(p['id'] as String);
@@ -202,13 +209,13 @@ class SyncManager {
     for (final local in localSyncedProjects) {
       if (local.pendingSync) continue;
       if (!remoteProjectIds.contains(local.id)) {
-        debugPrint('SyncManager: pruning locally deleted project ${local.id}');
+        Logger.d('SyncManager: pruning locally deleted project ${local.id}');
         await _localDb.deleteProjectById(local.id);
       }
     }
 
     final remoteTasks = await _remoteDs.fetchTasks();
-    debugPrint('SyncManager._pullRemoteChanges: ${remoteTasks.length} remote tasks');
+    Logger.d('SyncManager._pullRemoteChanges: ${remoteTasks.length} remote tasks');
     final remoteTaskIds = remoteTasks.map((t) => t['id'] as String).toSet();
     for (final t in remoteTasks) {
       await _localDb.upsertTaskFromRemote(t);
@@ -218,13 +225,13 @@ class SyncManager {
     for (final local in localSyncedTasks) {
       if (local.pendingSync) continue; // skip unsynced local creates
       if (!remoteTaskIds.contains(local.id)) {
-        debugPrint('SyncManager: pruning locally deleted task ${local.id}');
+        Logger.d('SyncManager: pruning locally deleted task ${local.id}');
         await _localDb.deleteTaskById(local.id);
       }
     }
 
     final remoteTimeEntries = await _remoteDs.fetchTimeEntries();
-    debugPrint('SyncManager._pullRemoteChanges: ${remoteTimeEntries.length} remote time entries');
+    Logger.d('SyncManager._pullRemoteChanges: ${remoteTimeEntries.length} remote time entries');
     for (final e in remoteTimeEntries) {
       await _localDb.upsertTimeEntryFromRemote(e);
     }
@@ -232,31 +239,31 @@ class SyncManager {
     // Special Days (stored in Supabase, cached in SharedPreferences)
     try {
       final specialDaysRaw = await _remoteDs.fetchSpecialDays();
-      debugPrint('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
+      Logger.d('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
       // Always merge to ensure deletions on other devices are reflected
       SpecialDaysCacheHelper.mergeRemoteData(specialDaysRaw);
     } catch (e) {
-      debugPrint('SyncManager._pullRemoteChanges: special days sync failed — $e');
+      Logger.d('SyncManager._pullRemoteChanges: special days sync failed — $e');
     }
 
     // Journal Entries (stored in Supabase, cached in SharedPreferences)
     try {
       final journalRaw = await _remoteDs.fetchJournalEntries();
-      debugPrint('SyncManager._pullRemoteChanges: ${journalRaw.length} journal entries from remote');
+      Logger.d('SyncManager._pullRemoteChanges: ${journalRaw.length} journal entries from remote');
       // Always merge to ensure deletions on other devices are reflected
       JournalCacheHelper.mergeRemoteData(journalRaw);
     } catch (e) {
-      debugPrint('SyncManager._pullRemoteChanges: journal sync failed — $e');
+      Logger.d('SyncManager._pullRemoteChanges: journal sync failed — $e');
     }
 
     // Moods (stored in Supabase, cached in SharedPreferences)
     try {
       final moodsRaw = await _remoteDs.fetchMoods();
-      debugPrint('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');
+      Logger.d('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');
       // Always merge to ensure deletions on other devices are reflected
       MoodService.mergeRemoteData(moodsRaw);
     } catch (e) {
-      debugPrint('SyncManager._pullRemoteChanges: moods sync failed — $e');
+      Logger.d('SyncManager._pullRemoteChanges: moods sync failed — $e');
     }
   }
 

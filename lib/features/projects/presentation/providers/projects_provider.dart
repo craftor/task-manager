@@ -1,13 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../data/datasources/local/app_database.dart' show AppDatabase;
 import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';
 import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
-
-/// Fixed UUID for the default project so it's consistent across all devices.
-const String defaultProjectId = '00000000-0000-0000-0000-000000000001';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase();
@@ -32,10 +30,10 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
     final repository = ref.read(projectRepositoryProvider);
     final projects = await repository.getAllProjects();
     // Check by fixed ID, or by name/isDefault for legacy
-    final hasDefault = projects.any((p) => p.id == defaultProjectId || p.isDefault || p.name == 'Default');
+    final hasDefault = projects.any((p) => p.id == AppConstants.defaultProjectId || p.isDefault || p.name == 'Default');
     if (!hasDefault) {
       final defaultProject = Project(
-        id: defaultProjectId,
+        id: AppConstants.defaultProjectId,
         name: 'Default',
         description: 'Default project for uncategorized tasks',
         color: '#808080',

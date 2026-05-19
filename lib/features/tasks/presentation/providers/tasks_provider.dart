@@ -87,12 +87,14 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       newIndex -= 1;
     }
 
-    final item = tasks.removeAt(oldIndex);
-    tasks.insert(newIndex, item);
+    // Create a copy to avoid mutating the UI state directly
+    final reordered = List<Task>.from(tasks);
+    final item = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, item);
 
     final repository = ref.read(taskRepositoryProvider);
-    for (int i = 0; i < tasks.length; i++) {
-      final updated = tasks[i].copyWith(sortOrder: i);
+    for (int i = 0; i < reordered.length; i++) {
+      final updated = reordered[i].copyWith(sortOrder: i);
       await repository.updateTask(updated);
     }
   }

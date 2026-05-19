@@ -223,7 +223,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> fixLegacyTaskProject(String taskId) async {
     await (update(tasks)..where((t) => t.id.equals(taskId)))
         .write(const TasksCompanion(
-      projectId: Value('00000000-0000-0000-0000-000000000001'),
+      projectId: Value(AppConstants.defaultProjectId),
       pendingSync: Value(true),
     ));
   }
@@ -231,7 +231,7 @@ class AppDatabase extends _$AppDatabase {
   // Migration: clean up duplicate default projects
   Future<void> cleanupDuplicateDefaultProjects() async {
     await (delete(projects)
-          ..where((p) => p.id.isNotValue('00000000-0000-0000-0000-000000000001'))
+          ..where((p) => p.id.isNotValue(AppConstants.defaultProjectId))
           ..where((p) => p.name.equals('Default') | p.isDefault.equals(true)))
         .go();
   }

@@ -1,7 +1,7 @@
 name: task_manager
 description: Personal task and time management application
 publish_to: 'none'
-version: 0.7.28
+version: 0.7.29
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -25,6 +25,7 @@ dependencies:
   local_auth: ^2.1.0
   url_launcher: ^6.2.0
   flutter_dotenv: ^5.1.0
+  flutter_secure_storage: ^9.0.0
   share_plus: ^9.0.0
   file_picker: ^8.0.0
 
@@ -37,5 +38,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - .env
+  # assets:
+  #   - .env  # REMOVED: .env contains credentials that should not be bundled

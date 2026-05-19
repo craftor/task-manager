@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
@@ -529,7 +530,7 @@ class _ProjectCompletionCard extends StatelessWidget {
           final name = (p as dynamic).name as String? ?? 'Unknown';
           final pid = (p as dynamic).id as String? ?? '';
           final isDefault = (p as dynamic).isDefault == true || name.toLowerCase() == 'default';
-          final projectTasks = tasks.where((t) => t.projectId == pid || (isDefault && (t.projectId == 'default-project' || t.projectId == '00000000-0000-0000-0000-000000000001'))).toList();
+          final projectTasks = tasks.where((t) => t.projectId == pid || (isDefault && (t.projectId == AppConstants.legacyDefaultProjectId || t.projectId == AppConstants.defaultProjectId))).toList();
           final total = projectTasks.length;
           final done = projectTasks.where((t) => t.status == TaskStatus.completed).length;
           final pct = total > 0 ? done / total : 0.0;

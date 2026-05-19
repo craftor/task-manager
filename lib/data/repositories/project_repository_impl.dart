@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
+import '../../../core/utils/logger.dart';
 import '../../domain/entities/project.dart' as entity;
 import '../../domain/repositories/project_repository.dart';
 import '../datasources/local/app_database.dart';
@@ -59,9 +59,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
       // Push to remote immediately
       if (_remote != null) {
         _remote!.upsertProject(project).then((_) {
-          debugPrint('ProjectRepositoryImpl.createProject: synced to remote');
+          Logger.d('ProjectRepositoryImpl.createProject: synced to remote');
         }).catchError((e) {
-          debugPrint('ProjectRepositoryImpl.createProject remote push failed: $e');
+          Logger.d('ProjectRepositoryImpl.createProject remote push failed: $e');
         });
       }
     } catch (e) {
@@ -90,9 +90,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
       // Push to remote immediately
       if (_remote != null) {
         _remote!.upsertProject(project).then((_) {
-          debugPrint('ProjectRepositoryImpl.updateProject: synced to remote');
+          Logger.d('ProjectRepositoryImpl.updateProject: synced to remote');
         }).catchError((e) {
-          debugPrint('ProjectRepositoryImpl.updateProject remote push failed: $e');
+          Logger.d('ProjectRepositoryImpl.updateProject remote push failed: $e');
         });
       }
     } catch (e) {
@@ -119,9 +119,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
           sortOrder: dbProject.sortOrder,
           isDefault: dbProject.isDefault,
         ), deletedAt: DateTime.now()).then((_) {
-          debugPrint('ProjectRepositoryImpl.deleteProject: pushed full sync-delete');
+          Logger.d('ProjectRepositoryImpl.deleteProject: pushed full sync-delete');
         }).catchError((e) {
-          debugPrint('ProjectRepositoryImpl.deleteProject remote push failed: $e');
+          Logger.d('ProjectRepositoryImpl.deleteProject remote push failed: $e');
         });
       }
 

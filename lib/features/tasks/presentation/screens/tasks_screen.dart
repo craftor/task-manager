@@ -96,7 +96,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           },
           children: pendingTasks.map((task) {
             final projects = ref.watch(projectsProvider).valueOrNull ?? [];
-            final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: 'default-project', name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
+            final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: AppConstants.defaultProjectId, name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
             final projectName = projects.firstWhere((p) => p.id == task.projectId, orElse: () => defaultProject).name;
             return _TaskCard(key: ValueKey(task.id), task: task, projectName: projectName,
                 onTap: () => _showTaskDialog(context, ref, task),
@@ -116,7 +116,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           },
           children: completedTasks.map((task) {
             final projects = ref.watch(projectsProvider).valueOrNull ?? [];
-            final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: 'default-project', name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
+            final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: AppConstants.defaultProjectId, name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
             final projectName = projects.firstWhere((p) => p.id == task.projectId, orElse: () => defaultProject).name;
             return _TaskCard(key: ValueKey(task.id), task: task, projectName: projectName,
                 onTap: () => _showTaskDialog(context, ref, task),
@@ -187,7 +187,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     Priority selectedPriority = task?.priority ?? Priority.medium;
     DateTime? startDate = task?.startDate ?? DateTime.now();
     DateTime? dueDate = task?.dueDate;
-    String selectedProjectId = task?.projectId ?? defaultProjectId;
+    String selectedProjectId = task?.projectId ?? AppConstants.defaultProjectId;
 
     showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (st, setSt) {
       final projectsAsync = ref.watch(projectsProvider);
@@ -455,7 +455,7 @@ class _ProjectSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final projectItems = <DropdownMenuItem<String>>[
-      DropdownMenuItem<String>(value: defaultProjectId, child: Text('Default', style: TextStyle(color: AppColors.textPrimary))),
+      DropdownMenuItem<String>(value: AppConstants.defaultProjectId, child: Text('Default', style: TextStyle(color: AppColors.textPrimary))),
       ...projects.map((project) => DropdownMenuItem<String>(value: project.id, child: Row(children: [
         Container(width: 12, height: 12, decoration: BoxDecoration(color: _parseColor(project.color), shape: BoxShape.circle)),
         const SizedBox(width: 8),
@@ -463,7 +463,7 @@ class _ProjectSelector extends StatelessWidget {
       ]))),
     ];
 
-    final effectiveProjectId = projectItems.any((item) => item.value == selectedProjectId) ? selectedProjectId : defaultProjectId;
+    final effectiveProjectId = projectItems.any((item) => item.value == selectedProjectId) ? selectedProjectId : AppConstants.defaultProjectId;
 
     return Container(padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(color: AppColors.surfaceLight, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),

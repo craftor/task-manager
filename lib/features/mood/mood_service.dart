@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/logger.dart';
 import '../../../data/datasources/remote/supabase_datasource.dart';
 
 const moodEmojis = ['😊', '😢', '😡', '😴', '😐', '🎉', '😰', '❤️'];
@@ -11,6 +11,12 @@ const moodLabels = {
 
 class MoodService {
   static const String _cacheKey = 'moods_cache';
+  static SharedPreferences? _prefs;
+
+  static Future<SharedPreferences> get _preferences async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
 
   /// Get all moods from local cache
   Future<Map<String, List<String>>> getAllMoods() async {
@@ -35,9 +41,9 @@ class MoodService {
 
     // Fire-and-forget to remote
     if (emojis.isEmpty) {
-      remote.deleteMood(dateKey).catchError((e) => debugPrint('Mood delete remote failed: $e'));
+      remote.deleteMood(dateKey).catchError((e) => Logger.d('Mood delete remote failed: $e'));
     } else {
-      remote.upsertMood(dateKey, json.encode(emojis.take(3).toList())).catchError((e) => debugPrint('Mood upsert remote failed: $e'));
+      remote.upsertMood(dateKey, json.encode(emojis.take(3).toList())).catchError((e) => Logger.d('Mood upsert remote failed: $e'));
     }
   }
 
@@ -47,7 +53,7 @@ class MoodService {
     all.remove(dateKey);
     await _saveCache(all);
 
-    remote.deleteMood(dateKey).catchError((e) => debugPrint('Mood delete remote failed: $e'));
+    remote.deleteMood(dateKey).catchError((e) => Logger.d('Mood delete remote failed: $e'));
   }
 
   /// Get mood distribution within a date range (from cache)
@@ -68,7 +74,7 @@ class MoodService {
   // ── Cache helpers ──
 
   Future<Map<String, List<String>>> _loadFromCache() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     final raw = prefs.getString(_cacheKey);
     if (raw == null) return {};
     try {
@@ -83,13 +89,13 @@ class MoodService {
   }
 
   Future<void> _saveCache(Map<String, List<String>> data) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     await prefs.setString(_cacheKey, json.encode(data));
   }
 
   /// Called by SyncManager to merge remote data into cache
   static Future<void> mergeRemoteData(List<Map<String, dynamic>> rows) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     final map = <String, List<String>>{};
     for (final row in rows) {
       final key = row['date_key'] as String?;
@@ -102,6 +108,6 @@ class MoodService {
       }
     }
     await prefs.setString(_cacheKey, json.encode(map));
-    debugPrint('MoodService: merged ${map.length} moods from remote');
+    Logger.d('MoodService: merged ${map.length} moods from remote');
   }
 }

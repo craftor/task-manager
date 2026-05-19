@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
+import '../../../core/utils/logger.dart';
 import '../../domain/entities/task.dart' as entity;
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/app_database.dart';
@@ -15,10 +15,10 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<List<entity.Task>> getAllTasks() async {
     try {
       final tasks = await _db.getAllTasks();
-      debugPrint('TaskRepositoryImpl.getAllTasks: ${tasks.length} tasks');
+      Logger.d('TaskRepositoryImpl.getAllTasks: ${tasks.length} tasks');
       return tasks.map(_mapToEntity).toList();
     } catch (e) {
-      debugPrint('TaskRepositoryImpl.getAllTasks error: $e');
+      Logger.d('TaskRepositoryImpl.getAllTasks error: $e');
       rethrow;
     }
   }
@@ -26,7 +26,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Stream<List<entity.Task>> watchAllTasks() {
     return _db.watchAllTasks().map((tasks) {
-      debugPrint('TaskRepositoryImpl.watchAllTasks: ${tasks.length} tasks');
+      Logger.d('TaskRepositoryImpl.watchAllTasks: ${tasks.length} tasks');
       return tasks.map(_mapToEntity).toList();
     });
   }
@@ -54,7 +54,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<void> createTask(entity.Task task) async {
     try {
-      debugPrint('TaskRepositoryImpl.createTask: ${task.title}');
+      Logger.d('TaskRepositoryImpl.createTask: ${task.title}');
       await _db.insertTask(TasksCompanion(
         id: Value(task.id),
         projectId: Value(task.projectId),
@@ -79,15 +79,15 @@ class TaskRepositoryImpl implements TaskRepository {
       // Push to remote immediately
       if (_remote != null) {
         _remote!.upsertTask(task).then((_) {
-          debugPrint('TaskRepositoryImpl.createTask: synced to remote');
+          Logger.d('TaskRepositoryImpl.createTask: synced to remote');
         }).catchError((e) {
-          debugPrint('TaskRepositoryImpl.createTask remote push failed: $e');
+          Logger.d('TaskRepositoryImpl.createTask remote push failed: $e');
         });
       }
 
-      debugPrint('TaskRepositoryImpl.createTask: success');
+      Logger.d('TaskRepositoryImpl.createTask: success');
     } catch (e) {
-      debugPrint('TaskRepositoryImpl.createTask error: $e');
+      Logger.d('TaskRepositoryImpl.createTask error: $e');
       rethrow;
     }
   }
@@ -119,9 +119,9 @@ class TaskRepositoryImpl implements TaskRepository {
       // Push to remote immediately
       if (_remote != null) {
         _remote!.upsertTask(task).then((_) {
-          debugPrint('TaskRepositoryImpl.updateTask: synced to remote');
+          Logger.d('TaskRepositoryImpl.updateTask: synced to remote');
         }).catchError((e) {
-          debugPrint('TaskRepositoryImpl.updateTask remote push failed: $e');
+          Logger.d('TaskRepositoryImpl.updateTask remote push failed: $e');
         });
       }
     } catch (e) {
@@ -155,9 +155,9 @@ class TaskRepositoryImpl implements TaskRepository {
           updatedAt: DateTime.now(),
           sortOrder: dbTask.sortOrder,
         ), deletedAt: DateTime.now()).then((_) {
-          debugPrint('TaskRepositoryImpl.deleteTask: pushed full sync-delete to remote');
+          Logger.d('TaskRepositoryImpl.deleteTask: pushed full sync-delete to remote');
         }).catchError((e) {
-          debugPrint('TaskRepositoryImpl.deleteTask remote push failed: $e');
+          Logger.d('TaskRepositoryImpl.deleteTask remote push failed: $e');
         });
       }
 

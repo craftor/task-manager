@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import '../../../core/utils/logger.dart';
 import '../../../data/datasources/remote/supabase_datasource.dart';
 
 class JournalEntry {
@@ -18,6 +18,12 @@ class JournalEntry {
 
 class JournalService {
   static const String _cacheKey = 'journal_cache';
+  SharedPreferences? _prefs;
+
+  Future<SharedPreferences> get _preferences async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
 
   /// Get entries for a date from local cache
   Future<List<JournalEntry>> getEntries(String dateKey) async {
@@ -33,7 +39,7 @@ class JournalService {
     await _saveCache(all);
 
     remote.upsertJournalEntry(dateKey, entry.toJson()).catchError((e) {
-      debugPrint('JournalService.addEntry: remote failed - $e');
+      Logger.d('JournalService.addEntry: remote failed - $e');
     });
     return entry;
   }
@@ -46,7 +52,7 @@ class JournalService {
     await _saveCache(all);
 
     remote.deleteJournalEntry(entryId).catchError((e) {
-      debugPrint('JournalService.deleteEntry: remote failed - $e');
+      Logger.d('JournalService.deleteEntry: remote failed - $e');
     });
   }
 
@@ -68,15 +74,15 @@ class JournalService {
         map.putIfAbsent(key, () => []).add(JournalEntry.fromJson(row));
       }
       await _saveCache(map);
-      debugPrint('JournalService: pulled ${rows.length} entries from remote');
+      Logger.d('JournalService: pulled ${rows.length} entries from remote');
     } catch (e) {
-      debugPrint('JournalService.pullFromRemote: $e');
+      Logger.d('JournalService.pullFromRemote: $e');
     }
   }
 
   // ── private ──
   Future<Map<String, List<JournalEntry>>> _loadCache() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     final raw = prefs.getString(_cacheKey);
     if (raw == null) return {};
     try {
@@ -86,7 +92,7 @@ class JournalService {
   }
 
   Future<void> _saveCache(Map<String, List<JournalEntry>> data) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     await prefs.setString(_cacheKey, json.encode(data.map((k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()))));
   }
 }

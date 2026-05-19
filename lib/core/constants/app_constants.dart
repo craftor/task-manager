@@ -27,4 +27,8 @@ class AppConstants {
   static const int priorityMedium = 2;
   static const int priorityHigh = 3;
   static const int priorityUrgent = 4;
+
+  // Default project IDs
+  static const String defaultProjectId = '00000000-0000-0000-0000-000000000001';
+  static const String legacyDefaultProjectId = 'default-project';
 }

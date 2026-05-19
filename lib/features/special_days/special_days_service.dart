@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/utils/logger.dart';
 import '../../../data/datasources/remote/supabase_datasource.dart';
 
 /// Colors for the 6 special day categories
@@ -15,6 +15,12 @@ const specialDayColors = [
 
 class SpecialDaysService {
   static const String _cacheKey = 'special_days_cache';
+  SharedPreferences? _prefs;
+
+  Future<SharedPreferences> get _preferences async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
 
   /// Get all special days from SharedPreferences (always fresh).
   /// Falls back to remote if cache is empty.
@@ -49,7 +55,7 @@ class SpecialDaysService {
 
     // Write to remote (fire-and-forget for responsiveness)
     remote.upsertSpecialDay(dateKey, dataJson).catchError((e) {
-      debugPrint('SpecialDaysService.setDay: remote write failed - $e');
+      Logger.d('SpecialDaysService.setDay: remote write failed - $e');
     });
   }
 
@@ -62,7 +68,7 @@ class SpecialDaysService {
 
     // Delete from remote (fire-and-forget)
     remote.deleteSpecialDay(dateKey).catchError((e) {
-      debugPrint('SpecialDaysService.removeDay: remote delete failed - $e');
+      Logger.d('SpecialDaysService.removeDay: remote delete failed - $e');
     });
   }
 
@@ -85,7 +91,7 @@ class SpecialDaysService {
   // ── Private ──
 
   Future<Map<String, Map<String, String>>> _loadFromCache() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     final raw = prefs.getString(_cacheKey);
     if (raw == null) return {};
     try {
@@ -101,7 +107,7 @@ class SpecialDaysService {
   }
 
   Future<void> _saveCache(Map<String, Map<String, String>> data) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _preferences;
     await prefs.setString(_cacheKey, json.encode(data));
   }
 
@@ -122,9 +128,9 @@ class SpecialDaysService {
         }
       }
       await _saveCache(map);
-      debugPrint('SpecialDaysService: pulled ${map.length} special days from remote');
+      Logger.d('SpecialDaysService: pulled ${map.length} special days from remote');
     } catch (e) {
-      debugPrint('SpecialDaysService.pullFromRemote: failed - $e');
+      Logger.d('SpecialDaysService.pullFromRemote: failed - $e');
     }
   }
 }
