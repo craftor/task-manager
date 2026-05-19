@@ -82,9 +82,9 @@ jobs:
         if: matrix.target == 'macos'
         run: |
           flutter build macos --release
-          mkdir -p artifacts
-          cd build/macos/Build/Products/Release
-          zip -r ../../../../artifacts/${APP_NAME}_${VERSION}_macos.zip .
+          mkdir -p $GITHUB_WORKSPACE/artifacts
+          cd $GITHUB_WORKSPACE/build/macos/Build/Products/Release
+          zip -r $GITHUB_WORKSPACE/artifacts/${APP_NAME}_${VERSION}_macos.zip .
 
       - name: Install Linux dependencies
         if: matrix.target == 'linux'
