@@ -89,7 +89,7 @@ GitHub Actions release workflow builds and publishes artifacts for **Android**, 
 
 ## Version
 
-Current version: 0.7.33
+Current version: see `lib/version.dart` (`appVersion`)
 
 ## Changelog
 
