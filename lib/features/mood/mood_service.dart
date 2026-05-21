@@ -11,6 +11,7 @@ const moodLabels = {
 
 class MoodService {
   static const String _cacheKey = 'moods_cache';
+  static const int _maxRetries = 3;
   static SharedPreferences? _prefs;
 
   static Future<SharedPreferences> get _preferences async {
@@ -29,7 +30,7 @@ class MoodService {
     return all[dateKey] ?? [];
   }
 
-  /// Set moods for a date. Writes to local cache immediately, then to remote.
+  /// Set moods for a date. Writes to local cache immediately, then syncs to remote with retry.
   Future<void> setMoods(SupabaseDatasource remote, String dateKey, List<String> emojis) async {
     final all = await _loadFromCache();
     if (emojis.isEmpty) {
@@ -39,11 +40,11 @@ class MoodService {
     }
     await _saveCache(all);
 
-    // Fire-and-forget to remote
+    // Sync to remote with retry
     if (emojis.isEmpty) {
-      remote.deleteMood(dateKey).catchError((e) => Logger.d('Mood delete remote failed: $e'));
+      _syncWithRetry(() => remote.deleteMood(dateKey));
     } else {
-      remote.upsertMood(dateKey, json.encode(emojis.take(3).toList())).catchError((e) => Logger.d('Mood upsert remote failed: $e'));
+      _syncWithRetry(() => remote.upsertMood(dateKey, json.encode(emojis.take(3).toList())));
     }
   }
 
@@ -53,7 +54,7 @@ class MoodService {
     all.remove(dateKey);
     await _saveCache(all);
 
-    remote.deleteMood(dateKey).catchError((e) => Logger.d('Mood delete remote failed: $e'));
+    _syncWithRetry(() => remote.deleteMood(dateKey));
   }
 
   /// Get mood distribution within a date range (from cache)
@@ -91,6 +92,24 @@ class MoodService {
   Future<void> _saveCache(Map<String, List<String>> data) async {
     final prefs = await _preferences;
     await prefs.setString(_cacheKey, json.encode(data));
+  }
+
+  /// Retry helper with exponential backoff for remote sync operations
+  Future<void> _syncWithRetry(Future<void> Function() operation) async {
+    var attempt = 0;
+    while (attempt < _maxRetries) {
+      try {
+        await operation();
+        return;
+      } catch (e) {
+        attempt++;
+        if (attempt >= _maxRetries) {
+          Logger.e('MoodService: remote sync failed after $_maxRetries attempts', error: e);
+        } else {
+          await Future.delayed(Duration(seconds: attempt * 2)); // exponential backoff
+        }
+      }
+    }
   }
 
   /// Called by SyncManager to merge remote data into cache

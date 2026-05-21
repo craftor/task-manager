@@ -75,7 +75,7 @@ class SyncManager {
 
   void _initPeriodicSync() {
     _periodicSync = Timer.periodic(
-      const Duration(minutes: 1),
+      AppConstants.syncInterval,
       (_) => syncAll(),
     );
   }

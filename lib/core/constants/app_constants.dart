@@ -34,4 +34,11 @@ class AppConstants {
   // Default project IDs
   static const String defaultProjectId = '00000000-0000-0000-0000-000000000001';
   static const String legacyDefaultProjectId = 'default-project';
+
+  // GitHub update check
+  static const String githubOwner = 'craftor';
+  static const String githubRepo = 'task-manager';
+
+  // Sync settings
+  static const Duration syncInterval = Duration(minutes: 5);
 }

@@ -9,6 +9,9 @@ import '../../../core/constants/app_constants.dart';
 
 part 'app_database.g.dart';
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// To regenerate: dart run build_runner build --delete-conflicting-outputs
+
 class TagsConverter extends TypeConverter<List<String>, String> {
   const TagsConverter();
 

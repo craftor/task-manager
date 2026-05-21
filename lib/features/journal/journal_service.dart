@@ -18,6 +18,7 @@ class JournalEntry {
 
 class JournalService {
   static const String _cacheKey = 'journal_cache';
+  static const int _maxRetries = 3;
   SharedPreferences? _prefs;
 
   Future<SharedPreferences> get _preferences async {
@@ -31,16 +32,14 @@ class JournalService {
     return all[dateKey] ?? [];
   }
 
-  /// Add entry — writes to local cache then fire-and-forget to remote
+  /// Add entry — writes to local cache immediately, then syncs to remote with retry
   Future<JournalEntry> addEntry(SupabaseDatasource remote, String dateKey, String content) async {
     final entry = JournalEntry(id: const Uuid().v4(), createdAt: DateTime.now(), content: content.trim());
     final all = await _loadCache();
     all.putIfAbsent(dateKey, () => []).insert(0, entry);
     await _saveCache(all);
 
-    remote.upsertJournalEntry(dateKey, entry.toJson()).catchError((e) {
-      Logger.d('JournalService.addEntry: remote failed - $e');
-    });
+    _syncEntryWithRetry(() => remote.upsertJournalEntry(dateKey, entry.toJson()));
     return entry;
   }
 
@@ -51,9 +50,7 @@ class JournalService {
     if (all[dateKey]?.isEmpty == true) all.remove(dateKey);
     await _saveCache(all);
 
-    remote.deleteJournalEntry(entryId).catchError((e) {
-      Logger.d('JournalService.deleteEntry: remote failed - $e');
-    });
+    _syncEntryWithRetry(() => remote.deleteJournalEntry(entryId));
   }
 
   /// Get all dates that have entries
@@ -81,6 +78,25 @@ class JournalService {
   }
 
   // ── private ──
+
+  /// Retry helper with exponential backoff for remote sync operations
+  Future<void> _syncEntryWithRetry(Future<void> Function() operation) async {
+    var attempt = 0;
+    while (attempt < _maxRetries) {
+      try {
+        await operation();
+        return;
+      } catch (e) {
+        attempt++;
+        if (attempt >= _maxRetries) {
+          Logger.e('JournalService: remote sync failed after $_maxRetries attempts', error: e);
+        } else {
+          await Future.delayed(Duration(seconds: attempt * 2)); // exponential backoff
+        }
+      }
+    }
+  }
+
   Future<Map<String, List<JournalEntry>>> _loadCache() async {
     final prefs = await _preferences;
     final raw = prefs.getString(_cacheKey);

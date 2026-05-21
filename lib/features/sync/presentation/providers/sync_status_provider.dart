@@ -17,13 +17,30 @@ final supabaseDatasourceProvider = Provider<SupabaseDatasource?>((ref) {
   return SupabaseDatasource(Supabase.instance.client, userId);
 });
 
+// Singleton instance holder to prevent multiple SyncManager instances
+// Multiple instances would cause duplicate periodic syncs and connectivity listeners
+class _SyncManagerHolder {
+  static SyncManager? _instance;
+  static void set(SyncManager? m) => _instance = m;
+  static SyncManager? get() => _instance;
+}
+
 final syncManagerProvider = Provider<SyncManager?>((ref) {
+  // Return existing singleton if already created
+  if (_SyncManagerHolder.get() != null) return _SyncManagerHolder.get();
+
   final db = ref.watch(databaseProvider);
   final datasource = ref.watch(supabaseDatasourceProvider);
   if (datasource == null) return null;
 
   final manager = SyncManager(db, datasource);
-  ref.onDispose(() => manager.dispose());
+  _SyncManagerHolder.set(manager);
+
+  ref.onDispose(() {
+    manager.dispose();
+    _SyncManagerHolder.set(null);
+  });
+
   return manager;
 });
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../constants/app_constants.dart';
 
 class UpdateInfo {
   final String version;
@@ -19,10 +20,8 @@ class UpdateInfo {
 }
 
 class UpdateService {
-  static const String _owner = 'craftor';
-  static const String _repo = 'task-manager';
-  static const String _apiUrl =
-      'https://api.github.com/repos/$_owner/$_repo/releases/latest';
+  static String get _apiUrl =>
+      'https://api.github.com/repos/${AppConstants.githubOwner}/${AppConstants.githubRepo}/releases/latest';
 
   /// Compare two version strings (e.g. "0.2.5" vs "0.2.6").
   /// Returns 1 if a > b, -1 if a < b, 0 if equal.
