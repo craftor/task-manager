@@ -20,6 +20,9 @@ import 'features/sync/presentation/providers/sync_status_provider.dart';
 import 'features/sync/data/sync_manager.dart' show SyncStatus;
 import 'core/services/providers/update_provider.dart';
 import 'core/services/update_service.dart';
+import 'features/ai/presentation/widgets/ai_floating_button.dart';
+import 'features/ai/presentation/screens/ai_chat_screen.dart';
+import 'features/ai/presentation/providers/ai_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -152,41 +155,60 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget _buildDesktopLayout() {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Row(
+      body: Stack(
         children: [
-          _buildSidebar(),
-          // Content area
-          Expanded(
-            child: Column(
-              children: [
-                // Compact top bar
-                Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(
-                      bottom: BorderSide(color: AppColors.border, width: 1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Task Manager',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              _buildSidebar(),
+              // Content area
+              Expanded(
+                child: Column(
+                  children: [
+                    // Compact top bar
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: const BoxDecoration(
+                        color: AppColors.surface,
+                        border: Border(
+                          bottom: BorderSide(color: AppColors.border, width: 1),
                         ),
                       ),
-                      const Spacer(),
-                      _buildUpdateBanner(context),
-                    ],
-                  ),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Task Manager',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          _buildUpdateBanner(context),
+                        ],
+                      ),
+                    ),
+                    Expanded(child: _buildBody()),
+                  ],
                 ),
-                Expanded(child: _buildBody()),
-              ],
-            ),
+              ),
+            ],
+          ),
+          AiFloatingButton(
+            onTap: () {
+              final sessionId = ref.read(aiSessionIdProvider);
+              if (sessionId == null) {
+                ref.read(aiSessionIdProvider.notifier).state =
+                    DateTime.now().millisecondsSinceEpoch.toString();
+              }
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const AiChatScreen(),
+              );
+            },
           ),
         ],
       ),
@@ -361,7 +383,26 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ],
       ),
       drawer: _buildMobileDrawer(),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          _buildBody(),
+          AiFloatingButton(
+            onTap: () {
+              final sessionId = ref.read(aiSessionIdProvider);
+              if (sessionId == null) {
+                ref.read(aiSessionIdProvider.notifier).state =
+                    DateTime.now().millisecondsSinceEpoch.toString();
+              }
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const AiChatScreen(),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
