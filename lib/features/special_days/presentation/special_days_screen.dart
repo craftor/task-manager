@@ -153,10 +153,10 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                           final catColor = _colorFor(idx);
                           final date = DateTime(_year, month, day);
                           final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
-                          bgColor = isPast ? catColor : catColor.withOpacity(0.5);
+                          bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
                           textColor = Colors.white;
                         } else if (isToday) {
-                          bgColor = AppColors.primary.withOpacity(0.3);
+                          bgColor = AppColors.primary.withValues(alpha: 0.3);
                           textColor = AppColors.primary;
                         } else {
                           bgColor = AppColors.border;
@@ -182,11 +182,11 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                           child: Container(
                             width: 20, height: 18,
                             decoration: BoxDecoration(
-                              color: _isLocked && isSpecial ? bgColor.withOpacity(0.4) : bgColor,
+                              color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor,
                               borderRadius: BorderRadius.circular(3),
                               border: isToday && !isSpecial
                                   ? Border.all(color: AppColors.primary, width: 1.5)
-                                  : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withOpacity(0.5), width: 1) : null),
+                                  : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null),
                             ),
                             alignment: Alignment.center,
                             child: Text(
@@ -240,7 +240,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(children: [
           Container(width: 36, height: 36,
-              decoration: BoxDecoration(color: _colorFor(idx).withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: _colorFor(idx).withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
               child: Center(child: Container(width: 14, height: 14,
                   decoration: BoxDecoration(color: _colorFor(idx), borderRadius: BorderRadius.circular(3))))),
           const SizedBox(width: 12),
@@ -360,7 +360,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                     decoration: BoxDecoration(
                       color: _colorFor(i), shape: BoxShape.circle,
                       border: isSel ? Border.all(color: Colors.white, width: 3) : null,
-                      boxShadow: isSel ? [BoxShadow(color: _colorFor(i).withOpacity(0.5), blurRadius: 6)] : null,
+                      boxShadow: isSel ? [BoxShadow(color: _colorFor(i).withValues(alpha: 0.5), blurRadius: 6)] : null,
                     ),
                     child: isSel ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
                   ),
@@ -486,7 +486,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                       color: _colorFor(i),
                       shape: BoxShape.circle,
                       border: isSel ? Border.all(color: Colors.white, width: 3) : null,
-                      boxShadow: isSel ? [BoxShadow(color: _colorFor(i).withOpacity(0.5), blurRadius: 6)] : null,
+                      boxShadow: isSel ? [BoxShadow(color: _colorFor(i).withValues(alpha: 0.5), blurRadius: 6)] : null,
                     ),
                     child: isSel ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
                   ),

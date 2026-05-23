@@ -41,6 +41,10 @@ class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
     await repository.createTimeEntry(entry);
     _runningEntryId = entry.id;
 
+    ref.onDispose(() {
+      _runningTimer?.cancel();
+    });
+
     _runningTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       ref.invalidateSelf();
     });
@@ -53,11 +57,8 @@ class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
     _runningTimer = null;
 
     final repository = ref.read(timeEntryRepositoryProvider);
-    final entries = await repository.getAllTimeEntries();
-    final runningEntry = entries.firstWhere(
-      (e) => e.id == _runningEntryId,
-      orElse: () => throw Exception('Entry not found'),
-    );
+    final runningEntry = await repository.getTimeEntryById(_runningEntryId!);
+    if (runningEntry == null) return;
 
     final endTime = DateTime.now();
     final duration = endTime.difference(runningEntry.startTime).inMinutes;

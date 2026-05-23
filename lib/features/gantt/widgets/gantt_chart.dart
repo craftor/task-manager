@@ -88,7 +88,7 @@ class GanttChartPainter extends CustomPainter {
 
       // Draw bar background
       final barPaint = Paint()
-        ..color = color.withOpacity(0.6)
+        ..color = color.withValues(alpha: 0.6)
         ..style = PaintingStyle.fill;
 
       final barRect = RRect.fromRectAndRadius(

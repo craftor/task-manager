@@ -168,7 +168,7 @@ class AppTheme {
 class AppShadows {
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.05),
+      color: AppColors.primary.withValues(alpha: 0.05),
       blurRadius: 20,
       offset: const Offset(0, 4),
     ),
@@ -176,7 +176,7 @@ class AppShadows {
 
   static List<BoxShadow> get glowShadow => [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.3),
+      color: AppColors.primary.withValues(alpha: 0.3),
       blurRadius: 12,
       spreadRadius: -2,
       offset: const Offset(0, 4),

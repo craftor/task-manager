@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../sync/data/sync_manager.dart';
 import '../../sync/presentation/providers/sync_status_provider.dart' show syncStatusProvider, supabaseDatasourceProvider;
-import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../mood/mood_provider.dart';
 import '../../mood/mood_service.dart';
 
@@ -104,7 +102,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
                 SegmentedButton<bool>(
                   selected: {_yearlyMode},
                   onSelectionChanged: (v) => setState(() => _yearlyMode = v.first),
-                  style: ButtonStyle(backgroundColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.primary.withOpacity(0.2) : Colors.transparent)),
+                  style: ButtonStyle(backgroundColor: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.selected) ? AppColors.primary.withValues(alpha: 0.2) : Colors.transparent)),
                   segments: const [
                     ButtonSegment(value: false, label: Text('Month', style: TextStyle(fontSize: 13))),
                     ButtonSegment(value: true, label: Text('Year', style: TextStyle(fontSize: 13))),
@@ -282,7 +280,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
             child: Container(
               height: 44, margin: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: emojis.isNotEmpty ? _moodColor(emojis.first).withOpacity(0.12) : AppColors.surfaceLight.withOpacity(0.5),
+                color: emojis.isNotEmpty ? _moodColor(emojis.first).withValues(alpha: 0.12) : AppColors.surfaceLight.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -330,7 +328,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isSel ? _moodColor(e).withOpacity(0.2) : AppColors.background,
+                    color: isSel ? _moodColor(e).withValues(alpha: 0.2) : AppColors.background,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: isSel ? _moodColor(e) : AppColors.border, width: isSel ? 2 : 1),
                   ),

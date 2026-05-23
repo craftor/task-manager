@@ -28,6 +28,12 @@ class TimeEntryRepositoryImpl implements TimeEntryRepository {
   }
 
   @override
+  Future<entity.TimeEntry?> getTimeEntryById(String id) async {
+    final entry = await _db.getTimeEntryById(id);
+    return entry != null ? _mapToEntity(entry) : null;
+  }
+
+  @override
   Future<void> createTimeEntry(entity.TimeEntry entry) async {
     await _db.insertTimeEntry(
       TimeEntriesCompanion(

@@ -3,7 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import '../../../core/utils/logger.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/sync/sync_queue.dart';
 import '../../../../data/datasources/local/app_database.dart';
 import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../../../domain/entities/project.dart' as entity;

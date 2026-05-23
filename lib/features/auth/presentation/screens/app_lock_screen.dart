@@ -127,9 +127,9 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                     child: Container(
                       width: 72, height: 72,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
                       ),
                       child: const Icon(Icons.fingerprint, size: 40, color: AppColors.primary),
                     ),

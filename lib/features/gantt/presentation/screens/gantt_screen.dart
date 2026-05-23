@@ -30,7 +30,7 @@ class GanttScreen extends ConsumerWidget {
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return AppColors.primary.withOpacity(0.2);
+                  return AppColors.primary.withValues(alpha: 0.2);
                 }
                 return Colors.transparent;
               }),
@@ -197,8 +197,6 @@ class GanttScreen extends ConsumerWidget {
   }
 
   Widget _buildTimelineHeader(GanttState state) {
-    final days = state.endDate.difference(state.startDate).inDays;
-
     return Container(
       height: 40,
       color: AppColors.surface,
@@ -242,7 +240,7 @@ class GanttScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               decoration: BoxDecoration(
                 color: isToday
-                    ? AppColors.primary.withOpacity(0.08)
+                    ? AppColors.primary.withValues(alpha: 0.08)
                     : Colors.transparent,
               ),
               child: Column(
@@ -284,7 +282,7 @@ class GanttScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border(
-                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                  right: BorderSide(color: AppColors.border.withValues(alpha: 0.3)),
                 ),
               ),
               child: Text(
@@ -314,7 +312,7 @@ class GanttScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border(
-                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                  right: BorderSide(color: AppColors.border.withValues(alpha: 0.3)),
                 ),
               ),
               child: Text(
@@ -339,7 +337,7 @@ class GanttScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border(
-                  right: BorderSide(color: AppColors.border.withOpacity(0.3)),
+                  right: BorderSide(color: AppColors.border.withValues(alpha: 0.3)),
                 ),
               ),
               alignment: Alignment.center,
@@ -405,7 +403,7 @@ class _LegendItem extends StatelessWidget {
           width: 12,
           height: 12,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.6),
+            color: color.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(3),
             border: Border.all(color: color, width: 1.5),
           ),

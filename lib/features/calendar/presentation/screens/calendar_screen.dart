@@ -7,7 +7,6 @@ import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../mood/mood_provider.dart';
 import '../../../mood/mood_service.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
 import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
 import '../providers/calendar_provider.dart';
 
@@ -36,7 +35,7 @@ class CalendarScreen extends ConsumerWidget {
               return Container(
                 margin: const EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: IconButton(
@@ -55,7 +54,7 @@ class CalendarScreen extends ConsumerWidget {
           Container(
             margin: const EdgeInsets.only(right: 4),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: IconButton(
@@ -233,7 +232,7 @@ class CalendarScreen extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isSel ? AppColors.primary.withOpacity(0.2) : AppColors.background,
+                              color: isSel ? AppColors.primary.withValues(alpha: 0.2) : AppColors.background,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: isSel ? AppColors.primary : AppColors.border,

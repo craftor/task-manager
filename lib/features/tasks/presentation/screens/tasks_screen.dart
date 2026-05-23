@@ -92,7 +92,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           onReorder: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(pendingTasks, oldIndex, newIndex); },
           proxyDecorator: (child, index, animation) {
             final double elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
-            return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withOpacity(0.3), child: child);
+            return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withValues(alpha: 0.3), child: child);
           },
           children: pendingTasks.map((task) {
             final projects = ref.watch(projectsProvider).valueOrNull ?? [];
@@ -112,7 +112,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
           onReorder: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(completedTasks, oldIndex, newIndex); },
           proxyDecorator: (child, index, animation) {
             final double elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
-            return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withOpacity(0.3), child: child);
+            return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withValues(alpha: 0.3), child: child);
           },
           children: completedTasks.map((task) {
             final projects = ref.watch(projectsProvider).valueOrNull ?? [];
@@ -263,7 +263,6 @@ class _TaskCard extends StatelessWidget {
   String get _priorityFull { switch (task.priority) { case Priority.low: return 'Low'; case Priority.medium: return 'Medium'; case Priority.high: return 'High'; case Priority.urgent: return 'Urgent'; } }
   String get _priorityAbbr { switch (task.priority) { case Priority.low: return 'L'; case Priority.medium: return 'M'; case Priority.high: return 'H'; case Priority.urgent: return 'U'; } }
   bool get _isOverdue => task.dueDate != null && task.dueDate!.isBefore(DateTime.now());
-  String _fmtDate(DateTime dt) => '${dt.day}/${dt.month}';
   String _fmtFull(DateTime dt) => '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   @override
@@ -329,25 +328,6 @@ class _TaskCard extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _DateChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final double fontSize;
-  const _DateChip({required this.icon, required this.label, required this.color, this.fontSize = 10});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(6)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: color, fontSize: fontSize, fontWeight: FontWeight.w600)),
-      ]));
   }
 }
 

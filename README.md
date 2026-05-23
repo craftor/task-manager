@@ -93,6 +93,17 @@ Current version: see `lib/version.dart` (`appVersion`)
 
 ## Changelog
 
+### 0.8.0
+- Code quality: full codebase scan with 6 review agents — fixes for N+1 batch upserts, TOCTOU patterns, timer leaks, deprecated withOpacity calls
+- Export: fix `_loadSpecialDays/Moods/Journal` stubs — now actually exports all data
+- Timer: fix `Timer.periodic` leak on error paths in time_tracking_provider
+- TOCTOU: fix `ensureDefaultProject` and `deleteProject` to use direct ID lookup instead of fetchAll
+- Import: add `getTimeEntryById` to DB/repository/provider chain
+- Drift: regenerate `app_database.g.dart` with new methods
+- macOS: close button minimizes to Dock instead of quitting; dock menu adds quit option
+- macOS: add network client entitlement for Supabase connectivity
+- macOS: set app name to TaskManager and update app icon
+
 ### 0.7.33
 - Fix: copy Android APK to artifacts directory in CI
 

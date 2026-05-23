@@ -5,7 +5,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../providers/time_tracking_provider.dart';
 import '../../domain/time_entry_entity.dart';
 import '../../../../domain/entities/task.dart' as task_entity;
-import '../../../../domain/entities/task.dart' show Task;
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 
 class TimeTrackingScreen extends ConsumerStatefulWidget {
@@ -46,7 +45,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: IconButton(
@@ -96,15 +95,15 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.primary.withOpacity(0.15),
-                AppColors.secondary.withOpacity(0.1),
+                AppColors.primary.withValues(alpha: 0.15),
+                AppColors.secondary.withValues(alpha: 0.1),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -114,7 +113,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.timer, color: AppColors.primary, size: 32),
@@ -134,7 +133,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.success.withOpacity(0.5),
+                                color: AppColors.success.withValues(alpha: 0.5),
                                 blurRadius: 6,
                               ),
                             ],
@@ -202,7 +201,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.play_arrow, color: AppColors.primary, size: 28),
@@ -253,7 +252,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
+              color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.error_outline, size: 48, color: AppColors.error),
@@ -304,7 +303,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
         final dayEntries = groupedEntries[dateKey]!;
         final totalMinutes = dayEntries.fold<int>(
           0,
-          (sum, e) => sum + ((e.durationMinutes ?? 0) as int),
+          (sum, e) => sum + (e.durationMinutes ?? 0),
         );
 
         return Column(
@@ -326,7 +325,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -368,7 +367,7 @@ class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -837,7 +836,7 @@ class _TimeEntryCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.play_arrow, color: AppColors.primary),
@@ -877,7 +876,7 @@ class _TimeEntryCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

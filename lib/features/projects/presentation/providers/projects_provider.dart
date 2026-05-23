@@ -28,22 +28,25 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
 
   Future<void> ensureDefaultProject() async {
     final repository = ref.read(projectRepositoryProvider);
+    final existing = await repository.getProjectById(AppConstants.defaultProjectId);
+    if (existing != null) return;
+
+    // Also check by isDefault/name for legacy data
     final projects = await repository.getAllProjects();
-    // Check by fixed ID, or by name/isDefault for legacy
-    final hasDefault = projects.any((p) => p.id == AppConstants.defaultProjectId || p.isDefault || p.name == 'Default');
-    if (!hasDefault) {
-      final defaultProject = Project(
-        id: AppConstants.defaultProjectId,
-        name: 'Default',
-        description: 'Default project for uncategorized tasks',
-        color: '#808080',
-        icon: 'folder',
-        createdAt: DateTime.now(),
-        isDefault: true,
-        sortOrder: -1,
-      );
-      await repository.createProject(defaultProject);
-    }
+    final hasLegacyDefault = projects.any((p) => p.isDefault || p.name == 'Default');
+    if (hasLegacyDefault) return;
+
+    final defaultProject = Project(
+      id: AppConstants.defaultProjectId,
+      name: 'Default',
+      description: 'Default project for uncategorized tasks',
+      color: '#808080',
+      icon: 'folder',
+      createdAt: DateTime.now(),
+      isDefault: true,
+      sortOrder: -1,
+    );
+    await repository.createProject(defaultProject);
   }
 
   Future<void> createProject({
@@ -100,8 +103,7 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
 
   Future<void> deleteProject(String id) async {
     final repository = ref.read(projectRepositoryProvider);
-    final projects = await repository.getAllProjects();
-    final project = projects.cast<Project?>().firstWhere((p) => p?.id == id, orElse: () => null);
+    final project = await repository.getProjectById(id);
     if (project == null) return;
     if (project.isDefault) return;
     await repository.deleteProject(id);

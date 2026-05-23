@@ -205,6 +205,8 @@ class AppDatabase extends _$AppDatabase {
   // Time entry queries
   Future<List<TimeEntry>> getAllTimeEntries() => select(timeEntries).get();
   Stream<List<TimeEntry>> watchAllTimeEntries() => select(timeEntries).watch();
+  Future<TimeEntry?> getTimeEntryById(String id) =>
+      (select(timeEntries)..where((e) => e.id.equals(id))).getSingleOrNull();
   Future<List<TimeEntry>> getTimeEntriesByTask(String taskId) =>
       (select(timeEntries)..where((e) => e.taskId.equals(taskId))).get();
   Future<int> insertTimeEntry(TimeEntriesCompanion entry) =>

@@ -49,7 +49,7 @@ class ProjectsScreen extends ConsumerWidget {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: IconButton(
@@ -77,7 +77,7 @@ class ProjectsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.1),
+              color: AppColors.error.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.error_outline, size: 48, color: AppColors.error),
@@ -129,7 +129,7 @@ class ProjectsScreen extends ConsumerWidget {
             return Material(
               elevation: elevation,
               color: Colors.transparent,
-              shadowColor: AppColors.primary.withOpacity(0.3),
+              shadowColor: AppColors.primary.withValues(alpha: 0.3),
               child: child,
             );
           },
@@ -158,7 +158,7 @@ class ProjectsScreen extends ConsumerWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -537,7 +537,7 @@ class _ProjectCardState extends State<_ProjectCard> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: _projectColor.withOpacity(0.15),
+                        color: _projectColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
@@ -598,7 +598,7 @@ class _ProjectCardState extends State<_ProjectCard> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: AnimatedRotation(
@@ -779,7 +779,7 @@ class _IconPicker extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isSelected ? iconColor.withOpacity(0.2) : AppColors.surfaceLight,
+              color: isSelected ? iconColor.withValues(alpha: 0.2) : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(10),
               border: isSelected ? Border.all(color: iconColor, width: 2) : null,
             ),
@@ -837,7 +837,7 @@ class _ColorPicker extends StatelessWidget {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: Color(int.parse(color.replaceFirst('#', '0xFF'))).withOpacity(0.4),
+                        color: Color(int.parse(color.replaceFirst('#', '0xFF'))).withValues(alpha: 0.4),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),

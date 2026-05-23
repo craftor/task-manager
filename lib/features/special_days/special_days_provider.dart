@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/datasources/remote/supabase_datasource.dart';
-import '../../../features/sync/presentation/providers/sync_status_provider.dart';
+import '../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
 import 'special_days_service.dart';
 
 final specialDaysServiceProvider = Provider<SpecialDaysService>((ref) => SpecialDaysService());

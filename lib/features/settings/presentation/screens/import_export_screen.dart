@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
-import '../../../../data/datasources/local/app_database.dart';
 import '../../../auth/presentation/providers/app_lock_provider.dart';
 import '../../data/import_export_service.dart';
 
@@ -304,7 +303,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
           Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconColor, size: 20),

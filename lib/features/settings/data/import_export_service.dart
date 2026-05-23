@@ -5,10 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/datasources/local/app_database.dart';
-import '../../special_days/special_days_service.dart';
-import '../../mood/mood_service.dart';
-import '../../journal/journal_service.dart';
 
 class ImportExportService {
   final AppDatabase _db;
@@ -207,17 +205,39 @@ class ImportExportService {
   }
 
   Future<Map<String, dynamic>> _loadSpecialDays() async {
-    // Reuse existing SpecialDaysService logic via SharedPreferences
-    // This is a simplified version - in production you'd call the service
-    return {};
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('special_days_cache');
+    if (raw == null) return {};
+    try {
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded;
+    } catch (_) {
+      return {};
+    }
   }
 
   Future<Map<String, dynamic>> _loadMoods() async {
-    return {};
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('moods_cache');
+    if (raw == null) return {};
+    try {
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded;
+    } catch (_) {
+      return {};
+    }
   }
 
   Future<Map<String, dynamic>> _loadJournal() async {
-    return {};
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('journal_cache');
+    if (raw == null) return {};
+    try {
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded;
+    } catch (_) {
+      return {};
+    }
   }
 }
 
