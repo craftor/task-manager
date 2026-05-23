@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/app_lock_provider.dart';
 import '../../data/import_export_service.dart';
+import 'ai_settings_screen.dart';
 
 final importExportServiceProvider = Provider<ImportExportService>((ref) {
   final db = ref.watch(databaseProvider);
@@ -263,6 +264,20 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
               ]),
             ),
           ],
+
+          const SizedBox(height: 24),
+
+          // ─── AI Section ───
+          const Text('AI', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          _buildSettingsCard(
+            icon: Icons.auto_awesome,
+            iconColor: AppColors.primary,
+            title: 'AI 设置',
+            subtitle: '配置 AI 模型 API',
+            trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiSettingsScreen())),
+          ),
 
           const SizedBox(height: 24),
 
