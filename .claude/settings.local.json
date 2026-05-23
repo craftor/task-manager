@@ -82,7 +82,27 @@
       "Bash(sudo apt-get install -y libsecret-1-dev)",
       "Bash(apt-get update *)",
       "Bash(apt-get install *)",
-      "Bash(pacman -Ss libsecret)"
+      "Bash(pacman -Ss libsecret)",
+      "Skill(health)",
+      "Bash(pod install *)",
+      "Bash(sudo gem *)",
+      "Bash(gem install *)",
+      "Bash(brew reinstall *)",
+      "Bash(flutter doctor *)",
+      "Bash(pod update *)",
+      "Bash(gem uninstall *)",
+      "Bash(gem list *)",
+      "Bash(brew info *)",
+      "Bash(pod --version)",
+      "Bash(brew list *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(/opt/homebrew/Cellar/cocoapods/1.16.2_2.reinstall/bin/pod *)",
+      "Bash(brew uninstall *)",
+      "Bash(brew install *)",
+      "Bash(gem env *)",
+      "Bash(/opt/homebrew/opt/cocoapods/bin/pod *)",
+      "Bash(open *)",
+      "Bash(sips -g pixelWidth icons/task.png)"
     ]
   }
 }
