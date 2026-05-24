@@ -335,12 +335,12 @@ class _CalendarTaskCard extends StatelessWidget {
           const SizedBox(height: 4),
           Row(children: [
             if (task.startDate != null) ...[
-              Icon(Icons.play_arrow, size: 12, color: AppColors.textMuted),
+              const Icon(Icons.play_arrow, size: 12, color: AppColors.textMuted),
               Text(_formatDateTime(task.startDate!), style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
               const SizedBox(width: 8),
             ],
             if (task.dueDate != null) ...[
-              Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+              const Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
               Text(_formatDateTime(task.dueDate!), style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
             ],
           ]),

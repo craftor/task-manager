@@ -93,6 +93,14 @@ Current version: see `lib/version.dart` (`appVersion`)
 
 ## Changelog
 
+### 0.8.1
+- Fix: BuildContext async gap issues, unnecessary null assertions, deprecated activeColor
+- Cleanup: Remove dead code _TimeSummaryCard, fix underscore local variable naming
+- Const optimization: 35+ prefer_const_constructors fixes across codebase
+- Dates: Responsive calendar grid (7 days/row) with mobile vs desktop layouts
+- Dashboard: Dashboard now default first page in sidebar
+- Build: Add macOS DMG packaging script (scripts/build_dmg.sh)
+
 ### 0.8.0
 - Code quality: full codebase scan with 6 review agents — fixes for N+1 batch upserts, TOCTOU patterns, timer leaks, deprecated withOpacity calls
 - Export: fix `_loadSpecialDays/Moods/Journal` stubs — now actually exports all data

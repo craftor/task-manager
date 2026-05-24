@@ -77,6 +77,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
 
   Future<void> _verifyPin() async {
     final ok = await ref.read(appLockProvider.notifier).verifyPin(_pinController.text);
+    if (!mounted) return;
     if (ok) {
       Navigator.pop(context, true);
     } else {

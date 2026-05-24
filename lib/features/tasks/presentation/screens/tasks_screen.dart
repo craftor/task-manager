@@ -435,7 +435,7 @@ class _ProjectSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final projectItems = <DropdownMenuItem<String>>[
-      DropdownMenuItem<String>(value: AppConstants.defaultProjectId, child: Text('Default', style: TextStyle(color: AppColors.textPrimary))),
+      DropdownMenuItem<String>(value: AppConstants.defaultProjectId, child: const Text('Default', style: TextStyle(color: AppColors.textPrimary))),
       ...projects.map((project) => DropdownMenuItem<String>(value: project.id, child: Row(children: [
         Container(width: 12, height: 12, decoration: BoxDecoration(color: _parseColor(project.color), shape: BoxShape.circle)),
         const SizedBox(width: 8),

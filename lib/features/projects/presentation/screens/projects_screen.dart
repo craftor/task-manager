@@ -714,7 +714,7 @@ class _TaskMiniCard extends StatelessWidget {
           ),
           if (task.dueDate != null) ...[
             const SizedBox(width: 8),
-            Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+            const Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
             const SizedBox(width: 2),
             Text(
               _formatDate(task.dueDate!),

@@ -160,8 +160,9 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
               }
               await ref.read(appLockProvider.notifier).setPin(pin);
               ref.invalidate(appLockEnabledProvider);
-              if (mounted) Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
+              if (!mounted) return;
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(ctx).showSnackBar(
                 const SnackBar(content: Text('App Lock PIN set'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
               );
             },
@@ -197,7 +198,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
               subtitle: locked ? 'PIN is required to open app' : 'Protect app with a 4-digit PIN',
               trailing: Switch(
                 value: locked,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: (_) => _showPinSetupDialog(),
               ),
               onTap: _showPinSetupDialog,

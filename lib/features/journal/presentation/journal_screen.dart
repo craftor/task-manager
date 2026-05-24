@@ -135,12 +135,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             ),
           ),
           // Today's entries
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 6),
             child: Row(children: [
-              const Icon(Icons.today, size: 16, color: AppColors.textSecondary),
-              const SizedBox(width: 6),
-              const Text("Today's Entries", style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+              Icon(Icons.today, size: 16, color: AppColors.textSecondary),
+              SizedBox(width: 6),
+              Text("Today's Entries", style: TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
             ]),
           ),
           entriesAsync.when(

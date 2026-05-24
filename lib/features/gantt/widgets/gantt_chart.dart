@@ -43,9 +43,9 @@ class GanttChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final taskHeight = 32.0;
-    final rowHeight = 48.0;
-    final leftPadding = 120.0;
+    const taskHeight = 32.0;
+    const rowHeight = 48.0;
+    const leftPadding = 120.0;
     final totalDays = endDate.difference(startDate).inDays.clamp(1, 365);
     final dayWidth = (size.width - leftPadding) / totalDays;
 

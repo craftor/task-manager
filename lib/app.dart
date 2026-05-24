@@ -94,9 +94,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   static const _navItems = [
+    _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.edit_note_outlined, Icons.edit_note, 'Journal'),
     _NavItem(Icons.task_alt_outlined, Icons.task_alt, 'Tasks'),
-    _NavItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
     _NavItem(Icons.calendar_month_outlined, Icons.calendar_month, 'Calendar'),
     _NavItem(Icons.emoji_emotions_outlined, Icons.emoji_emotions, 'Mood'),
     _NavItem(Icons.auto_awesome_outlined, Icons.auto_awesome, 'Dates'),
@@ -445,14 +445,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Widget _buildBody() {
+    if (_selectedIndex == 0) {
+      return DashboardScreen(
+          onNavigate: (index) => setState(() => _selectedIndex = index));
+    }
     switch (_selectedIndex) {
-      case 0:
-        return const JournalScreen();
       case 1:
-        return const TasksProjectsScreen();
+        return const JournalScreen();
       case 2:
-        return DashboardScreen(
-            onNavigate: (index) => setState(() => _selectedIndex = index));
+        return const TasksProjectsScreen();
       case 3:
         return const CalendarScreen();
       case 4:
@@ -464,7 +465,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case 7:
         return const ProfileScreen();
       default:
-        return const JournalScreen();
+        return DashboardScreen(
+            onNavigate: (index) => setState(() => _selectedIndex = index));
     }
   }
 
@@ -545,10 +547,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.system_update, color: AppColors.primary, size: 24),
-            const SizedBox(width: 10),
+            Icon(Icons.system_update, color: AppColors.primary, size: 24),
+            SizedBox(width: 10),
             Text(
               'Update Available',
               style: TextStyle(

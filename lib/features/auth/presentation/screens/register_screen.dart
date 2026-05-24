@@ -51,11 +51,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              const Expanded(child: Text('Passwords do not match')),
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(child: Text('Passwords do not match')),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -68,11 +68,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
     if (password.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
+          content: const Row(
             children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              const Expanded(child: Text('Password must be at least 6 characters')),
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(child: Text('Password must be at least 6 characters')),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -261,7 +261,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                 ),
                 const SizedBox(height: 24),
                 // Terms
-                Text(
+                const Text(
                   'By signing up, you agree to our Terms of Service and Privacy Policy',
                   style: TextStyle(
                     color: AppColors.textMuted,

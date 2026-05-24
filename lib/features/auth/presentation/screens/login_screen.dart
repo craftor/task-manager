@@ -206,19 +206,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                     fontWeight: FontWeight.w600)),
                       ),
                       const SizedBox(height: 24),
-                      Row(
+                      const Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                               child: Divider(color: AppColors.border)),
                           Padding(
                             padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                                EdgeInsets.symmetric(horizontal: 16),
                             child: Text('or',
                                 style: TextStyle(
                                     color: AppColors.textMuted,
                                     fontSize: 14)),
                           ),
-                          const Expanded(
+                          Expanded(
                               child: Divider(color: AppColors.border)),
                         ],
                       ),

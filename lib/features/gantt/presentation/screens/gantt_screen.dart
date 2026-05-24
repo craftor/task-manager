@@ -69,20 +69,20 @@ class GanttScreen extends ConsumerWidget {
     }).toList();
 
     if (visibleTasks.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.bar_chart, size: 64, color: AppColors.textMuted),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'No tasks in time range',
               style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Tasks will appear here when they have due dates',
               style: TextStyle(color: AppColors.textSecondary),
@@ -101,13 +101,13 @@ class GanttScreen extends ConsumerWidget {
           color: AppColors.surface,
           child: Row(
             children: [
-              _LegendItem(color: AppColors.error, label: 'Urgent'),
+              const _LegendItem(color: AppColors.error, label: 'Urgent'),
               const SizedBox(width: 16),
-              _LegendItem(color: Colors.orange, label: 'High'),
+              const _LegendItem(color: Colors.orange, label: 'High'),
               const SizedBox(width: 16),
-              _LegendItem(color: AppColors.warning, label: 'Medium'),
+              const _LegendItem(color: AppColors.warning, label: 'Medium'),
               const SizedBox(width: 16),
-              _LegendItem(color: AppColors.secondary, label: 'Low'),
+              const _LegendItem(color: AppColors.secondary, label: 'Low'),
               const Spacer(),
               Row(
                 children: [

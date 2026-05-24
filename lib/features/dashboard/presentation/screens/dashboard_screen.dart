@@ -134,10 +134,10 @@ class DashboardScreen extends ConsumerWidget {
           _ProjectCompletionCard(tasks: tasks, projectsAsync: projectsAsync),
           const SizedBox(height: 16),
           // Total time overview
-          _TimeOverviewCard(),
+          const _TimeOverviewCard(),
           const SizedBox(height: 16),
           // Task completion time stats
-          _TaskTimeStatsCard(),
+          const _TaskTimeStatsCard(),
           const SizedBox(height: 16),
           // Recent tasks
           _RecentTasksCard(tasks: tasks),
@@ -203,108 +203,6 @@ class _SummaryCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _TimeSummaryCard extends StatelessWidget {
-  final int totalMinutes;
-
-  const _TimeSummaryCard({required this.totalMinutes});
-
-  String _formatDuration(int minutes) {
-    if (minutes < 60) {
-      return '${minutes}m';
-    }
-    final hours = minutes ~/ 60;
-    final mins = minutes % 60;
-    if (mins == 0) {
-      return '${hours}h';
-    }
-    return '${hours}h ${mins}m';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.timer, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Time Tracked',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDuration(totalMinutes),
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    'Total time tracked',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check, color: AppColors.success, size: 16),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${(totalMinutes / 60).toStringAsFixed(1)} hrs',
-                      style: const TextStyle(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

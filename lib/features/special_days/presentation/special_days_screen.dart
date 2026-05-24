@@ -110,122 +110,127 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   Color _colorFor(int index) => Color(specialDayColors[index.clamp(0, 5)]);
 
   Widget _buildGrid(BuildContext context, Map<String, Map<String, String>> specialDays, DateTime now) {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
     final todayKey = DateFormat('yyyy-MM-dd').format(now);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...List.generate(12, (m) {
-            final month = m + 1;
-            final daysInMonth = DateTime(_year, month + 1, 0).day;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 36,
-                    child: Text(monthNames[m],
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                  ),
-                  Expanded(
-                    child: Wrap(
-                      spacing: 2,
-                      runSpacing: 2,
-                      children: List.generate(31, (d) {
-                        final day = d + 1;
-                        final exists = day <= daysInMonth;
-                        final key = '$_year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
-                        final data = specialDays[key];
-                        final isSpecial = data != null;
-                        final isToday = key == todayKey;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 500;
+        final months = List.generate(12, (m) => _buildMonth(context, m, specialDays, todayKey, now));
 
-                        if (!exists) return const SizedBox(width: 20, height: 18);
-
-                        Color bgColor;
-                        Color textColor = AppColors.textMuted;
-                        if (isSpecial) {
-                          final idx = int.tryParse(data!['color'] ?? '0') ?? 0;
-                          final catColor = _colorFor(idx);
-                          final date = DateTime(_year, month, day);
-                          final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
-                          bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
-                          textColor = Colors.white;
-                        } else if (isToday) {
-                          bgColor = AppColors.primary.withValues(alpha: 0.3);
-                          textColor = AppColors.primary;
-                        } else {
-                          bgColor = AppColors.border;
-                        }
-
-                        return GestureDetector(
-                          onTap: () {
-                            if (_isLocked) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1)),
-                              );
-                              return;
-                            }
-                            if (isSpecial) {
-                              _showDayInfo(key, data!, _year, month, day);
-                            } else {
-                              _showAddDialogForDate(DateTime(_year, month, day));
-                            }
-                          },
-                          onLongPress: _isLocked ? null : (isSpecial
-                              ? () => _showLongPressMenu(key, data!, _year, month, day)
-                              : null),
-                          child: Container(
-                            width: 20, height: 18,
-                            decoration: BoxDecoration(
-                              color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor,
-                              borderRadius: BorderRadius.circular(3),
-                              border: isToday && !isSpecial
-                                  ? Border.all(color: AppColors.primary, width: 1.5)
-                                  : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '$day',
-                              style: TextStyle(color: textColor, fontSize: 9, fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          const SizedBox(height: 12),
-          // Color legend
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(6, (i) {
-                final labels = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(children: [
-                    Container(
-                      width: 10, height: 10,
-                      decoration: BoxDecoration(color: _colorFor(i), borderRadius: BorderRadius.circular(2)),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(labels[i], style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                  ]),
-                );
-              }),
+        if (isNarrow) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: months,
             ),
+          );
+        }
+
+        // Desktop: arrange months in a wrap grid
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: months.map((m) => SizedBox(
+              width: 220,
+              child: m,
+            )).toList(),
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMonth(BuildContext context, int m, Map<String, Map<String, String>> specialDays, String todayKey, DateTime now) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    final month = m + 1;
+    final daysInMonth = DateTime(_year, month + 1, 0).day;
+    final firstDay = DateTime(_year, month, 1).weekday % 7;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(monthNames[m],
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Row(
+          children: dayLabels.map((l) => SizedBox(
+            width: 28, height: 18,
+            child: Center(child: Text(l, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w600))),
+          )).toList(),
+        ),
+        const SizedBox(height: 2),
+        ...List.generate(((daysInMonth + firstDay + 6) ~/ 7), (weekRow) {
+          return Row(
+            children: List.generate(7, (dayOfWeek) {
+              final dayIndex = weekRow * 7 + dayOfWeek - firstDay + 1;
+              final day = dayIndex;
+              if (day < 1 || day > daysInMonth) {
+                return const SizedBox(width: 28, height: 22);
+              }
+              final key = '$_year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+              final data = specialDays[key];
+              final isSpecial = data != null;
+              final isToday = key == todayKey;
+
+              Color bgColor;
+              Color textColor = AppColors.textMuted;
+              if (isSpecial) {
+                final idx = int.tryParse(data['color'] ?? '0') ?? 0;
+                final catColor = _colorFor(idx);
+                final date = DateTime(_year, month, day);
+                final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
+                bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
+                textColor = Colors.white;
+              } else if (isToday) {
+                bgColor = AppColors.primary.withValues(alpha: 0.3);
+                textColor = AppColors.primary;
+              } else {
+                bgColor = AppColors.border;
+              }
+
+              return GestureDetector(
+                onTap: () {
+                  if (_isLocked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1)),
+                    );
+                    return;
+                  }
+                  if (isSpecial) {
+                    _showDayInfo(key, data, _year, month, day);
+                  } else {
+                    _showAddDialogForDate(DateTime(_year, month, day));
+                  }
+                },
+                onLongPress: _isLocked ? null : (isSpecial
+                    ? () => _showLongPressMenu(key, data, _year, month, day)
+                    : null),
+                child: Container(
+                  width: 28, height: 22,
+                  decoration: BoxDecoration(
+                    color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor,
+                    borderRadius: BorderRadius.circular(4),
+                    border: isToday && !isSpecial
+                        ? Border.all(color: AppColors.primary, width: 1.5)
+                        : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$day',
+                    style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              );
+            }),
+          );
+        }),
+      ],
     );
   }
 
