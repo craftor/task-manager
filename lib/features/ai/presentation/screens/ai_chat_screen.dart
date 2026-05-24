@@ -32,7 +32,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(aiChatProvider);
-    final messages = ref.watch(aiMessagesProvider);
+    final messages = ref.watch(aiMessagesListProvider);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -42,7 +42,6 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       ),
       child: Column(
         children: [
-          // Handle + Header
           Center(
             child: Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -66,50 +65,49 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             ),
           ),
           const Divider(height: 1, color: AppColors.border),
-          // Messages
           Expanded(
-            child: messages.when(
-              data: (msgs) {
-                if (msgs.isEmpty) {
-                  return const Center(child: Text('开始对话吧！', style: TextStyle(color: AppColors.textMuted)));
-                }
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: msgs.length,
-                  itemBuilder: (_, i) => ChatMessageBubble(message: msgs[i]),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
-            ),
+            child: messages.isEmpty
+                ? const Center(child: Text('开始对话吧！', style: TextStyle(color: AppColors.textMuted)))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: messages.length,
+                    itemBuilder: (_, i) => ChatMessageBubble(message: messages[i]),
+                  ),
           ),
-          // Tool confirmation
-          if (chatState.pendingToolCall != null)
+          if (chatState.isLoading)
+            Container(
+              padding: const EdgeInsets.all(12),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                  SizedBox(width: 8),
+                  Text('AI 正在思考...', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                ],
+              ),
+            ),
+          if (chatState.pendingAction != null)
             Container(
               padding: const EdgeInsets.all(12),
               color: AppColors.surface,
               child: Row(children: [
-                Expanded(
-                  child: Text('确认执行 ${chatState.pendingToolCall!.name}？', style: const TextStyle(color: AppColors.textPrimary)),
-                ),
-                TextButton(onPressed: () => ref.read(aiChatProvider.notifier).cancelToolCall(), child: const Text('取消')),
+                Expanded(child: Text('确认执行 ${chatState.pendingAction!.action}？', style: const TextStyle(color: AppColors.textPrimary))),
+                TextButton(onPressed: () => ref.read(aiChatProvider.notifier).cancelAction(), child: const Text('取消')),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () => ref.read(aiChatProvider.notifier).confirmToolCall(),
+                  onPressed: () => ref.read(aiChatProvider.notifier).confirmAction(),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                   child: const Text('确认'),
                 ),
               ]),
             ),
-          // Error
           if (chatState.error != null)
             Container(
               padding: const EdgeInsets.all(8),
               color: AppColors.error.withValues(alpha: 0.1),
-              child: Text(chatState.error!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
+              child: Text(chatState.error!, style: const TextStyle(color: AppColors.error, fontSize: 12), maxLines: 5, overflow: TextOverflow.ellipsis),
             ),
-          // Input
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: AppColors.surface, border: Border(top: BorderSide(color: AppColors.border))),

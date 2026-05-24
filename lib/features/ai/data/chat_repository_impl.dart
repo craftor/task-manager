@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../domain/models/chat_message.dart';
 import '../domain/repositories/chat_repository.dart';
 
@@ -33,7 +34,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<String> createSession() async {
-    return DateTime.now().millisecondsSinceEpoch.toString();
+    // Generate a valid UUID v4 for the session
+    return const Uuid().v4();
   }
 
   @override
@@ -47,14 +49,18 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   ChatMessage _mapRow(Map<String, dynamic> row) {
+    final roleStr = row['role'] as String?;
+    final role = roleStr != null && ChatRole.values.any((r) => r.name == roleStr)
+        ? ChatRole.values.firstWhere((r) => r.name == roleStr)
+        : ChatRole.user;
     return ChatMessage(
-      id: row['id'],
-      sessionId: row['session_id'],
-      role: ChatRole.values.firstWhere((r) => r.name == row['role']),
-      content: row['content'],
-      toolCalls: (row['tool_calls'] as List?)?.map((t) => ToolCall(name: t['name'], arguments: Map<String, dynamic>.from(t['arguments']))).toList(),
-      toolResults: (row['tool_results'] as List?)?.map((t) => ToolResult(name: t['name'], success: t['success'], error: t['error'], result: t['result'])).toList(),
-      createdAt: DateTime.parse(row['created_at']),
+      id: row['id'] as String,
+      sessionId: row['session_id'] as String,
+      role: role,
+      content: row['content'] as String? ?? '',
+      toolCalls: (row['tool_calls'] as List?)?.map((t) => ToolCall(name: t['name'] as String, arguments: Map<String, dynamic>.from(t['arguments'] as Map))).toList(),
+      toolResults: (row['tool_results'] as List?)?.map((t) => ToolResult(name: t['name'] as String, success: t['success'] as bool? ?? false, error: t['error'] as String?, result: t['result'])).toList(),
+      createdAt: DateTime.tryParse(row['created_at'] as String? ?? '') ?? DateTime.now(),
     );
   }
 }

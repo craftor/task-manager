@@ -70,3 +70,24 @@ CREATE POLICY chat_messages_owner ON chat_messages
 -- 2. Remote-wins reconciliation: When syncing, remote messages take precedence.
 -- 3. tool_calls and tool_results support AI function calling (optional per message).
 -- 4. The ON DELETE CASCADE on user_id ensures user data cleanup when account is deleted.
+
+-- =============================================================================
+-- AI CONFIG TABLE
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS ai_config (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    api_base_url TEXT,
+    api_key TEXT,
+    model_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE ai_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY ai_config_owner ON ai_config
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);

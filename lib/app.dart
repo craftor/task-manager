@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -23,6 +24,7 @@ import 'core/services/update_service.dart';
 import 'features/ai/presentation/widgets/ai_floating_button.dart';
 import 'features/ai/presentation/screens/ai_chat_screen.dart';
 import 'features/ai/presentation/providers/ai_provider.dart';
+import 'package:uuid/uuid.dart';
 import 'package:url_launcher/url_launcher.dart';
 class TaskManagerApp extends ConsumerWidget {
   const TaskManagerApp({super.key});
@@ -196,18 +198,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ],
           ),
           AiFloatingButton(
-            onTap: () {
-              final sessionId = ref.read(aiSessionIdProvider);
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              var sessionId = ref.read(aiSessionIdProvider);
               if (sessionId == null) {
-                ref.read(aiSessionIdProvider.notifier).state =
-                    DateTime.now().millisecondsSinceEpoch.toString();
+                sessionId = prefs.getString('ai_session_id') ?? const Uuid().v4();
+                ref.read(aiSessionIdProvider.notifier).state = sessionId;
+                await prefs.setString('ai_session_id', sessionId);
               }
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const AiChatScreen(),
-              );
+              if (mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const AiChatScreen(),
+                );
+              }
             },
           ),
         ],
@@ -387,18 +393,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         children: [
           _buildBody(),
           AiFloatingButton(
-            onTap: () {
-              final sessionId = ref.read(aiSessionIdProvider);
+            onTap: () async {
+              final prefs = await SharedPreferences.getInstance();
+              var sessionId = ref.read(aiSessionIdProvider);
               if (sessionId == null) {
-                ref.read(aiSessionIdProvider.notifier).state =
-                    DateTime.now().millisecondsSinceEpoch.toString();
+                sessionId = prefs.getString('ai_session_id') ?? const Uuid().v4();
+                ref.read(aiSessionIdProvider.notifier).state = sessionId;
+                await prefs.setString('ai_session_id', sessionId);
               }
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const AiChatScreen(),
-              );
+              if (mounted) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const AiChatScreen(),
+                );
+              }
             },
           ),
         ],

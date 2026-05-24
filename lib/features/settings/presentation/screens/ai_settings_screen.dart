@@ -31,12 +31,17 @@ class _AiSettingsScreenState extends ConsumerState<AiSettingsScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final config = ref.read(aiConfigServiceProvider);
-    await config.setBaseUrl(_baseUrlController.text.trim());
-    await config.setApiKey(_apiKeyController.text.trim());
-    await config.setModelName(_modelController.text.trim());
-    setState(() => _saving = false);
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已保存')));
+    try {
+      final config = ref.read(aiConfigServiceProvider);
+      await config.setBaseUrl(_baseUrlController.text.trim());
+      await config.setApiKey(_apiKeyController.text.trim());
+      await config.setModelName(_modelController.text.trim());
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已保存')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存失败: $e'), backgroundColor: AppColors.error));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override

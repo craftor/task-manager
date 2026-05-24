@@ -79,13 +79,29 @@ class SyncManager {
     );
   }
 
+  bool _isSyncing = false;
+  DateTime? _lastSyncSuccess;
+
   Future<void> syncAll() async {
+    // Prevent overlapping syncs (connectivity changes can fire rapidly)
+    if (_isSyncing) {
+      Logger.d('SyncManager.syncAll: skipping, sync already in progress');
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastSyncSuccess != null &&
+        now.difference(_lastSyncSuccess!).inSeconds < 30) {
+      Logger.d('SyncManager.syncAll: skipping, last sync was <30s ago');
+      return;
+    }
     Logger.d('SyncManager.syncAll: starting');
+    _isSyncing = true;
     _syncStateController.add(const SyncState(status: SyncStatus.syncing));
     try {
       await _syncPendingChanges();
       await _pullRemoteChanges();
       Logger.d('SyncManager.syncAll: completed successfully');
+      _lastSyncSuccess = DateTime.now();
       _syncStateController.add(SyncState(
         status: SyncStatus.success,
         lastSyncTime: DateTime.now(),
@@ -96,6 +112,8 @@ class SyncManager {
         status: SyncStatus.error,
         errorMessage: e.toString(),
       ));
+    } finally {
+      _isSyncing = false;
     }
   }
 
