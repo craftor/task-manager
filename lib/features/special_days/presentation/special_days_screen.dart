@@ -18,6 +18,9 @@ class SpecialDaysScreen extends ConsumerStatefulWidget {
 class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   late int _year;
   bool _isUnlocked = false;
+  bool _showCalendar = false; // true = 7-day row calendar, false = 28-31 cells per month row
+  final ScrollController _scrollController = ScrollController();
+  bool _scrolledToCurrentYear = false;
 
   SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
 
@@ -29,6 +32,17 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
       ref.invalidate(specialDaysProvider);
       ref.invalidate(specialDaysSortedProvider);
     });
+  }
+
+  void _scrollToCurrentYear() {
+    if (_scrollController.hasClients) {
+      final targetOffset = (_year - 2020) * 360.0;
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   bool get _isCurrentYear => _year == DateTime.now().year;
@@ -72,6 +86,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               onPressed: () => _showAddDialog(),
               tooltip: 'Add special day',
             ),
+          if (_showCalendar) ...[
           IconButton(
             icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary),
             onPressed: () => setState(() {
@@ -90,6 +105,26 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               _isUnlocked = false;
             }),
           ),
+          const SizedBox(width: 4),
+          ],
+          // View mode toggle
+          PopupMenuButton<bool>(
+            icon: Icon(_showCalendar ? Icons.grid_view : Icons.view_agenda, color: AppColors.textPrimary, size: 20),
+            tooltip: 'Toggle view',
+            onSelected: (v) => setState(() => _showCalendar = v),
+            itemBuilder: (ctx) => [
+              PopupMenuItem(value: false, child: Row(children: [
+                Icon(_showCalendar ? null : Icons.check, color: AppColors.primary, size: 16),
+                const SizedBox(width: 8),
+                const Text('Month Row'),
+              ])),
+              PopupMenuItem(value: true, child: Row(children: [
+                Icon(_showCalendar ? Icons.check : null, color: AppColors.primary, size: 16),
+                const SizedBox(width: 8),
+                const Text('Calendar'),
+              ])),
+            ],
+          ),
           const SizedBox(width: 8),
         ],
       ),
@@ -99,7 +134,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           final yearDays = Map.fromEntries(
             allDays.entries.where((e) => e.key.startsWith(prefix)),
           );
-          return _buildGrid(context, yearDays, now);
+          return _showCalendar ? _buildCalendarGrid(context, yearDays, now) : _buildMonthRowGrid(context, allDays, now, scrollController: _scrollController, firstBuild: !_scrolledToCurrentYear && !_showCalendar, onScrolled: () { _scrolledToCurrentYear = true; });
         },
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => const Center(child: Text('Error', style: TextStyle(color: AppColors.error))),
@@ -109,13 +144,14 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
 
   Color _colorFor(int index) => Color(specialDayColors[index.clamp(0, 5)]);
 
-  Widget _buildGrid(BuildContext context, Map<String, Map<String, String>> specialDays, DateTime now) {
+  // ─── Calendar Grid (7 days per row) ───
+  Widget _buildCalendarGrid(BuildContext context, Map<String, Map<String, String>> specialDays, DateTime now) {
     final todayKey = DateFormat('yyyy-MM-dd').format(now);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 500;
-        final months = List.generate(12, (m) => _buildMonth(context, m, specialDays, todayKey, now));
+        final months = List.generate(12, (m) => _buildCalendarMonth(context, m, specialDays, todayKey, now));
 
         if (isNarrow) {
           return SingleChildScrollView(
@@ -127,25 +163,20 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           );
         }
 
-        // Desktop: arrange months in a wrap grid
         return SingleChildScrollView(
           padding: const EdgeInsets.all(12),
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: months.map((m) => SizedBox(
-              width: 220,
-              child: m,
-            )).toList(),
+            children: months.map((m) => SizedBox(width: 220, child: m)).toList(),
           ),
         );
       },
     );
   }
 
-  Widget _buildMonth(BuildContext context, int m, Map<String, Map<String, String>> specialDays, String todayKey, DateTime now) {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  Widget _buildCalendarMonth(BuildContext context, int m, Map<String, Map<String, String>> specialDays, String todayKey, DateTime now) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
     final month = m + 1;
@@ -155,82 +186,174 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(monthNames[m],
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
-        Row(
-          children: dayLabels.map((l) => SizedBox(
-            width: 28, height: 18,
-            child: Center(child: Text(l, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w600))),
-          )).toList(),
-        ),
+        Row(children: dayLabels.map((l) => SizedBox(width: 28, height: 18, child: Center(child: Text(l, style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w600))))).toList()),
         const SizedBox(height: 2),
         ...List.generate(((daysInMonth + firstDay + 6) ~/ 7), (weekRow) {
-          return Row(
-            children: List.generate(7, (dayOfWeek) {
-              final dayIndex = weekRow * 7 + dayOfWeek - firstDay + 1;
-              final day = dayIndex;
-              if (day < 1 || day > daysInMonth) {
-                return const SizedBox(width: 28, height: 22);
-              }
-              final key = '$_year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
-              final data = specialDays[key];
-              final isSpecial = data != null;
-              final isToday = key == todayKey;
-
-              Color bgColor;
-              Color textColor = AppColors.textMuted;
-              if (isSpecial) {
-                final idx = int.tryParse(data['color'] ?? '0') ?? 0;
-                final catColor = _colorFor(idx);
-                final date = DateTime(_year, month, day);
-                final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
-                bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
-                textColor = Colors.white;
-              } else if (isToday) {
-                bgColor = AppColors.primary.withValues(alpha: 0.3);
-                textColor = AppColors.primary;
-              } else {
-                bgColor = AppColors.border;
-              }
-
-              return GestureDetector(
-                onTap: () {
-                  if (_isLocked) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1)),
-                    );
-                    return;
-                  }
-                  if (isSpecial) {
-                    _showDayInfo(key, data, _year, month, day);
-                  } else {
-                    _showAddDialogForDate(DateTime(_year, month, day));
-                  }
-                },
-                onLongPress: _isLocked ? null : (isSpecial
-                    ? () => _showLongPressMenu(key, data, _year, month, day)
-                    : null),
-                child: Container(
-                  width: 28, height: 22,
-                  decoration: BoxDecoration(
-                    color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor,
-                    borderRadius: BorderRadius.circular(4),
-                    border: isToday && !isSpecial
-                        ? Border.all(color: AppColors.primary, width: 1.5)
-                        : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$day',
-                    style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              );
-            }),
-          );
+          return Row(children: List.generate(7, (dayOfWeek) {
+            final dayIndex = weekRow * 7 + dayOfWeek - firstDay + 1;
+            final day = dayIndex;
+            if (day < 1 || day > daysInMonth) return const SizedBox(width: 28, height: 22);
+            final key = '$_year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+            final data = specialDays[key];
+            final isSpecial = data != null;
+            final isToday = key == todayKey;
+            Color bgColor; Color textColor = AppColors.textMuted;
+            if (isSpecial) {
+              final idx = int.tryParse(data['color'] ?? '0') ?? 0;
+              final catColor = _colorFor(idx);
+              final date = DateTime(_year, month, day);
+              final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
+              bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
+              textColor = Colors.white;
+            } else if (isToday) {
+              bgColor = AppColors.primary.withValues(alpha: 0.3);
+              textColor = AppColors.primary;
+            } else {
+              bgColor = AppColors.border;
+            }
+            return GestureDetector(
+              onTap: () { if (_isLocked) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1))); return; } if (isSpecial) { _showDayInfo(key, data, _year, month, day); } else { _showAddDialogForDate(DateTime(_year, month, day)); } },
+              onLongPress: _isLocked ? null : (isSpecial ? () => _showLongPressMenu(key, data, _year, month, day) : null),
+              child: Container(width: 28, height: 22, decoration: BoxDecoration(color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor, borderRadius: BorderRadius.circular(4), border: isToday && !isSpecial ? Border.all(color: AppColors.primary, width: 1.5) : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null)), alignment: Alignment.center, child: Text('$day', style: TextStyle(color: textColor, fontSize: 10, fontWeight: FontWeight.w500))),
+            );
+          }));
         }),
       ],
+    );
+  }
+
+  // ─── Month Row Grid (28-31 cells per month row) ───
+  Widget _buildMonthRowGrid(BuildContext context, Map<String, Map<String, String>> specialDays, DateTime now, {ScrollController? scrollController, bool firstBuild = false, VoidCallback? onScrolled}) {
+    final todayKey = DateFormat('yyyy-MM-dd').format(now);
+
+    // Scroll to current year on first build
+    if (firstBuild && scrollController != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scrollController.hasClients) {
+          final targetOffset = (now.year - 2020) * 360.0;
+          scrollController.animateTo(
+            targetOffset.clamp(0.0, scrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+          onScrolled?.call();
+        }
+      });
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 500;
+        // Show 2020-2030 for continuous scrolling
+        final allYearMonths = <Widget>[];
+        for (int y = 2020; y <= 2030; y++) {
+          // Year label before January
+          allYearMonths.add(Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: SizedBox(
+              width: 40,
+              child: Text('$y', style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.bold)),
+            ),
+          ));
+          for (int m = 1; m <= 12; m++) {
+            final isLastMonth = m == 12;
+            allYearMonths.add(_buildMonthRow(y, m, specialDays, todayKey, now, isLastMonth: isLastMonth));
+            if (m < 12) {
+              allYearMonths.add(const SizedBox(height: 4));
+            }
+          }
+          if (y < 2030) {
+            allYearMonths.add(const SizedBox(height: 8));
+          }
+        }
+
+        if (isNarrow) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: allYearMonths,
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: allYearMonths,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMonthRow(int year, int month, Map<String, Map<String, String>> specialDays, String todayKey, DateTime now, {bool isLastMonth = false}) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    const cellSize = 22.0;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: isLastMonth ? 16 : 4,
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 40,
+              child: Text(monthNames[month - 1], style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(daysInMonth, (d) {
+                    final day = d + 1;
+                    final key = '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+                    final data = specialDays[key];
+                    final isSpecial = data != null;
+                    final isToday = key == todayKey;
+
+                    Color bgColor; Color textColor = AppColors.textMuted;
+                    if (isSpecial) {
+                      final idx = int.tryParse(data['color'] ?? '0') ?? 0;
+                      final catColor = _colorFor(idx);
+                      final date = DateTime(year, month, day);
+                      final isPast = date.isBefore(DateTime(now.year, now.month, now.day + 1));
+                      bgColor = isPast ? catColor : catColor.withValues(alpha: 0.5);
+                      textColor = Colors.white;
+                    } else if (isToday) {
+                      bgColor = AppColors.primary.withValues(alpha: 0.3);
+                      textColor = AppColors.primary;
+                    } else {
+                      bgColor = AppColors.border;
+                    }
+
+                    return GestureDetector(
+                      onTap: () { if (_isLocked) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unlock to edit past years'), duration: Duration(seconds: 1))); return; } if (isSpecial) { _showDayInfo(key, data, year, month, day); } else { _showAddDialogForDate(DateTime(year, month, day)); } },
+                      onLongPress: _isLocked ? null : (isSpecial ? () => _showLongPressMenu(key, data, year, month, day) : null),
+                      child: Container(
+                        width: cellSize, height: cellSize,
+                        margin: const EdgeInsets.only(right: 2),
+                        decoration: BoxDecoration(color: _isLocked && isSpecial ? bgColor.withValues(alpha: 0.4) : bgColor, borderRadius: BorderRadius.circular(3), border: isToday && !isSpecial ? Border.all(color: AppColors.primary, width: 1.5) : (isSpecial && _isLocked ? Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 1) : null)),
+                        alignment: Alignment.center,
+                        child: Text('$day', style: TextStyle(color: textColor, fontSize: 9, fontWeight: FontWeight.w500)),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

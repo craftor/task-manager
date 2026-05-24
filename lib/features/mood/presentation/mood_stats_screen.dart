@@ -138,30 +138,50 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
     final daysInMonth = DateTime(_year, _month + 1, 0).day;
     final firstWeekday = DateTime(_year, _month, 1).weekday;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (entries.isNotEmpty) ...[
-          _SummaryRow(distribution: entries, total: total),
-          const SizedBox(height: 24),
-          const Text('Distribution', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
-          ...entries.map((e) {
-            final pct = total > 0 ? e.value / total : 0.0;
-            return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
-              Text(e.key, style: const TextStyle(fontSize: 22)),
-              const SizedBox(width: 10),
-              Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
-              const SizedBox(width: 10),
-              SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-            ]));
-          }),
-          const SizedBox(height: 24),
-        ],
-        const Text('Calendar', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        _buildMoodCalendarGrid(year: _year, month: _month, daysInMonth: daysInMonth, firstWeekday: firstWeekday, moods: moods, prefix: prefix),
-      ]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 600;
+        final emojiSize = isWide ? 32.0 : 22.0;
+        final summaryEmojiSize = isWide ? 56.0 : 40.0;
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (entries.isNotEmpty) ...[
+              _SummaryRow(distribution: entries, total: total, emojiSize: summaryEmojiSize),
+              const SizedBox(height: 24),
+              const Text('Distribution', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              if (isWide)
+                Wrap(spacing: 16, runSpacing: 8, children: entries.map((e) {
+                  final pct = total > 0 ? e.value / total : 0.0;
+                  return SizedBox(width: 300, child: Row(children: [
+                    Text(e.key, style: TextStyle(fontSize: emojiSize)),
+                    const SizedBox(width: 10),
+                    Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
+                    const SizedBox(width: 10),
+                    SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
+                  ]));
+                }).toList())
+              else
+                ...entries.map((e) {
+                  final pct = total > 0 ? e.value / total : 0.0;
+                  return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
+                    Text(e.key, style: TextStyle(fontSize: emojiSize)),
+                    const SizedBox(width: 10),
+                    Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
+                    const SizedBox(width: 10),
+                    SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
+                  ]));
+                }),
+              const SizedBox(height: 24),
+            ],
+            const Text('Calendar', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            _buildMoodCalendarGrid(year: _year, month: _month, daysInMonth: daysInMonth, firstWeekday: firstWeekday, moods: moods, prefix: prefix, emojiSize: emojiSize),
+          ]),
+        );
+      },
     );
   }
 
@@ -190,80 +210,132 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
 
     const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (total > 0) _SummaryRow(distribution: overallEntries, total: total),
-      if (total > 0) ...[
-        const SizedBox(height: 24),
-        const Text('Year Distribution', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        ...overallEntries.map((e) {
-          final pct = total > 0 ? e.value / total : 0.0;
-          return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
-            Text(e.key, style: const TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
-            Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
-            const SizedBox(width: 10),
-            SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
-          ]));
-        }),
-        const SizedBox(height: 24),
-      ],
-      const Text('Monthly Breakdown', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-      const SizedBox(height: 12),
-      GridView.count(
-        crossAxisCount: 4,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.1,
-        children: List.generate(12, (i) {
-          final m = i + 1;
-          final dist = monthly[m] ?? {};
-          final count = dist.values.fold<int>(0, (a, b) => a + b);
-          return Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              if (count == 0)
-                const Expanded(child: Center(child: Text('-', style: TextStyle(color: AppColors.textMuted, fontSize: 14))))
-              else
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: dist.entries.map((e) {
-                      return Row(children: [
-                        Text(e.key, style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 2),
-                        Text('×${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
-                      ]);
-                    }).toList(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 600;
+        final emojiSize = isWide ? 32.0 : 22.0;
+        final summaryEmojiSize = isWide ? 56.0 : 40.0;
+
+        return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (total > 0) _SummaryRow(distribution: overallEntries, total: total, emojiSize: summaryEmojiSize),
+          if (total > 0) ...[
+            const SizedBox(height: 24),
+            const Text('Year Distribution', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            if (isWide)
+              Wrap(spacing: 16, runSpacing: 8, children: overallEntries.map((e) {
+                final pct = total > 0 ? e.value / total : 0.0;
+                return SizedBox(width: 300, child: Row(children: [
+                  Text(e.key, style: TextStyle(fontSize: emojiSize)),
+                  const SizedBox(width: 10),
+                  Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
+                  const SizedBox(width: 10),
+                  SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
+                ]));
+              }).toList())
+            else
+              ...overallEntries.map((e) {
+                final pct = total > 0 ? e.value / total : 0.0;
+                return Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
+                  Text(e.key, style: TextStyle(fontSize: emojiSize)),
+                  const SizedBox(width: 10),
+                  Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: pct, minHeight: 24, backgroundColor: AppColors.border, valueColor: const AlwaysStoppedAnimation(AppColors.primary)))),
+                  const SizedBox(width: 10),
+                  SizedBox(width: 50, child: Text('${e.value}d  ${(pct * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12))),
+                ]));
+              }),
+            const SizedBox(height: 24),
+          ],
+          const Text('Monthly Breakdown', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          if (isWide)
+            Wrap(spacing: 8, runSpacing: 8, children: List.generate(12, (i) {
+              final m = i + 1;
+              final dist = monthly[m] ?? {};
+              final count = dist.values.fold<int>(0, (a, b) => a + b);
+              return SizedBox(
+                width: 140,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
                   ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    if (count == 0)
+                      const Center(child: Text('-', style: TextStyle(color: AppColors.textMuted, fontSize: 14)))
+                    else
+                      Wrap(spacing: 4, runSpacing: 4, children: dist.entries.map((e) {
+                        return Row(mainAxisSize: MainAxisSize.min, children: [
+                          Text(e.key, style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 2),
+                          Text('×${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                        ]);
+                      }).toList()),
+                  ]),
                 ),
-            ]),
-          );
-        }),
-      ),
-    ]));
+              );
+            }))
+          else
+            GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.1,
+              children: List.generate(12, (i) {
+                final m = i + 1;
+                final dist = monthly[m] ?? {};
+                final count = dist.values.fold<int>(0, (a, b) => a + b);
+                return Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(monthNames[m], style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    if (count == 0)
+                      const Expanded(child: Center(child: Text('-', style: TextStyle(color: AppColors.textMuted, fontSize: 14))))
+                    else
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: dist.entries.map((e) {
+                            return Row(children: [
+                              Text(e.key, style: TextStyle(fontSize: emojiSize * 0.5)),
+                              const SizedBox(width: 2),
+                              Text('×${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                            ]);
+                          }).toList(),
+                        ),
+                      ),
+                  ]),
+                );
+              }),
+            ),
+        ]));
+      },
+    );
   }
 
   // ─── Calendar Grid ───
-  Widget _buildMoodCalendarGrid({required int year, required int month, required int daysInMonth, required int firstWeekday, required Map<String, List<String>> moods, required String prefix}) {
+  Widget _buildMoodCalendarGrid({required int year, required int month, required int daysInMonth, required int firstWeekday, required Map<String, List<String>> moods, required String prefix, double emojiSize = 22}) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Column(children: [
       Row(children: weekdays.map((d) => Expanded(child: Center(child: Text(d, style: const TextStyle(color: AppColors.textMuted, fontSize: 11))))).toList()),
       const SizedBox(height: 4),
-      ..._buildCalendarRows(year, month, daysInMonth, firstWeekday, moods, prefix),
+      ..._buildCalendarRows(year, month, daysInMonth, firstWeekday, moods, prefix, emojiSize),
     ]);
   }
 
-  List<Widget> _buildCalendarRows(int year, int month, int days, int firstWeekday, Map<String, List<String>> moods, String prefix) {
+  List<Widget> _buildCalendarRows(int year, int month, int days, int firstWeekday, Map<String, List<String>> moods, String prefix, double emojiSize) {
     final rows = <Widget>[];
     var day = 1;
     for (var week = 0; week < 6 && day <= days; week++) {
@@ -287,7 +359,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
                 if (emojis.isEmpty)
                   Text('$d', style: const TextStyle(color: AppColors.textMuted, fontSize: 11))
                 else
-                  Text(emojis.join(''), style: const TextStyle(fontSize: 11)),
+                  Text(emojis.join(''), style: TextStyle(fontSize: emojiSize * 0.5)),
               ]),
             ),
           )));
@@ -385,7 +457,8 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
 class _SummaryRow extends StatelessWidget {
   final List<MapEntry<String, int>> distribution;
   final int total;
-  const _SummaryRow({required this.distribution, required this.total});
+  final double emojiSize;
+  const _SummaryRow({required this.distribution, required this.total, this.emojiSize = 40});
 
   @override
   Widget build(BuildContext context) {
@@ -394,7 +467,7 @@ class _SummaryRow extends StatelessWidget {
     return Container(padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
       child: Row(children: [
-        Text(top, style: const TextStyle(fontSize: 40)),
+        Text(top, style: TextStyle(fontSize: emojiSize)),
         const SizedBox(width: 16),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${moodLabels[top] ?? top} dominates', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
