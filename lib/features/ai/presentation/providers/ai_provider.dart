@@ -241,7 +241,8 @@ class AiChatNotifier extends StateNotifier<AiChatState> {
   }
 
   String _stripThinkTags(String text) {
-    final result = text.replaceAll(RegExp(r'<thinking>[\s\S]*?</thinking>'), '');
+    // Remove <think>... blocks and the newlines that follow
+    final result = text.replaceAll(RegExp(r'<think>[\s\S]*?\s*'), '');
     return result.trim();
   }
 

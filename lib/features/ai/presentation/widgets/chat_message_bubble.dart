@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/chat_message.dart';
 
@@ -34,11 +35,39 @@ class ChatMessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              message.content,
-              style: TextStyle(
-                color: isUser ? Colors.white : AppColors.textPrimary,
-                fontSize: 14,
+            MarkdownBody(
+              data: message.content,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(
+                  color: isUser ? Colors.white : AppColors.textPrimary,
+                  fontSize: 14,
+                ),
+                code: TextStyle(
+                  backgroundColor: isUser
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : AppColors.primary.withValues(alpha: 0.1),
+                  color: isUser ? Colors.white : AppColors.primary,
+                  fontSize: 13,
+                  fontFamily: 'monospace',
+                ),
+                codeblockDecoration: BoxDecoration(
+                  color: isUser
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                blockquoteDecoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: AppColors.primary.withValues(alpha: 0.5),
+                      width: 3,
+                    ),
+                  ),
+                ),
+                listBullet: TextStyle(
+                  color: isUser ? Colors.white : AppColors.textPrimary,
+                ),
               ),
             ),
             if (message.toolCalls != null && message.toolCalls!.isNotEmpty)

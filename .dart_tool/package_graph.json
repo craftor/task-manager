@@ -5,13 +5,14 @@
   "packages": [
     {
       "name": "task_manager",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "dependencies": [
         "connectivity_plus",
         "drift",
         "file_picker",
         "flutter",
         "flutter_dotenv",
+        "flutter_markdown",
         "flutter_riverpod",
         "flutter_secure_storage",
         "http",
@@ -1705,6 +1706,24 @@
         "collection",
         "meta",
         "pub_semver"
+      ]
+    },
+    {
+      "name": "flutter_markdown",
+      "version": "0.7.7+1",
+      "dependencies": [
+        "flutter",
+        "markdown",
+        "meta",
+        "path"
+      ]
+    },
+    {
+      "name": "markdown",
+      "version": "7.3.1",
+      "dependencies": [
+        "args",
+        "meta"
       ]
     }
   ],
