@@ -36,7 +36,8 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
 
   void _scrollToCurrentYear() {
     if (_scrollController.hasClients) {
-      final targetOffset = (_year - 2020) * 360.0;
+      final startYear = DateTime.now().year - 5;
+      final targetOffset = (_year - startYear) * 360.0;
       _scrollController.animateTo(
         targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 300),
@@ -248,7 +249,8 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
         final isNarrow = constraints.maxWidth < 500;
         // Show 2020-2030 for continuous scrolling
         final allYearMonths = <Widget>[];
-        for (int y = 2020; y <= 2030; y++) {
+        final currentYear = DateTime.now().year;
+        for (int y = currentYear - 5; y <= currentYear + 5; y++) {
           // Year label before January
           allYearMonths.add(Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4),
@@ -584,7 +586,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
               GestureDetector(
                 onTap: () async {
                   final d = await showDatePicker(context: ctx, initialDate: selectedDate,
-                      firstDate: DateTime(2020), lastDate: DateTime(2030),
+                      firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)), lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                       builder: (ctx, child) => Theme(data: ThemeData.dark().copyWith(
                           colorScheme: const ColorScheme.dark(primary: AppColors.primary, surface: AppColors.surface)), child: child!));
                   if (d != null) setD(() => selectedDate = d);

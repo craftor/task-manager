@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppLockService {
@@ -37,6 +38,6 @@ class AppLockService {
 
   String _hashPin(String pin) {
     final bytes = utf8.encode(_salt + pin);
-    return base64.encode(bytes);
+    return sha256.convert(bytes).toString();
   }
 }

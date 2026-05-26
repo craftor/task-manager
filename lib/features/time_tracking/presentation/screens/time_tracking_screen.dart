@@ -747,8 +747,8 @@ class _DateTimePickerButton extends StatelessWidget {
     final date = await showDatePicker(
       context: context,
       initialDate: dateTime,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
       builder: (context, child) => Theme(
         data: ThemeData.dark().copyWith(
           colorScheme: const ColorScheme.dark(

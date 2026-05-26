@@ -10,14 +10,14 @@ class SpecialDaysCacheHelper {
   /// This ensures deletions on other devices are reflected.
   static Future<void> mergeRemoteData(List<Map<String, dynamic>> rows) async {
     final prefs = await SharedPreferences.getInstance();
-    final Map<String, dynamic> cache = {};
+    final Map<String, Map<String, dynamic>> cache = {};
 
     for (final row in rows) {
       final key = row['date_key'] as String?;
       final dataStr = row['data'] as String?;
       if (key != null && dataStr != null) {
         try {
-          cache[key] = json.decode(dataStr);
+          cache[key] = json.decode(dataStr) as Map<String, dynamic>;
         } catch (_) {
           cache[key] = {'color': '0'};
         }

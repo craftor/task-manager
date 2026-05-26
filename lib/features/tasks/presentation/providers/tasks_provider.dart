@@ -86,15 +86,35 @@ class TasksNotifier extends StreamNotifier<List<Task>> {
       newIndex -= 1;
     }
 
-    // Create a copy to avoid mutating the UI state directly
-    final reordered = List<Task>.from(tasks);
-    final item = reordered.removeAt(oldIndex);
-    reordered.insert(newIndex, item);
+    // Reorder within the given sublist
+    final reorderedSublist = List<Task>.from(tasks);
+    final item = reorderedSublist.removeAt(oldIndex);
+    reorderedSublist.insert(newIndex, item);
 
+    // Reassign sortOrder globally: pending first, then completed
     final repository = ref.read(taskRepositoryProvider);
-    for (int i = 0; i < reordered.length; i++) {
-      final updated = reordered[i].copyWith(sortOrder: i);
-      await repository.updateTask(updated);
+    final allTasks = await repository.getAllTasks();
+    final reorderedIds = reorderedSublist.map((t) => t.id).toSet();
+
+    final pendingTasks = reorderedSublist.where((t) => t.status != TaskStatus.completed).toList();
+    final otherCompleted = allTasks
+        .where((t) => !reorderedIds.contains(t.id) && t.status == TaskStatus.completed)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final sortedCompleted = reorderedSublist
+        .where((t) => t.status == TaskStatus.completed)
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    var sortIdx = 0;
+    for (final t in pendingTasks) {
+      await repository.updateTask(t.copyWith(sortOrder: sortIdx++, updatedAt: DateTime.now()));
+    }
+    for (final t in sortedCompleted) {
+      await repository.updateTask(t.copyWith(sortOrder: sortIdx++, updatedAt: DateTime.now()));
+    }
+    for (final t in otherCompleted) {
+      await repository.updateTask(t.copyWith(sortOrder: sortIdx++, updatedAt: DateTime.now()));
     }
   }
 }

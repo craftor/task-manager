@@ -9,6 +9,7 @@ import '../../../journal/journal_provider.dart';
 import '../../../mood/mood_provider.dart';
 import '../../../special_days/special_days_provider.dart';
 import '../../../../domain/entities/task.dart';
+import '../../../../domain/entities/project.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final Function(int)? onNavigate;
@@ -49,7 +50,7 @@ class DashboardScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     List<Task> tasks,
-    AsyncValue<List<dynamic>> projectsAsync,
+    AsyncValue<List<Project>> projectsAsync,
   ) {
     final totalTasks = tasks.length;
     final pendingTasks = tasks.where((t) => t.status != TaskStatus.completed).length;
@@ -319,7 +320,7 @@ class _MiniStat extends StatelessWidget {
 
 class _ProjectCard extends StatelessWidget {
   final List<Task> tasks;
-  final AsyncValue<List<dynamic>> projectsAsync;
+  final AsyncValue<List<Project>> projectsAsync;
 
   const _ProjectCard({required this.tasks, required this.projectsAsync});
 
@@ -337,9 +338,9 @@ class _ProjectCard extends StatelessWidget {
           const Text('Project Progress', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           ...projects.take(5).map((p) {
-            final name = (p as dynamic).name as String? ?? '?';
-            final pid = (p as dynamic).id as String? ?? '';
-            final isDefault = (p as dynamic).isDefault == true || name.toLowerCase() == 'default';
+            final name = p.name;
+            final pid = p.id;
+            final isDefault = p.isDefault || name.toLowerCase() == 'default';
             final ptasks = tasks.where((t) => t.projectId == pid || (isDefault && (t.projectId == AppConstants.legacyDefaultProjectId || t.projectId == AppConstants.defaultProjectId))).toList();
             final total = ptasks.length;
             final done = ptasks.where((t) => t.status == TaskStatus.completed).length;

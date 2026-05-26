@@ -90,8 +90,8 @@ class CalendarScreen extends ConsumerWidget {
     final moods = moodsAsync.valueOrNull ?? {};
 
     return TableCalendar<Task>(
-      firstDay: DateTime.utc(2020, 1, 1),
-      lastDay: DateTime.utc(2030, 12, 31),
+      firstDay: DateTime.now().subtract(const Duration(days: 365 * 5)),
+      lastDay: DateTime.now().add(const Duration(days: 365 * 5)),
       focusedDay: calendarState.focusedDay,
       selectedDayPredicate: (day) => isSameDay(calendarState.selectedDay, day),
       calendarFormat: CalendarFormat.month,

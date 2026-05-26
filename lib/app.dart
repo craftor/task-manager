@@ -598,8 +598,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           ),
           ElevatedButton.icon(
             onPressed: () {
+              final url = info.downloadUrl;
               Navigator.pop(ctx);
-              _openDownloadUrl(info.downloadUrl);
+              _openDownloadUrl(url);
             },
             icon: const Icon(Icons.download, size: 18),
             label: const Text('Download'),
@@ -654,10 +655,21 @@ class _AppLockWrapperState extends ConsumerState<_AppLockWrapper> with WidgetsBi
   Future<void> _showLock() async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_) => const AppLockScreen()),
+      MaterialPageRoute(
+        builder: (_) => PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            // Block back button — user must unlock or app stays locked
+          },
+          child: const AppLockScreen(),
+        ),
+      ),
     );
     if (result == true && mounted) {
       setState(() => _needsUnlock = false);
+    } else if (mounted) {
+      // If unlock failed or was bypassed, show lock again
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showLock());
     }
   }
 

@@ -319,8 +319,8 @@ class ProjectsScreen extends ConsumerWidget {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: startDate ?? DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
+                            firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                           );
                           if (date != null) {
                             setDialogState(() => startDate = date);
@@ -365,8 +365,8 @@ class ProjectsScreen extends ConsumerWidget {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: endDate ?? DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
+                            firstDate: DateTime.now().subtract(const Duration(days: 365 * 5)),
+                            lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                           );
                           if (date != null) {
                             setDialogState(() => endDate = date);
