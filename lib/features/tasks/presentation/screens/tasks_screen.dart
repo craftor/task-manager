@@ -12,7 +12,9 @@ import '../widgets/task_detail_panel.dart';
 enum TaskFilter { all, pending, completed, highPriority, overdue }
 
 class TasksScreen extends ConsumerStatefulWidget {
-  const TasksScreen({super.key});
+  final int tabIndex;
+
+  const TasksScreen({super.key, this.tabIndex = 0});
 
   @override
   ConsumerState<TasksScreen> createState() => _TasksScreenState();
