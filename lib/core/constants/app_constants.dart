@@ -10,6 +10,11 @@ class AppConstants {
   static const double sidebarBreakpoint = 900;  // sidebar vs drawer
   static const double compactBreakpoint = 600;  // compact card layouts
 
+  // Master-detail layout
+  static const double masterPaneDefaultWidth = 350.0;
+  static const double masterPaneMinWidth = 280.0;
+  static const double masterPaneMaxWidth = 500.0;
+
   // Spacing
   static const double spacing4 = 4.0;
   static const double spacing8 = 8.0;

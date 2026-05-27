@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../tasks/presentation/screens/tasks_screen.dart';
+import 'package:task_manager/features/tasks/presentation/screens/tasks_screen.dart';
 import '../presentation/screens/projects_screen.dart';
 
 class TasksProjectsScreen extends ConsumerStatefulWidget {
@@ -51,9 +51,9 @@ class _TasksProjectsScreenState extends ConsumerState<TasksProjectsScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          TasksScreen(),
-          ProjectsScreen(),
+        children: [
+          const TasksScreen(),
+          const ProjectsScreen(),
         ],
       ),
     );

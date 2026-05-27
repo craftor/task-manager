@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/master_detail_layout.dart';
 import '../../../../domain/entities/task.dart';
 import '../../../../domain/entities/project.dart';
 import '../providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
+import '../widgets/task_detail_panel.dart';
 
 enum TaskFilter { all, pending, completed, highPriority, overdue }
 
@@ -50,7 +52,24 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         ],
       ),
       body: tasksAsync.when(
-        data: (tasks) => _buildTaskList(context, ref, tasks),
+        data: (tasks) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
+          final selectedTaskId = ref.watch(selectedTaskIdProvider);
+
+          final taskList = _buildTaskList(context, ref, tasks);
+
+          if (isDesktop) {
+            return MasterDetailLayout(
+              masterPane: taskList,
+              detailPane: selectedTaskId != null
+                  ? TaskDetailPanel(selectedTaskId: selectedTaskId)
+                  : null,
+              onCloseDetail: () => ref.read(selectedTaskIdProvider.notifier).state = null,
+            );
+          }
+          return taskList;
+        },
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (error, stack) => _buildErrorState(error),
       ),
@@ -99,7 +118,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: AppConstants.defaultProjectId, name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
             final projectName = projects.firstWhere((p) => p.id == task.projectId, orElse: () => defaultProject).name;
             return _TaskCard(key: ValueKey(task.id), task: task, projectName: projectName,
-                onTap: () => _showTaskDialog(context, ref, task),
+                onTap: () {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
+                  if (isDesktop) {
+                    ref.read(selectedTaskIdProvider.notifier).state = task.id;
+                  } else {
+                    _showTaskDialog(context, ref, task);
+                  }
+                },
                 onToggle: () => ref.read(tasksProvider.notifier).toggleTaskStatus(task.id),
                 onDelete: () => _confirmDelete(context, ref, task));
           }).toList(),
@@ -119,7 +146,15 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             final defaultProject = projects.firstWhere((p) => p.isDefault, orElse: () => Project(id: AppConstants.defaultProjectId, name: 'Default', color: '#808080', icon: 'folder', createdAt: DateTime.now()));
             final projectName = projects.firstWhere((p) => p.id == task.projectId, orElse: () => defaultProject).name;
             return _TaskCard(key: ValueKey(task.id), task: task, projectName: projectName,
-                onTap: () => _showTaskDialog(context, ref, task),
+                onTap: () {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
+                  if (isDesktop) {
+                    ref.read(selectedTaskIdProvider.notifier).state = task.id;
+                  } else {
+                    _showTaskDialog(context, ref, task);
+                  }
+                },
                 onToggle: () => ref.read(tasksProvider.notifier).toggleTaskStatus(task.id),
                 onDelete: () => _confirmDelete(context, ref, task));
           }).toList(),

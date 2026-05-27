@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/master_detail_layout.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../providers/projects_provider.dart';
+import '../widgets/project_detail_panel.dart';
 
 const _projectIconMap = {
   'folder': Icons.folder_rounded,
@@ -60,7 +63,24 @@ class ProjectsScreen extends ConsumerWidget {
         ],
       ),
       body: projectsAsync.when(
-        data: (projects) => _buildProjectList(context, ref, projects),
+        data: (projects) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
+          final selectedProjectId = ref.watch(selectedProjectIdProvider);
+
+          final projectList = _buildProjectList(context, ref, projects);
+
+          if (isDesktop) {
+            return MasterDetailLayout(
+              masterPane: projectList,
+              detailPane: selectedProjectId != null
+                  ? ProjectDetailPanel(selectedProjectId: selectedProjectId)
+                  : null,
+              onCloseDetail: () => ref.read(selectedProjectIdProvider.notifier).state = null,
+            );
+          }
+          return projectList;
+        },
         loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
@@ -138,11 +158,14 @@ class ProjectsScreen extends ConsumerWidget {
       },
       itemBuilder: (context, index) {
         final project = sortedProjects[index];
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= AppConstants.sidebarBreakpoint;
         return _ProjectCard(
           key: ValueKey(project.id),
           project: project,
           onEdit: () => _showProjectDialog(context, ref, project),
           onDelete: () => _confirmDelete(context, ref, project),
+          onSelect: isDesktop ? () => ref.read(selectedProjectIdProvider.notifier).state = project.id : null,
           ref: ref,
         );
       },
@@ -489,6 +512,7 @@ class _ProjectCard extends StatefulWidget {
   final Project project;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback? onSelect;
   final WidgetRef ref;
 
   const _ProjectCard({
@@ -496,6 +520,7 @@ class _ProjectCard extends StatefulWidget {
     required this.project,
     required this.onEdit,
     required this.onDelete,
+    this.onSelect,
     required this.ref,
   });
 
@@ -523,7 +548,13 @@ class _ProjectCardState extends State<_ProjectCard> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             child: InkWell(
-              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              onTap: () {
+                if (widget.onSelect != null) {
+                  widget.onSelect!();
+                } else {
+                  setState(() => _isExpanded = !_isExpanded);
+                }
+              },
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.all(16),

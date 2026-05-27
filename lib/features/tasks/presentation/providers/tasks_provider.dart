@@ -14,6 +14,8 @@ final tasksProvider = StreamNotifierProvider<TasksNotifier, List<Task>>(
   TasksNotifier.new,
 );
 
+final selectedTaskIdProvider = StateProvider<String?>((ref) => null);
+
 class TasksNotifier extends StreamNotifier<List<Task>> {
   @override
   Stream<List<Task>> build() {

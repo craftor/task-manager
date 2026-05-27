@@ -20,6 +20,8 @@ final projectsProvider =
   ProjectsNotifier.new,
 );
 
+final selectedProjectIdProvider = StateProvider<String?>((ref) => null);
+
 class ProjectsNotifier extends StreamNotifier<List<Project>> {
   @override
   Stream<List<Project>> build() {
