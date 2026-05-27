@@ -664,8 +664,8 @@ class _CompactQuickActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _CompactActionBtn(icon: Icons.add_task, color: AppColors.primary, tooltip: 'Add Task', onTap: () {}),
-        _CompactActionBtn(icon: Icons.create_new_folder, color: AppColors.secondary, tooltip: 'Add Project', onTap: () {}),
+        _CompactActionBtn(icon: Icons.add_task, color: AppColors.primary, tooltip: 'Add Task', onTap: () => onNavigate?.call(2)),
+        _CompactActionBtn(icon: Icons.create_new_folder, color: AppColors.secondary, tooltip: 'Add Project', onTap: () => onNavigate?.call(2)),
         _CompactActionBtn(icon: Icons.edit_note, color: AppColors.warning, tooltip: 'Journal', onTap: () => onNavigate?.call(1)),
         _CompactActionBtn(icon: Icons.emoji_emotions, color: Colors.purple, tooltip: 'Mood', onTap: () => onNavigate?.call(4)),
         _CompactActionBtn(icon: Icons.auto_awesome, color: Colors.teal, tooltip: 'Special Day', onTap: () => onNavigate?.call(5)),
