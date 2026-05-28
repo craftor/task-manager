@@ -34,18 +34,6 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
     });
   }
 
-  void _scrollToCurrentYear() {
-    if (_scrollController.hasClients) {
-      final startYear = DateTime.now().year - 5;
-      final targetOffset = (_year - startYear) * 360.0;
-      _scrollController.animateTo(
-        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
-
   bool get _isCurrentYear => _year == DateTime.now().year;
   bool get _isLocked => !_isCurrentYear && !_isUnlocked;
 

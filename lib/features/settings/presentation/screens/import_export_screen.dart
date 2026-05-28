@@ -162,6 +162,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
               ref.invalidate(appLockEnabledProvider);
               if (!mounted) return;
               Navigator.pop(ctx);
+              if (!ctx.mounted) return;
               ScaffoldMessenger.of(ctx).showSnackBar(
                 const SnackBar(content: Text('App Lock PIN set'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
               );
