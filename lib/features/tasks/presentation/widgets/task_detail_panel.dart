@@ -39,7 +39,7 @@ class TaskDetailPanel extends ConsumerWidget {
         final projectName = projects
             .firstWhere(
               (p) => p.id == task.projectId,
-              orElse: () => projects.isNotEmpty ? projects.first : defaultProject,
+              orElse: () => defaultProject,
             )
             .name;
 
@@ -62,7 +62,7 @@ class TaskDetailPanel extends ConsumerWidget {
 
   void _showEditDialog(BuildContext context, WidgetRef ref, Task task) {
     final titleController = TextEditingController(text: task.title);
-    final descController = TextEditingController(text: task.description ?? '');
+    final descController = TextEditingController(text: task.description);
     Priority selectedPriority = task.priority;
     DateTime? startDate = task.startDate;
     DateTime? dueDate = task.dueDate;
@@ -273,7 +273,7 @@ class _TaskDetailContent extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Description
-            if (task.description != null && task.description!.isNotEmpty) ...[
+            if (task.description.isNotEmpty) ...[
               const Text('Description', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
               const SizedBox(height: 8),
               Container(
@@ -284,7 +284,7 @@ class _TaskDetailContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: Text(task.description!, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.5)),
+                child: Text(task.description, style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, height: 1.5)),
               ),
               const SizedBox(height: 24),
             ],
