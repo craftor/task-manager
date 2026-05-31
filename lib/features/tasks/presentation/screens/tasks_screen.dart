@@ -110,7 +110,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       if (pendingTasks.isNotEmpty) ...[
         _buildSectionHeader('Pending', pendingTasks.length),
         ReorderableListView(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          onReorderItem: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(pendingTasks, oldIndex, newIndex); },
+          onReorder: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(pendingTasks, oldIndex, newIndex); },
           proxyDecorator: (child, index, animation) {
             final double elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
             return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withValues(alpha: 0.3), child: child);
@@ -138,7 +138,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         const SizedBox(height: 24),
         _buildSectionHeader('Completed', completedTasks.length),
         ReorderableListView(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-          onReorderItem: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(completedTasks, oldIndex, newIndex); },
+          onReorder: (oldIndex, newIndex) { ref.read(tasksProvider.notifier).reorderTasks(completedTasks, oldIndex, newIndex); },
           proxyDecorator: (child, index, animation) {
             final double elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
             return Material(elevation: elevation, color: Colors.transparent, shadowColor: AppColors.primary.withValues(alpha: 0.3), child: child);

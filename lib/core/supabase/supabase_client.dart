@@ -1,4 +1,5 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/secure_credentials_service.dart';
 
@@ -11,12 +12,13 @@ class AppSupabaseClient {
     var url = await _secureCredentials.getSupabaseUrl();
     var anonKey = await _secureCredentials.getSupabaseAnonKey();
 
-    // If secure storage is empty, try loading from .env (for initial setup)
+    // If secure storage is empty, try loading from assets config (for initial setup)
     if (url == null || url.isEmpty || anonKey == null || anonKey.isEmpty) {
       try {
-        await dotenv.load(fileName: '.env');
-        url = dotenv.env['SUPABASE_URL'] ?? url;
-        anonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? anonKey;
+        final configString = await rootBundle.loadString('assets/flutter_assets/assets/config.json');
+        final config = json.decode(configString) as Map<String, dynamic>;
+        url = config['SUPABASE_URL'] as String? ?? url;
+        anonKey = config['SUPABASE_ANON_KEY'] as String? ?? anonKey;
 
         // Migrate to secure storage for future runs
         if (url != null && url.isNotEmpty && anonKey != null && anonKey.isNotEmpty) {
@@ -24,7 +26,7 @@ class AppSupabaseClient {
           await _secureCredentials.saveSupabaseAnonKey(anonKey);
         }
       } catch (e) {
-        // .env loading failed - will fall through to error check
+        // Asset loading failed - will fall through to error check
       }
     }
 

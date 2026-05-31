@@ -138,7 +138,7 @@ class ProjectsScreen extends ConsumerWidget {
     return ReorderableListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
       itemCount: sortedProjects.length,
-      onReorderItem: (oldIndex, newIndex) {
+      onReorder: (oldIndex, newIndex) {
         ref.read(projectsProvider.notifier).reorderProjects(oldIndex, newIndex);
       },
       proxyDecorator: (child, index, animation) {
