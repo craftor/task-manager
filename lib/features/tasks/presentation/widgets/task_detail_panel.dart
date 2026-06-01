@@ -15,7 +15,7 @@ class TaskDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (selectedTaskId == null) {
-      return _EmptyState();
+      return const _EmptyState();
     }
 
     final tasksAsync = ref.watch(tasksProvider);
@@ -25,7 +25,7 @@ class TaskDetailPanel extends ConsumerWidget {
       data: (tasks) {
         final task = tasks.where((t) => t.id == selectedTaskId).firstOrNull;
         if (task == null) {
-          return _EmptyState(message: 'Task not found');
+          return const _EmptyState(message: 'Task not found');
         }
 
         final projects = projectsAsync.valueOrNull ?? [];
@@ -267,8 +267,8 @@ class _TaskDetailContent extends StatelessWidget {
             Wrap(spacing: 8, runSpacing: 8, children: [
               _Chip(icon: Icons.folder_outlined, label: projectName, color: AppColors.primary),
               _Chip(icon: Icons.flag_outlined, label: _priorityLabel, color: _priorityColor),
-              if (isCompleted) _Chip(icon: Icons.check_circle_outlined, label: 'Completed', color: AppColors.success),
-              if (_isOverdue) _Chip(icon: Icons.warning_outlined, label: 'Overdue', color: AppColors.error),
+              if (isCompleted) const _Chip(icon: Icons.check_circle_outlined, label: 'Completed', color: AppColors.success),
+              if (_isOverdue) const _Chip(icon: Icons.warning_outlined, label: 'Overdue', color: AppColors.error),
             ]),
             const SizedBox(height: 24),
 

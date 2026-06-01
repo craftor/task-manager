@@ -14,7 +14,7 @@ class ProjectDetailPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (selectedProjectId == null) {
-      return _EmptyState();
+      return const _EmptyState();
     }
 
     final projectsAsync = ref.watch(projectsProvider);
@@ -24,7 +24,7 @@ class ProjectDetailPanel extends ConsumerWidget {
       data: (projects) {
         final project = projects.where((p) => p.id == selectedProjectId).firstOrNull;
         if (project == null) {
-          return _EmptyState(message: 'Project not found');
+          return const _EmptyState(message: 'Project not found');
         }
 
         final tasks = tasksAsync.when(
@@ -353,7 +353,7 @@ class _MiniTaskCard extends StatelessWidget {
           decoration: done ? TextDecoration.lineThrough : null), maxLines: 1, overflow: TextOverflow.ellipsis)),
         if (task.dueDate != null) ...[
           const SizedBox(width: 8),
-          Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+          const Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
           const SizedBox(width: 2),
           Text('${task.dueDate!.day}/${task.dueDate!.month}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
         ],

@@ -1,0 +1,9 @@
+# Force LF for auto-generated platform plugin registrants so git doesn't churn
+# them every time `flutter pub get` runs on Windows.
+**/flutter/generated_plugin_registrant.cc      text eol=lf
+**/flutter/generated_plugin_registrant.h       text eol=lf
+**/flutter/generated_plugins.cmake             text eol=lf
+**/Flutter/GeneratedPluginRegistrant.swift     text eol=lf
+
+# Drift-generated SQLite code is already gitignored, but keep eol stable when present
+*.g.dart                                       text eol=lf

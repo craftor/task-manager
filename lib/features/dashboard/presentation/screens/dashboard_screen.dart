@@ -115,18 +115,18 @@ class DashboardScreen extends ConsumerWidget {
 
               // Time + Task Time
               isWide
-                  ? Row(
+                  ? const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(child: _TimeCard()),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(child: _TaskTimeCard()),
                       ],
                     )
-                  : Column(
+                  : const Column(
                       children: [
                         _TimeCard(),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         _TaskTimeCard(),
                       ],
                     ),

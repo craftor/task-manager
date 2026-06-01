@@ -270,7 +270,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
                     else
                       Wrap(spacing: 4, runSpacing: 4, children: dist.entries.map((e) {
                         return Row(mainAxisSize: MainAxisSize.min, children: [
-                          Text(e.key, style: TextStyle(fontSize: 16)),
+                          Text(e.key, style: const TextStyle(fontSize: 16)),
                           const SizedBox(width: 2),
                           Text('×${e.value}', style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                         ]);

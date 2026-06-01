@@ -56,13 +56,15 @@ lib/
 
 ## Environment Setup
 
-Create a `.env` file from `.env.example` before running:
+Create `assets/config.json` from the template before running:
 ```bash
-cp .env.example .env
-# Then fill in SUPABASE_URL and SUPABASE_KEY
+cp assets/config.example.json assets/config.json
+# Then fill in SUPABASE_URL and SUPABASE_ANON_KEY
 ```
 
-pubspec.yaml references `assets: - .env` — the file must exist or the build fails.
+`assets/config.json` is gitignored. It is read once at first launch and migrated into `flutter_secure_storage` (see `lib/core/supabase/supabase_client.dart`). After first launch, credentials come from secure storage, not the asset file.
+
+pubspec.yaml references `assets/config.json` — the file must exist locally or the build fails.
 
 ## Version
 
@@ -77,4 +79,4 @@ Version is defined in `lib/version.dart` (`appVersion`). This is the single sour
 ## Known Issues
 
 - Run `flutter analyze lib/` to check lib/ code quality
-- `.env` file must exist before building (cp .env.example .env)
+- `assets/config.json` must exist before building (cp assets/config.example.json assets/config.json)

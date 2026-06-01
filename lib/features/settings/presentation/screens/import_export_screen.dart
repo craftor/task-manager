@@ -160,10 +160,10 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
               }
               await ref.read(appLockProvider.notifier).setPin(pin);
               ref.invalidate(appLockEnabledProvider);
-              if (!mounted) return;
-              Navigator.pop(ctx);
               if (!ctx.mounted) return;
-              ScaffoldMessenger.of(ctx).showSnackBar(
+              Navigator.pop(ctx);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('App Lock PIN set'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
               );
             },

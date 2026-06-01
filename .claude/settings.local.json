@@ -113,7 +113,20 @@
       "Bash(pkill -9 -f \"task_manager\")",
       "Bash(pkill -9 -f task_manager)",
       "Bash(cp -R build/macos/Build/Products/Release/task_manager.app /Applications/)",
-      "Bash(bash *)"
+      "Bash(bash *)",
+      "Bash(ls -la build/app/outputs/flutter-apk/)",
+      "Bash(ls -la build/app/outputs/apk/debug/)",
+      "Bash(where adb *)",
+      "Bash(/c/Users/craft/AppData/Local/Android/Sdk/platform-tools/adb.exe install *)",
+      "Bash(/c/Users/craft/AppData/Local/Android/Sdk/platform-tools/adb.exe devices *)",
+      "Bash(/c/Users/craft/AppData/Local/Android/Sdk/platform-tools/adb.exe *)",
+      "Bash(sleep3)",
+      "Bash(unzip -l build/app/outputs/flutter-apk/app-debug.apk)",
+      "Bash(Get-ChildItem lib/features -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(cargo check *)",
+      "Bash(rustc -vV)",
+      "Bash(tasklist)"
     ]
   }
 }
