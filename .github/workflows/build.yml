@@ -52,6 +52,13 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate Drift code
+        # app_database.g.dart is gitignored, so CI must run build_runner
+        # before flutter build. Otherwise Drift schema classes are unresolved
+        # and the whole data layer fails to compile.
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Validate version consistency
         if: matrix.target == 'android'
         run: bash scripts/check_version_sync.sh
