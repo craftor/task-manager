@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import '../../../domain/entities/project.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/time_entry.dart';
@@ -16,27 +17,94 @@ import 'remote_datasource.dart';
 /// self-hosted has no native row-level RLS — every collection permission is
 /// set to "User" with full CRUD in the console.
 class AppwriteDatasource implements RemoteDatasource {
-  // ignore: unused_field
   final Client _client;
   final String userId;
   final String databaseId;
 
   AppwriteDatasource(this._client, this.userId, this.databaseId);
 
+  Databases get _databases => Databases(_client);
+
   // Projects
   @override
   Future<List<Map<String, dynamic>>> fetchProjects() async {
-    throw UnimplementedError('AppwriteDatasource.fetchProjects (Phase C.1)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'projects',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.isNull('deleted_at'),
+        Query.orderAsc(r'$createdAt'),
+      ],
+    );
+    return result.documents.map(_projectDocToMap).toList();
   }
 
   @override
   Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
-    throw UnimplementedError('AppwriteDatasource.upsertProject (Phase C.1)');
+    final data = _projectPayload(project, deletedAt: deletedAt);
+    try {
+      await _databases.createDocument(
+        databaseId: databaseId,
+        collectionId: 'projects',
+        documentId: project.id,
+        data: data,
+      );
+    } on AppwriteException catch (e) {
+      if (e.code == 409) {
+        // Document already exists — fall back to update.
+        await _databases.updateDocument(
+          databaseId: databaseId,
+          collectionId: 'projects',
+          documentId: project.id,
+          data: data,
+        );
+      } else {
+        rethrow;
+      }
+    }
   }
 
   @override
   Future<void> deleteProject(String id) async {
-    throw UnimplementedError('AppwriteDatasource.deleteProject (Phase C.1)');
+    await _databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: 'projects',
+      documentId: id,
+      data: {'deleted_at': DateTime.now().toIso8601String()},
+    );
+  }
+
+  /// Build the project data map. Note: `createdAt` / `updatedAt` are
+  /// auto-managed by Appwrite as `$createdAt` / `$updatedAt`; we never send
+  /// them in the payload.
+  Map<String, dynamic> _projectPayload(Project project, {DateTime? deletedAt}) {
+    final data = <String, dynamic>{
+      'user_id': userId,
+      'parent_id': project.parentId,
+      'name': project.name,
+      'description': project.description,
+      'color': project.color,
+      'icon': project.icon,
+      'start_date': project.startDate?.toIso8601String(),
+      'end_date': project.endDate?.toIso8601String(),
+      'sort_order': project.sortOrder,
+      'is_default': project.isDefault,
+    };
+    if (deletedAt != null) {
+      data['deleted_at'] = deletedAt.toIso8601String();
+    }
+    return data;
+  }
+
+  /// Project the Appwrite `Document` back to the row shape that downstream
+  /// repositories already expect (snake_case + `id` field).
+  Map<String, dynamic> _projectDocToMap(Document doc) {
+    final data = Map<String, dynamic>.from(doc.data);
+    data['id'] = doc.$id;
+    data['created_at'] = doc.$createdAt.toIso8601String();
+    data['updated_at'] = doc.$updatedAt.toIso8601String();
+    return data;
   }
 
   // Tasks
