@@ -7,15 +7,21 @@ import 'remote_datasource.dart';
 
 /// Appwrite implementation of [RemoteDatasource].
 ///
-/// All methods currently throw [UnimplementedError] — this skeleton is the
-/// target for the Phase C sub-steps. Once each method group is implemented
-/// (C.1 projects, C.2 tasks, C.3 time_entries, C.4 special_days + moods,
-/// C.5 journal_entries), flip `kUseAppwrite` in `remote_datasource_factory.dart`
-/// to actually route here.
+/// All methods are now implemented for the 6 collections:
+/// - projects (C.1)
+/// - tasks (C.2) — also closes the 7-field gap left by SupabaseDatasource
+/// - time_entries (C.3)
+/// - special_days + moods (C.4)
+/// - journal_entries (C.5)
 ///
-/// All queries must include `Query.equal('user_id', userId)` since Appwrite
-/// self-hosted has no native row-level RLS — every collection permission is
-/// set to "User" with full CRUD in the console.
+/// Appwrite auto-manages `$createdAt` / `$updatedAt` on every document —
+/// they are never sent in the payload. On read, we project them into the
+/// row map as `created_at` / `updated_at` (ISO 8601) so the local Drift
+/// schema is satisfied.
+///
+/// All queries include `Query.equal('user_id', userId)` because Appwrite
+/// self-hosted has no native row-level RLS — every collection permission
+/// is set to "User" with full CRUD in the console.
 class AppwriteDatasource implements RemoteDatasource {
   final Client _client;
   final String userId;
@@ -25,7 +31,38 @@ class AppwriteDatasource implements RemoteDatasource {
 
   Databases get _databases => Databases(_client);
 
-  // Projects
+  // ─── Shared upsert helper ────────────────────────────────────────────
+
+  /// Appwrite has no native upsert. Try create; on 409 (document already
+  /// exists) fall back to update. Any other Appwrite error rethrows.
+  Future<void> _upsertDocument({
+    required String collectionId,
+    required String documentId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      await _databases.createDocument(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        documentId: documentId,
+        data: data,
+      );
+    } on AppwriteException catch (e) {
+      if (e.code == 409) {
+        await _databases.updateDocument(
+          databaseId: databaseId,
+          collectionId: collectionId,
+          documentId: documentId,
+          data: data,
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  // ─── Projects (C.1) ─────────────────────────────────────────────────
+
   @override
   Future<List<Map<String, dynamic>>> fetchProjects() async {
     final result = await _databases.listDocuments(
@@ -37,32 +74,16 @@ class AppwriteDatasource implements RemoteDatasource {
         Query.orderAsc(r'$createdAt'),
       ],
     );
-    return result.documents.map(_projectDocToMap).toList();
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
-    final data = _projectPayload(project, deletedAt: deletedAt);
-    try {
-      await _databases.createDocument(
-        databaseId: databaseId,
-        collectionId: 'projects',
-        documentId: project.id,
-        data: data,
-      );
-    } on AppwriteException catch (e) {
-      if (e.code == 409) {
-        // Document already exists — fall back to update.
-        await _databases.updateDocument(
-          databaseId: databaseId,
-          collectionId: 'projects',
-          documentId: project.id,
-          data: data,
-        );
-      } else {
-        rethrow;
-      }
-    }
+    await _upsertDocument(
+      collectionId: 'projects',
+      documentId: project.id,
+      data: _projectPayload(project, deletedAt: deletedAt),
+    );
   }
 
   @override
@@ -75,9 +96,6 @@ class AppwriteDatasource implements RemoteDatasource {
     );
   }
 
-  /// Build the project data map. Note: `createdAt` / `updatedAt` are
-  /// auto-managed by Appwrite as `$createdAt` / `$updatedAt`; we never send
-  /// them in the payload.
   Map<String, dynamic> _projectPayload(Project project, {DateTime? deletedAt}) {
     final data = <String, dynamic>{
       'user_id': userId,
@@ -97,103 +115,233 @@ class AppwriteDatasource implements RemoteDatasource {
     return data;
   }
 
-  /// Project the Appwrite `Document` back to the row shape that downstream
-  /// repositories already expect (snake_case + `id` field).
-  Map<String, dynamic> _projectDocToMap(Document doc) {
-    final data = Map<String, dynamic>.from(doc.data);
-    data['id'] = doc.$id;
-    data['created_at'] = doc.$createdAt.toIso8601String();
-    data['updated_at'] = doc.$updatedAt.toIso8601String();
-    return data;
-  }
+  // ─── Tasks (C.2) — closes the 7-field gap ───────────────────────────
 
-  // Tasks
   @override
   Future<List<Map<String, dynamic>>> fetchTasks() async {
-    throw UnimplementedError('AppwriteDatasource.fetchTasks (Phase C.2)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'tasks',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.isNull('deleted_at'),
+        Query.orderAsc(r'$createdAt'),
+      ],
+    );
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertTask(Task task, {DateTime? deletedAt}) async {
-    throw UnimplementedError('AppwriteDatasource.upsertTask (Phase C.2)');
+    await _upsertDocument(
+      collectionId: 'tasks',
+      documentId: task.id,
+      data: _taskPayload(task, deletedAt: deletedAt),
+    );
   }
 
   @override
   Future<void> deleteTask(String id) async {
-    throw UnimplementedError('AppwriteDatasource.deleteTask (Phase C.2)');
+    await _databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: 'tasks',
+      documentId: id,
+      data: {'deleted_at': DateTime.now().toIso8601String()},
+    );
   }
 
-  // Time Entries
+  Map<String, dynamic> _taskPayload(Task task, {DateTime? deletedAt}) {
+    final data = <String, dynamic>{
+      'user_id': userId,
+      'project_id': task.projectId,
+      'parent_task_id': task.parentTaskId,
+      'title': task.title,
+      'description': task.description,
+      'priority': task.priority.index,
+      'status': task.status.index,
+      'start_date': task.startDate?.toIso8601String(),
+      'due_date': task.dueDate?.toIso8601String(),
+      'tags': task.tags,
+      'estimated_minutes': task.estimatedMinutes,
+      'actual_minutes': task.actualMinutes,
+      'is_recurring': task.isRecurring,
+      'recurring_rule': task.recurringRule,
+      'sort_order': task.sortOrder,
+    };
+    if (deletedAt != null) {
+      data['deleted_at'] = deletedAt.toIso8601String();
+    }
+    return data;
+  }
+
+  // ─── Time Entries (C.3) — hard delete on deleteTimeEntry ──────────
+
   @override
   Future<List<Map<String, dynamic>>> fetchTimeEntries() async {
-    throw UnimplementedError(
-        'AppwriteDatasource.fetchTimeEntries (Phase C.3)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'time_entries',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.orderAsc('start_time'),
+      ],
+    );
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertTimeEntry(TimeEntry entry) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.upsertTimeEntry (Phase C.3)');
+    await _upsertDocument(
+      collectionId: 'time_entries',
+      documentId: entry.id,
+      data: {
+        'user_id': userId,
+        'task_id': entry.taskId,
+        'start_time': entry.startTime.toIso8601String(),
+        'end_time': entry.endTime?.toIso8601String(),
+        'duration_minutes': entry.durationMinutes,
+        'note': entry.note,
+        'manual': entry.manual,
+      },
+    );
   }
 
   @override
   Future<void> deleteTimeEntry(String id) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.deleteTimeEntry (Phase C.3)');
+    await _databases.deleteDocument(
+      databaseId: databaseId,
+      collectionId: 'time_entries',
+      documentId: id,
+    );
   }
 
-  // Special Days
+  // ─── Special Days (C.4) — composite id = userId_dateKey ────────────
+
   @override
   Future<List<Map<String, dynamic>>> fetchSpecialDays() async {
-    throw UnimplementedError(
-        'AppwriteDatasource.fetchSpecialDays (Phase C.4)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'special_days',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.orderAsc('date_key'),
+      ],
+    );
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertSpecialDay(String dateKey, String data) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.upsertSpecialDay (Phase C.4)');
+    await _upsertDocument(
+      collectionId: 'special_days',
+      documentId: _compositeId(dateKey),
+      data: {
+        'user_id': userId,
+        'date_key': dateKey,
+        'data': data,
+      },
+    );
   }
 
   @override
   Future<void> deleteSpecialDay(String dateKey) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.deleteSpecialDay (Phase C.4)');
+    await _databases.deleteDocument(
+      databaseId: databaseId,
+      collectionId: 'special_days',
+      documentId: _compositeId(dateKey),
+    );
   }
 
-  // Moods
+  // ─── Moods (C.4) — same shape as special_days ──────────────────────
+
   @override
   Future<List<Map<String, dynamic>>> fetchMoods() async {
-    throw UnimplementedError('AppwriteDatasource.fetchMoods (Phase C.4)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'moods',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.orderAsc('date_key'),
+      ],
+    );
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertMood(String dateKey, String data) async {
-    throw UnimplementedError('AppwriteDatasource.upsertMood (Phase C.4)');
+    await _upsertDocument(
+      collectionId: 'moods',
+      documentId: _compositeId(dateKey),
+      data: {
+        'user_id': userId,
+        'date_key': dateKey,
+        'data': data,
+      },
+    );
   }
 
   @override
   Future<void> deleteMood(String dateKey) async {
-    throw UnimplementedError('AppwriteDatasource.deleteMood (Phase C.4)');
+    await _databases.deleteDocument(
+      databaseId: databaseId,
+      collectionId: 'moods',
+      documentId: _compositeId(dateKey),
+    );
   }
 
-  // Journal Entries
+  // ─── Journal Entries (C.5) — hard delete ────────────────────────────
+
   @override
   Future<List<Map<String, dynamic>>> fetchJournalEntries() async {
-    throw UnimplementedError(
-        'AppwriteDatasource.fetchJournalEntries (Phase C.5)');
+    final result = await _databases.listDocuments(
+      databaseId: databaseId,
+      collectionId: 'journal_entries',
+      queries: [
+        Query.equal('user_id', userId),
+        Query.orderDesc(r'$createdAt'),
+      ],
+    );
+    return result.documents.map(_docToRow).toList();
   }
 
   @override
   Future<void> upsertJournalEntry(
       String dateKey, Map<String, dynamic> entry) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.upsertJournalEntry (Phase C.5)');
+    await _upsertDocument(
+      collectionId: 'journal_entries',
+      documentId: entry['id'] as String,
+      data: {
+        'user_id': userId,
+        'date_key': dateKey,
+        'content': entry['content'],
+      },
+    );
   }
 
   @override
   Future<void> deleteJournalEntry(String entryId) async {
-    throw UnimplementedError(
-        'AppwriteDatasource.deleteJournalEntry (Phase C.5)');
+    await _databases.deleteDocument(
+      databaseId: databaseId,
+      collectionId: 'journal_entries',
+      documentId: entryId,
+    );
   }
+
+  // ─── Helpers ────────────────────────────────────────────────────────
+
+  /// Project an Appwrite `Document` back to the row shape downstream
+  /// repositories expect: snake_case fields, `id` set, `created_at` /
+  /// `updated_at` populated from the auto-managed `$createdAt` /
+  /// `$updatedAt` (which are already ISO 8601 strings in SDK 21.4.0).
+  Map<String, dynamic> _docToRow(Document doc) {
+    final data = Map<String, dynamic>.from(doc.data);
+    data['id'] = doc.$id;
+    data['created_at'] = doc.$createdAt;
+    data['updated_at'] = doc.$updatedAt;
+    return data;
+  }
+
+  /// Composite document id for special_days and moods (one row per
+  /// user × date). Matches the Supabase convention.
+  String _compositeId(String dateKey) => '${userId}_$dateKey';
 }
