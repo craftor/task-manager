@@ -15,11 +15,11 @@ import 'supabase_datasource.dart';
 /// Why compile-time and not runtime: the Appwrite project id, endpoint, and
 /// database id are baked into the binary. A runtime switch would need a
 /// remote config layer that's out of scope for v1.
-const bool kUseAppwrite = false;
+const bool kUseAppwrite = true;
 
 /// Appwrite database id used by every [AppwriteDatasource] instance.
 /// Must match the database created in the Appwrite console during Phase C setup.
-const String kAppwriteDatabaseId = 'task_manager';
+const String kAppwriteDatabaseId = '6a20eeaa002f0f294ab9';
 
 /// Build the appropriate [AuthService] for the current build flag.
 AuthService buildAuthService() {
