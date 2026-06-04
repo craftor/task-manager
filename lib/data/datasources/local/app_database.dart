@@ -190,7 +190,7 @@ class AppDatabase extends _$AppDatabase {
       status: Value(data['status'] as int? ?? 0),
       startDate: Value(data['start_date'] != null ? DateTime.parse(data['start_date'] as String) : null),
       dueDate: Value(data['due_date'] != null ? DateTime.parse(data['due_date'] as String) : null),
-      tags: Value((data['tags'] as String?)?.split(',') ?? []),
+      tags: Value(_parseTags(data['tags'])),
       estimatedMinutes: Value(data['estimated_minutes'] as int?),
       actualMinutes: Value(data['actual_minutes'] as int?),
       isRecurring: Value(data['is_recurring'] as bool? ?? false),
@@ -200,6 +200,17 @@ class AppDatabase extends _$AppDatabase {
       sortOrder: Value(data['sort_order'] as int? ?? 0),
       pendingSync: const Value(false),
     ));
+  }
+
+  /// Normalize the `tags` field across remote backends.
+  ///
+  /// - Appwrite returns a `List<dynamic>` of strings (string-array attribute).
+  /// - Supabase CSV column would have returned a `String?` like "a,b,c".
+  /// - Anything else (null / empty list) → empty list.
+  static List<String> _parseTags(dynamic raw) {
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    if (raw is String) return raw.isEmpty ? const [] : raw.split(',');
+    return const [];
   }
 
   // Time entry queries

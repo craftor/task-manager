@@ -43,8 +43,6 @@ void main() {
       when(() => mockDb.upsertTimeEntryFromRemote(any())).thenAnswer((_) async {});
       when(() => mockDb.deleteProjectById(any())).thenAnswer((_) async {});
       when(() => mockDb.deleteTaskById(any())).thenAnswer((_) async {});
-      when(() => mockDb.fixLegacyTaskProject(any())).thenAnswer((_) async {});
-      when(() => mockDb.cleanupDuplicateDefaultProjects()).thenAnswer((_) async {});
     });
 
     test('syncStateStream is accessible', () async {

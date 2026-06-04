@@ -1,7 +1,7 @@
 name: task_manager
 description: Personal task and time management application
 publish_to: 'none'
-version: 0.10.0
+version: 0.11.0
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
