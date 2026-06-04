@@ -1,20 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../../../data/datasources/remote/remote_datasource_factory.dart';
 import '../../data/sync_manager.dart';
 
-/// Current authenticated user id. Read from the Supabase auth client.
-///
-/// TODO(Phase B): replace with `AuthService.currentUser` once the Appwrite
-/// auth migration lands. The single-callsite read here is the only thing
-/// that ties us to the Supabase SDK outside of the auth feature.
+/// Current authenticated user id. Sourced from the auth state (set during
+/// `AuthNotifier._initAuthState`) so this provider stays backend-agnostic.
 final userIdProvider = Provider<String?>((ref) {
-  final authState = ref.watch(authStateProvider);
-  if (authState.status != AuthStatus.authenticated) return null;
-  return Supabase.instance.client.auth.currentUser?.id;
+  return ref.watch(authStateProvider).userId;
 });
 
 /// Backend-agnostic remote datasource (Supabase today, Appwrite in Phase C).

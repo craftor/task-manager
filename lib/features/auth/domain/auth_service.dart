@@ -1,51 +1,34 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'app_user.dart';
+import 'auth_event.dart';
 
+/// Result of an authentication attempt.
 class AuthResult {
   final bool success;
   final String? error;
-  final User? user;
+  final AppUser? user;
 
   AuthResult.success(this.user) : success = true, error = null;
   AuthResult.failure(this.error) : success = false, user = null;
 }
 
-class AuthService {
-  GoTrueClient get _auth => Supabase.instance.client.auth;
+/// Backend-agnostic auth surface.
+///
+/// Implemented by [SupabaseAuthService] (today) and [AppwriteAuthService]
+/// (Phase B end-state). Selected by `kUseAppwrite` in
+/// `remote_datasource_factory.dart` via the auth provider.
+abstract class AuthService {
+  /// Read any persisted session and emit an [AuthEvent] for it. Idempotent.
+  Future<void> initialize();
 
-  Future<AuthResult> signInWithEmail(String email, String password) async {
-    try {
-      final response = await _auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      return AuthResult.success(response.user);
-    } on AuthException catch (e) {
-      return AuthResult.failure(e.message);
-    } catch (e) {
-      return AuthResult.failure('Network error: ${e.toString()}');
-    }
-  }
+  Future<AuthResult> signInWithEmail(String email, String password);
 
-  Future<AuthResult> signUp(String email, String password) async {
-    try {
-      final response = await _auth.signUp(
-        email: email,
-        password: password,
-      );
-      return AuthResult.success(response.user);
-    } on AuthException catch (e) {
-      return AuthResult.failure(e.message);
-    } catch (e) {
-      return AuthResult.failure('Network error: ${e.toString()}');
-    }
-  }
+  Future<AuthResult> signUp(String email, String password);
 
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
+  Future<void> signOut();
 
-  User? get currentUser => _auth.currentUser;
-  bool get isAuthenticated => _auth.currentUser != null;
+  AppUser? get currentUser;
+  bool get isAuthenticated;
 
-  Stream<AuthState> get onAuthStateChange => _auth.onAuthStateChange;
+  /// Stream of auth state changes, projected to our domain [AuthEvent] type.
+  Stream<AuthEvent> get onAuthStateChange;
 }
