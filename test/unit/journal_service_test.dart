@@ -3,13 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task_manager/features/journal/journal_service.dart';
-import 'package:task_manager/data/datasources/remote/supabase_datasource.dart';
+import 'package:task_manager/data/datasources/remote/remote_datasource.dart';
 
-class MockSupabaseDatasource extends Mock implements SupabaseDatasource {}
+class MockRemoteDatasource extends Mock implements RemoteDatasource {}
 
 void main() {
   group('JournalService', () {
-    late MockSupabaseDatasource mockDs;
+    late MockRemoteDatasource mockDs;
     late SharedPreferences prefs;
 
     setUpAll(() {
@@ -17,7 +17,7 @@ void main() {
     });
 
     setUp(() async {
-      mockDs = MockSupabaseDatasource();
+      mockDs = MockRemoteDatasource();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
     });

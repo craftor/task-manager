@@ -1,19 +1,18 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:task_manager/features/sync/data/sync_manager.dart';
 import 'package:task_manager/data/datasources/local/app_database.dart';
-import 'package:task_manager/data/datasources/remote/supabase_datasource.dart';
+import 'package:task_manager/data/datasources/remote/remote_datasource.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
-class MockSupabaseDatasource extends Mock implements SupabaseDatasource {}
+class MockRemoteDatasource extends Mock implements RemoteDatasource {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('SyncManager', () {
     late MockAppDatabase mockDb;
-    late MockSupabaseDatasource mockDs;
+    late MockRemoteDatasource mockDs;
 
     setUpAll(() {
       registerFallbackValue(<String, dynamic>{});
@@ -21,7 +20,7 @@ void main() {
 
     setUp(() async {
       mockDb = MockAppDatabase();
-      mockDs = MockSupabaseDatasource();
+      mockDs = MockRemoteDatasource();
 
       when(() => mockDb.getPendingProjects()).thenAnswer((_) async => []);
       when(() => mockDb.getPendingTasks()).thenAnswer((_) async => []);

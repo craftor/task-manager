@@ -3,11 +3,11 @@ import '../../../core/utils/logger.dart';
 import '../../domain/entities/task.dart' as entity;
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/app_database.dart';
-import '../datasources/remote/supabase_datasource.dart';
+import '../datasources/remote/remote_datasource.dart';
 
 class TaskRepositoryImpl implements TaskRepository {
   final AppDatabase _db;
-  final SupabaseDatasource? _remote;
+  final RemoteDatasource? _remote;
 
   TaskRepositoryImpl(this._db, [this._remote]);
 

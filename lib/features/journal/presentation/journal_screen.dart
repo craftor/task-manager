@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../sync/data/sync_manager.dart';
 import '../../sync/presentation/providers/sync_status_provider.dart';
 import '../../journal/journal_provider.dart';
@@ -21,7 +21,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _hasUnsaved = false;
   String? _editingEntryId;
 
-  SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
+  RemoteDatasource? get _remote => ref.read(remoteDatasourceProvider);
 
   @override
   void dispose() {

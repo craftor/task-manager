@@ -2,14 +2,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../domain/entities/project.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/time_entry.dart';
+import 'remote_datasource.dart';
 
-class SupabaseDatasource {
+class SupabaseDatasource implements RemoteDatasource {
   final SupabaseClient _client;
   final String userId;
 
   SupabaseDatasource(this._client, this.userId);
 
   // Projects
+  @override
   Future<List<Map<String, dynamic>>> fetchProjects() async {
     final response = await _client
         .from('projects')
@@ -20,6 +22,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
     final data = <String, dynamic>{
       'id': project.id,
@@ -42,6 +45,7 @@ class SupabaseDatasource {
     await _client.from('projects').upsert(data);
   }
 
+  @override
   Future<void> deleteProject(String id) async {
     await _client.from('projects').update({
       'deleted_at': DateTime.now().toIso8601String(),
@@ -49,6 +53,7 @@ class SupabaseDatasource {
   }
 
   // Tasks
+  @override
   Future<List<Map<String, dynamic>>> fetchTasks() async {
     final response = await _client
         .from('tasks')
@@ -59,6 +64,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertTask(Task task, {DateTime? deletedAt}) async {
     final data = <String, dynamic>{
       'id': task.id,
@@ -79,6 +85,7 @@ class SupabaseDatasource {
     await _client.from('tasks').upsert(data);
   }
 
+  @override
   Future<void> deleteTask(String id) async {
     await _client.from('tasks').update({
       'deleted_at': DateTime.now().toIso8601String(),
@@ -86,6 +93,7 @@ class SupabaseDatasource {
   }
 
   // Time Entries
+  @override
   Future<List<Map<String, dynamic>>> fetchTimeEntries() async {
     final response = await _client
         .from('time_entries')
@@ -95,6 +103,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertTimeEntry(TimeEntry entry) async {
     await _client.from('time_entries').upsert({
       'id': entry.id,
@@ -110,11 +119,13 @@ class SupabaseDatasource {
     });
   }
 
+  @override
   Future<void> deleteTimeEntry(String id) async {
     await _client.from('time_entries').delete().eq('id', id);
   }
 
   // Special Days
+  @override
   Future<List<Map<String, dynamic>>> fetchSpecialDays() async {
     final response = await _client
         .from('special_days')
@@ -124,6 +135,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertSpecialDay(String dateKey, String data) async {
     await _client.from('special_days').upsert({
       'id': '${userId}_$dateKey',
@@ -134,6 +146,7 @@ class SupabaseDatasource {
     });
   }
 
+  @override
   Future<void> deleteSpecialDay(String dateKey) async {
     await _client
         .from('special_days')
@@ -142,6 +155,7 @@ class SupabaseDatasource {
   }
 
   // Moods
+  @override
   Future<List<Map<String, dynamic>>> fetchMoods() async {
     final response = await _client
         .from('moods')
@@ -151,6 +165,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertMood(String dateKey, String data) async {
     await _client.from('moods').upsert({
       'id': '${userId}_$dateKey',
@@ -161,6 +176,7 @@ class SupabaseDatasource {
     });
   }
 
+  @override
   Future<void> deleteMood(String dateKey) async {
     await _client
         .from('moods')
@@ -169,6 +185,7 @@ class SupabaseDatasource {
   }
 
   // Journal Entries
+  @override
   Future<List<Map<String, dynamic>>> fetchJournalEntries() async {
     final response = await _client
         .from('journal_entries')
@@ -178,6 +195,7 @@ class SupabaseDatasource {
     return response;
   }
 
+  @override
   Future<void> upsertJournalEntry(String dateKey, Map<String, dynamic> entry) async {
     await _client.from('journal_entries').upsert({
       'id': entry['id'],
@@ -189,6 +207,7 @@ class SupabaseDatasource {
     });
   }
 
+  @override
   Future<void> deleteJournalEntry(String entryId) async {
     await _client
         .from('journal_entries')

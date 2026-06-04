@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show immutable;
 import '../../../core/utils/logger.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/datasources/local/app_database.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../../../domain/entities/project.dart' as entity;
 import '../../../../domain/entities/task.dart' as task_entity;
 import '../../../../domain/entities/time_entry.dart' as time_entity;
@@ -29,7 +29,7 @@ class SyncState {
 
 class SyncManager {
   final AppDatabase _localDb;
-  final SupabaseDatasource _remoteDs;
+  final RemoteDatasource _remoteDs;
   final Connectivity _connectivity = Connectivity();
 
   StreamSubscription? _connectivitySubscription;

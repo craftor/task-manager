@@ -2,19 +2,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../../data/datasources/remote/remote_datasource.dart';
+import '../../../../data/datasources/remote/remote_datasource_factory.dart';
 import '../../data/sync_manager.dart';
 
+/// Current authenticated user id. Read from the Supabase auth client.
+///
+/// TODO(Phase B): replace with `AuthService.currentUser` once the Appwrite
+/// auth migration lands. The single-callsite read here is the only thing
+/// that ties us to the Supabase SDK outside of the auth feature.
 final userIdProvider = Provider<String?>((ref) {
   final authState = ref.watch(authStateProvider);
   if (authState.status != AuthStatus.authenticated) return null;
   return Supabase.instance.client.auth.currentUser?.id;
 });
 
-final supabaseDatasourceProvider = Provider<SupabaseDatasource?>((ref) {
+/// Backend-agnostic remote datasource (Supabase today, Appwrite in Phase C).
+///
+/// Returns null when no user is signed in. The implementation is selected
+/// by `kUseAppwrite` in `remote_datasource_factory.dart`.
+final remoteDatasourceProvider = Provider<RemoteDatasource?>((ref) {
   final userId = ref.watch(userIdProvider);
-  if (userId == null) return null;
-  return SupabaseDatasource(Supabase.instance.client, userId);
+  return buildRemoteDatasource(userId: userId);
 });
 
 // Singleton instance holder to prevent multiple SyncManager instances
@@ -30,7 +39,7 @@ final syncManagerProvider = Provider<SyncManager?>((ref) {
   if (_SyncManagerHolder.get() != null) return _SyncManagerHolder.get();
 
   final db = ref.watch(databaseProvider);
-  final datasource = ref.watch(supabaseDatasourceProvider);
+  final datasource = ref.watch(remoteDatasourceProvider);
   if (datasource == null) return null;
 
   final manager = SyncManager(db, datasource);

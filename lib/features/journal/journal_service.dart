@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/utils/logger.dart';
-import '../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../data/datasources/remote/remote_datasource.dart';
 
 class JournalEntry {
   final String id;
@@ -33,7 +33,7 @@ class JournalService {
   }
 
   /// Add entry — writes to local cache immediately, then syncs to remote with retry
-  Future<JournalEntry> addEntry(SupabaseDatasource remote, String dateKey, String content) async {
+  Future<JournalEntry> addEntry(RemoteDatasource remote, String dateKey, String content) async {
     final entry = JournalEntry(id: const Uuid().v4(), createdAt: DateTime.now(), content: content.trim());
     final all = await _loadCache();
     all.putIfAbsent(dateKey, () => []).insert(0, entry);
@@ -44,7 +44,7 @@ class JournalService {
   }
 
   /// Delete entry from local cache + remote
-  Future<void> deleteEntry(SupabaseDatasource remote, String dateKey, String entryId) async {
+  Future<void> deleteEntry(RemoteDatasource remote, String dateKey, String entryId) async {
     final all = await _loadCache();
     all[dateKey]?.removeWhere((e) => e.id == entryId);
     if (all[dateKey]?.isEmpty == true) all.remove(dateKey);
@@ -61,7 +61,7 @@ class JournalService {
   }
 
   /// Pull all from remote and replace local cache
-  Future<void> pullFromRemote(SupabaseDatasource remote) async {
+  Future<void> pullFromRemote(RemoteDatasource remote) async {
     try {
       final rows = await remote.fetchJournalEntries();
       final map = <String, List<JournalEntry>>{};

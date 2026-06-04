@@ -3,20 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task_manager/features/mood/mood_service.dart';
-import 'package:task_manager/data/datasources/remote/supabase_datasource.dart';
+import 'package:task_manager/data/datasources/remote/remote_datasource.dart';
 
-class MockSupabaseDatasource extends Mock implements SupabaseDatasource {}
+class MockRemoteDatasource extends Mock implements RemoteDatasource {}
 
 void main() {
   group('MoodService', () {
-    late MockSupabaseDatasource mockDs;
+    late MockRemoteDatasource mockDs;
 
     setUpAll(() {
       registerFallbackValue(<String, dynamic>{});
     });
 
     setUp(() async {
-      mockDs = MockSupabaseDatasource();
+      mockDs = MockRemoteDatasource();
       // Reset static cache to ensure fresh SharedPreferences per test
       SharedPreferences.setMockInitialValues({});
     });

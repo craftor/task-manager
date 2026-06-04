@@ -7,7 +7,7 @@ import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../mood/mood_provider.dart';
 import '../../../mood/mood_service.dart';
-import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
+import '../../../sync/presentation/providers/sync_status_provider.dart' show remoteDatasourceProvider;
 import '../providers/calendar_provider.dart';
 
 class CalendarScreen extends ConsumerWidget {
@@ -263,7 +263,7 @@ class CalendarScreen extends ConsumerWidget {
                         if (currentMoods.isNotEmpty)
                           TextButton(
                             onPressed: () async {
-                              final remote = ref.read(supabaseDatasourceProvider);
+                              final remote = ref.read(remoteDatasourceProvider);
                               if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, key);
                               ref.invalidate(allMoodsProvider);
                               ref.invalidate(weeklyMoodDistributionProvider);
@@ -279,7 +279,7 @@ class CalendarScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () {
-                            final remote = ref.read(supabaseDatasourceProvider);
+                            final remote = ref.read(remoteDatasourceProvider);
                             if (remote != null) ref.read(moodServiceProvider).setMoods(remote, key, selected.toList());
                             ref.invalidate(allMoodsProvider);
                             ref.invalidate(weeklyMoodDistributionProvider);

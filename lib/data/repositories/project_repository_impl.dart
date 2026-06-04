@@ -3,11 +3,11 @@ import '../../../core/utils/logger.dart';
 import '../../domain/entities/project.dart' as entity;
 import '../../domain/repositories/project_repository.dart';
 import '../datasources/local/app_database.dart';
-import '../datasources/remote/supabase_datasource.dart';
+import '../datasources/remote/remote_datasource.dart';
 
 class ProjectRepositoryImpl implements ProjectRepository {
   final AppDatabase _db;
-  final SupabaseDatasource? _remote;
+  final RemoteDatasource? _remote;
 
   ProjectRepositoryImpl(this._db, [this._remote]);
 

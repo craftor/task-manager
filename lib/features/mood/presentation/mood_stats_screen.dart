@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../sync/presentation/providers/sync_status_provider.dart' show syncStatusProvider, supabaseDatasourceProvider;
+import '../../sync/presentation/providers/sync_status_provider.dart' show syncStatusProvider, remoteDatasourceProvider;
 import '../../mood/mood_provider.dart';
 import '../../mood/mood_service.dart';
 
@@ -416,7 +416,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
             Row(mainAxisAlignment: MainAxisAlignment.end, children: [
               if (current.isNotEmpty)
                 TextButton(onPressed: () {
-                  final remote = ref.read(supabaseDatasourceProvider);
+                  final remote = ref.read(remoteDatasourceProvider);
                   if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, dateKey);
                   ref.invalidate(allMoodsProvider);
                   ref.invalidate(weeklyMoodDistributionProvider);
@@ -426,7 +426,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
               const SizedBox(width: 8),
               ElevatedButton(onPressed: () {
-                final remote = ref.read(supabaseDatasourceProvider);
+                final remote = ref.read(remoteDatasourceProvider);
                 if (remote != null) ref.read(moodServiceProvider).setMoods(remote, dateKey, selected.toList());
                 ref.invalidate(allMoodsProvider);
                 ref.invalidate(weeklyMoodDistributionProvider);

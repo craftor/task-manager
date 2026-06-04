@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/logger.dart';
-import '../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../data/datasources/remote/remote_datasource.dart';
 
 /// Colors for the 6 special day categories
 const specialDayColors = [
@@ -24,7 +24,7 @@ class SpecialDaysService {
 
   /// Get all special days from SharedPreferences (always fresh).
   /// Falls back to remote if cache is empty.
-  Future<Map<String, Map<String, String>>> getAll(SupabaseDatasource? remote) async {
+  Future<Map<String, Map<String, String>>> getAll(RemoteDatasource? remote) async {
     final cached = await _loadFromCache();
 
     if (cached.isEmpty && remote != null) {
@@ -42,7 +42,7 @@ class SpecialDaysService {
   }
 
   /// Mark a day as special. Writes to remote + cache.
-  Future<void> setDay(SupabaseDatasource remote, String dateKey, int colorIndex, String? desc) async {
+  Future<void> setDay(RemoteDatasource remote, String dateKey, int colorIndex, String? desc) async {
     // Build data map
     final data = <String, String>{'color': colorIndex.toString()};
     if (desc != null && desc.isNotEmpty) data['desc'] = desc;
@@ -60,7 +60,7 @@ class SpecialDaysService {
   }
 
   /// Remove a special day. Deletes from remote + cache.
-  Future<void> removeDay(SupabaseDatasource remote, String dateKey) async {
+  Future<void> removeDay(RemoteDatasource remote, String dateKey) async {
     // Update local SharedPreferences FIRST
     final all = await _loadFromCache();
     all.remove(dateKey);
@@ -73,7 +73,7 @@ class SpecialDaysService {
   }
 
   /// Pull all special days from remote and merge into SharedPreferences.
-  Future<void> pullFromRemote(SupabaseDatasource remote) async {
+  Future<void> pullFromRemote(RemoteDatasource remote) async {
     await _pullFromRemote(remote);
   }
 
@@ -111,7 +111,7 @@ class SpecialDaysService {
     await prefs.setString(_cacheKey, json.encode(data));
   }
 
-  Future<void> _pullFromRemote(SupabaseDatasource remote) async {
+  Future<void> _pullFromRemote(RemoteDatasource remote) async {
     try {
       final rows = await remote.fetchSpecialDays();
       final map = <String, Map<String, String>>{};

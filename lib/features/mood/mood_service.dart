@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/utils/logger.dart';
-import '../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../data/datasources/remote/remote_datasource.dart';
 
 const moodEmojis = ['😊', '😢', '😡', '😴', '😐', '🎉', '😰', '❤️'];
 const moodLabels = {
@@ -31,7 +31,7 @@ class MoodService {
   }
 
   /// Set moods for a date. Writes to local cache immediately, then syncs to remote with retry.
-  Future<void> setMoods(SupabaseDatasource remote, String dateKey, List<String> emojis) async {
+  Future<void> setMoods(RemoteDatasource remote, String dateKey, List<String> emojis) async {
     final all = await _loadFromCache();
     if (emojis.isEmpty) {
       all.remove(dateKey);
@@ -49,7 +49,7 @@ class MoodService {
   }
 
   /// Remove all moods for a date
-  Future<void> removeMoods(SupabaseDatasource remote, String dateKey) async {
+  Future<void> removeMoods(RemoteDatasource remote, String dateKey) async {
     final all = await _loadFromCache();
     all.remove(dateKey);
     await _saveCache(all);

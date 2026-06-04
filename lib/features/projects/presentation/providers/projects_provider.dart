@@ -5,14 +5,14 @@ import '../../../../data/datasources/local/app_database.dart' show AppDatabase;
 import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';
-import '../../../sync/presentation/providers/sync_status_provider.dart' show supabaseDatasourceProvider;
+import '../../../sync/presentation/providers/sync_status_provider.dart' show remoteDatasourceProvider;
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase();
 });
 
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
-  return ProjectRepositoryImpl(ref.watch(databaseProvider), ref.watch(supabaseDatasourceProvider));
+  return ProjectRepositoryImpl(ref.watch(databaseProvider), ref.watch(remoteDatasourceProvider));
 });
 
 final projectsProvider =

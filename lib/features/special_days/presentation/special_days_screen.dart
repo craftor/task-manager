@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../data/datasources/remote/supabase_datasource.dart';
+import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../special_days/special_days_provider.dart';
 import '../../special_days/special_days_service.dart';
 import '../../sync/data/sync_manager.dart';
@@ -22,7 +22,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _scrolledToCurrentYear = false;
 
-  SupabaseDatasource? get _remote => ref.read(supabaseDatasourceProvider);
+  RemoteDatasource? get _remote => ref.read(remoteDatasourceProvider);
 
   @override
   void initState() {
