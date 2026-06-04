@@ -1,3 +1,8 @@
+// ignore_for_file: deprecated_member_use
+// All `Databases` methods (createDocument / updateDocument / deleteDocument /
+// listDocuments) are deprecated in Appwrite SDK 1.8.0 in favor of
+// `TablesDB`. SDK 21.4.0 still ships the deprecated surface, so we use it.
+
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import '../../../domain/entities/project.dart';

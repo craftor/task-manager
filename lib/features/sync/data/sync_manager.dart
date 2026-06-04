@@ -45,16 +45,6 @@ class SyncManager {
     // Trigger initial sync after a short delay to let auth settle
     Future.delayed(const Duration(seconds: 1), () async {
       try {
-        // Fix legacy tasks: re-map projectId and re-mark for sync
-        final tasks = await _localDb.getAllTasks();
-        for (final t in tasks) {
-          if (t.projectId == AppConstants.legacyDefaultProjectId) {
-            await _localDb.fixLegacyTaskProject(t.id);
-          }
-        }
-        // Clean up duplicate default projects in local DB
-        await _localDb.cleanupDuplicateDefaultProjects();
-        Logger.d('SyncManager: triggering initial sync');
         syncAll();
       } catch (e, st) {
         Logger.e('SyncManager: initial sync setup failed', error: e, stackTrace: st);
@@ -104,12 +94,6 @@ class SyncManager {
     final pendingProjects = await _localDb.getPendingProjects();
     Logger.d('SyncManager._syncPendingChanges: ${pendingProjects.length} pending projects');
     for (final driftProject in pendingProjects) {
-      // Skip legacy default project with non-UUID id
-      if (driftProject.id == AppConstants.legacyDefaultProjectId) {
-        Logger.d('SyncManager: skipping legacy default project');
-        await _localDb.markProjectSynced(driftProject.id);
-        continue;
-      }
       final domainProject = entity.Project(
         id: driftProject.id,
         parentId: driftProject.parentId,
@@ -131,13 +115,9 @@ class SyncManager {
     final pendingTasks = await _localDb.getPendingTasks();
     Logger.d('SyncManager._syncPendingChanges: ${pendingTasks.length} pending tasks');
     for (final driftTask in pendingTasks) {
-      // Remap legacy default-project to fixed UUID
-      final fixedProjectId = driftTask.projectId == AppConstants.legacyDefaultProjectId
-          ? AppConstants.defaultProjectId
-          : driftTask.projectId;
       final domainTask = task_entity.Task(
         id: driftTask.id,
-        projectId: fixedProjectId,
+        projectId: driftTask.projectId,
         parentTaskId: driftTask.parentTaskId,
         title: driftTask.title,
         description: driftTask.description,
@@ -235,7 +215,7 @@ class SyncManager {
       await _localDb.upsertTimeEntryFromRemote(e);
     }
 
-    // Special Days (stored in Supabase, cached in SharedPreferences)
+    // Special Days (Appwrite → SharedPreferences cache)
     try {
       final specialDaysRaw = await _remoteDs.fetchSpecialDays();
       Logger.d('SyncManager._pullRemoteChanges: ${specialDaysRaw.length} special days from remote');
@@ -245,7 +225,7 @@ class SyncManager {
       Logger.d('SyncManager._pullRemoteChanges: special days sync failed — $e');
     }
 
-    // Journal Entries (stored in Supabase, cached in SharedPreferences)
+    // Journal Entries (Appwrite → SharedPreferences cache)
     try {
       final journalRaw = await _remoteDs.fetchJournalEntries();
       Logger.d('SyncManager._pullRemoteChanges: ${journalRaw.length} journal entries from remote');
@@ -255,7 +235,7 @@ class SyncManager {
       Logger.d('SyncManager._pullRemoteChanges: journal sync failed — $e');
     }
 
-    // Moods (stored in Supabase, cached in SharedPreferences)
+    // Moods (Appwrite → SharedPreferences cache)
     try {
       final moodsRaw = await _remoteDs.fetchMoods();
       Logger.d('SyncManager._pullRemoteChanges: ${moodsRaw.length} moods from remote');

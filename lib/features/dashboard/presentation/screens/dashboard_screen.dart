@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
@@ -338,10 +337,8 @@ class _ProjectCard extends StatelessWidget {
           const Text('Project Progress', style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           ...projects.take(5).map((p) {
-            final name = p.name;
             final pid = p.id;
-            final isDefault = p.isDefault || name.toLowerCase() == 'default';
-            final ptasks = tasks.where((t) => t.projectId == pid || (isDefault && (t.projectId == AppConstants.legacyDefaultProjectId || t.projectId == AppConstants.defaultProjectId))).toList();
+            final ptasks = tasks.where((t) => t.projectId == pid).toList();
             final total = ptasks.length;
             final done = ptasks.where((t) => t.status == TaskStatus.completed).length;
             final pct = total > 0 ? done / total : 0.0;
@@ -350,7 +347,7 @@ class _ProjectCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  SizedBox(width: 60, child: Text(name, style: const TextStyle(color: AppColors.textMuted, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  SizedBox(width: 60, child: Text(p.name, style: const TextStyle(color: AppColors.textMuted, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Container(
