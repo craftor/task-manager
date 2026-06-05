@@ -13,9 +13,8 @@ class AuthResult {
 
 /// Backend-agnostic auth surface.
 ///
-/// Implemented by [SupabaseAuthService] (today) and [AppwriteAuthService]
-/// (Phase B end-state). Selected by `kUseAppwrite` in
-/// `remote_datasource_factory.dart` via the auth provider.
+/// Implemented by [AppwriteAuthService] (replaces the deleted
+/// SupabaseAuthService from the Supabase → Appwrite migration).
 abstract class AuthService {
   /// Read any persisted session and emit an [AuthEvent] for it. Idempotent.
   Future<void> initialize();

@@ -11,10 +11,10 @@ final userIdProvider = Provider<String?>((ref) {
   return ref.watch(authStateProvider).userId;
 });
 
-/// Backend-agnostic remote datasource (Supabase today, Appwrite in Phase C).
+/// Backend-agnostic remote datasource (Appwrite; replaced Supabase).
 ///
-/// Returns null when no user is signed in. The implementation is selected
-/// by `kUseAppwrite` in `remote_datasource_factory.dart`.
+/// Returns null when no user is signed in. Implementation is
+/// [AppwriteDatasource] (the Supabase variant was removed in Phase E).
 final remoteDatasourceProvider = Provider<RemoteDatasource?>((ref) {
   final userId = ref.watch(userIdProvider);
   return buildRemoteDatasource(userId: userId);

@@ -126,7 +126,8 @@
       "Bash(Select-Object Name)",
       "Bash(cargo check *)",
       "Bash(rustc -vV)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(powershell *)"
     ]
   }
 }

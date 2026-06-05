@@ -4,12 +4,12 @@ import '../../../domain/entities/time_entry.dart';
 
 /// Backend-agnostic interface for the remote data source.
 ///
-/// All cloud I/O (currently Supabase, migrating to Appwrite) flows through
-/// this interface so feature code (services, repositories, screens) stays
-/// unaware of the underlying SDK.
+/// All cloud I/O (Appwrite, since the Supabase → Appwrite migration) flows
+/// through this interface so feature code (services, repositories, screens)
+/// stays unaware of the underlying SDK.
 ///
-/// The implementation is selected by `remote_datasource_factory.dart` via
-/// the `kUseAppwrite` flag.
+/// Implemented by [AppwriteDatasource] (replaces the deleted
+/// SupabaseDatasource from Phase E).
 abstract class RemoteDatasource {
   // Projects
   Future<List<Map<String, dynamic>>> fetchProjects();
