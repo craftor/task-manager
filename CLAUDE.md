@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Personal task and time management Flutter app with Supabase backend, built with Clean Architecture.
+Personal task and time management Flutter app with Appwrite backend, built with Clean Architecture.
 
 ## Commands
 
@@ -36,8 +36,8 @@ flutter build linux --release
 
 ```
 lib/
-├── core/              # Shared: theme, constants, exceptions, sync queue, logger, supabase client
-├── data/              # Repository implementations + Drift database + Supabase datasource
+├── core/              # Shared: theme, constants, exceptions, logger, appwrite client
+├── data/              # Repository implementations + Drift database + RemoteDatasource (Appwrite impl)
 ├── domain/            # Entities + repository interfaces
 └── features/         # Feature modules (auth, calendar, dashboard, journal, mood, projects, settings, special_days, sync, tasks, time_tracking)
     └── [feature]/
@@ -50,21 +50,22 @@ lib/
 
 **Database:** Drift (SQLite) with generated type-safe queries in `lib/data/datasources/local/app_database.g.dart`
 
-**Sync:** Supabase PostgreSQL. `core/sync/sync_queue.dart` handles offline retry. Remote-wins reconciliation on pull.
+**Sync:** Appwrite self-hosted. `SyncManager` runs a 5-min pull timer with optimistic push-before-pull; offline changes queue in Drift (`pendingSync=true`) and retry on reconnect.
 
 **Providers:** Located in `presentation/` directories under each feature (e.g., `features/auth/presentation/providers/`)
 
-## Environment Setup
+## Backend
 
-Create `assets/config.json` from the template before running:
-```bash
-cp assets/config.example.json assets/config.json
-# Then fill in SUPABASE_URL and SUPABASE_ANON_KEY
-```
+The app connects to a self-hosted Appwrite instance. Endpoint and project ID
+are hardcoded in `lib/core/appwrite/appwrite_client.dart`. **No local
+config, `.env`, or build-time secrets are needed.**
 
-`assets/config.json` is gitignored. It is read once at first launch and migrated into `flutter_secure_storage` (see `lib/core/supabase/supabase_client.dart`). After first launch, credentials come from secure storage, not the asset file.
-
-pubspec.yaml references `assets/config.json` — the file must exist locally or the build fails.
+The Appwrite console must define 6 collections — `projects`, `tasks`,
+`time_entries`, `special_days`, `moods`, `journal_entries` — with the
+attributes each module expects (see `lib/data/datasources/remote/appwrite_datasource.dart`
+for the field-per-collection contract). Permissions are user-scoped; every
+query also adds `Query.equal('user_id', currentUserId)` because Appwrite
+self-hosted has no native row-level RLS.
 
 ## Version
 
@@ -72,11 +73,10 @@ Version is defined in `lib/version.dart` (`appVersion`). This is the single sour
 
 ## macOS Specifics
 
-- `macos/Runner/Release.entitlements` includes `com.apple.security.network.client` — required for Supabase connectivity
+- `macos/Runner/Release.entitlements` includes `com.apple.security.network.client` — required for Appwrite connectivity
 - Close button minimizes to Dock (AppDelegate.applicationShouldTerminateAfterLastWindowClosed = false)
 - To rebuild after entitlement changes: `flutter build macos --release`
 
 ## Known Issues
 
 - Run `flutter analyze lib/` to check lib/ code quality
-- `assets/config.json` must exist before building (cp assets/config.example.json assets/config.json)
