@@ -83,9 +83,11 @@ class ImportExportService {
     final file = File('${dir.path}/task_manager_export_$timestamp.json');
     await file.writeAsString(json);
 
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      subject: 'Task Manager Export',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        subject: 'Task Manager Export',
+      ),
     );
   }
 
