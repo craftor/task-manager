@@ -62,7 +62,9 @@ class ProjectsNotifier extends StreamNotifier<List<Project>> {
   }) async {
     final repository = ref.read(projectRepositoryProvider);
     final projects = await repository.getAllProjects();
-    final maxSortOrder = projects.isEmpty ? 0 : projects.map((p) => p.sortOrder).reduce((a, b) => a > b ? a : b);
+    // Empty branch returns -1 so `+1` below yields 0 (matches the
+    // "only the -1 default project exists" case from ensureDefaultProject).
+    final maxSortOrder = projects.isEmpty ? -1 : projects.map((p) => p.sortOrder).reduce((a, b) => a > b ? a : b);
     final project = Project(
       id: const Uuid().v4(),
       parentId: parentId,
