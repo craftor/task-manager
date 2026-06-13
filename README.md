@@ -4,75 +4,92 @@ Personal task and time management application built with Flutter.
 
 ## Features
 
-- **Task Management**: Create, edit, delete, and reorder tasks with drag-and-drop
+- **Task Management**: Create, edit, soft-delete, and reorder tasks with drag-and-drop
 - **Project Organization**: Organize tasks by projects with expandable cards
 - **Priority & Time Tracking**: Set task priority (low/medium/high/urgent) with start and due dates
 - **Dashboard**: Visual statistics and data overview with completion rates
 - **Calendar View**: Calendar integration with mood emoji picker for deadline visualization
-- **Journal**: Daily entries with timestamps, Supabase sync
+- **Journal**: Daily entries with timestamps, Appwrite sync
 - **Mood Tracking**: Multi-emoji support (max 3/day) with month/year statistics and distribution charts
 - **Special Days**: 12x31 grid with 6-color categories and interval tracking
-- **App Lock**: Biometric/PIN protection when app resumes
+- **App Lock**: Biometric/PIN protection with PBKDF2-secured secret storage
 - **User Profile**: Customizable avatar with local storage
 - **Auto-Update**: GitHub Release checker with download dialog
+- **Offline-first**: All writes queue locally and sync when the network returns;
+  deletes propagate as tombstones instead of being silently resurrected on pull
 
 ## Architecture
 
-Built with Clean Architecture principles:
+Built with Clean Architecture principles. Each feature module follows
+`{feature}/{domain,data,presentation}/` — see [`CLAUDE.md`](CLAUDE.md) for the
+authoritative structure overview.
 
 ```
 lib/
-├── core/           # Shared utilities, theme, constants, exceptions, sync
-├── data/           # Data layer (repositories, datasources, database)
-├── domain/         # Business logic (entities, services)
-└── features/       # Feature modules
-    ├── auth/       # Login, register, app lock, profile
-    ├── calendar/   # Calendar screen
-    ├── dashboard/  # Statistics overview
-    ├── journal/    # Daily journal entries
-    ├── mood/       # Mood tracking and stats
-    ├── projects/   # Project management
-    ├── settings/   # Import/export, preferences
-    ├── special_days/  # Special dates grid
-    ├── sync/       # Supabase synchronization
-    └── tasks/      # Task management
+├── core/              # Shared: theme, constants, exceptions, logger, appwrite client
+├── data/              # Repository implementations + Drift database + RemoteDatasource
+├── domain/            # Entities + repository interfaces
+└── features/
+    ├── auth/          # domain, data, presentation
+    ├── calendar/      # presentation
+    ├── dashboard/     # presentation
+    ├── journal/       # domain, data, presentation
+    ├── mood/          # domain, data, presentation
+    ├── projects/      # presentation
+    ├── settings/      # data, presentation
+    ├── special_days/  # domain, data, presentation
+    ├── sync/          # data, presentation
+    ├── tasks/         # presentation
+    └── time_tracking/ # domain, data, presentation
 ```
+
+Cross-cutting helpers in `lib/core/`:
+
+- `core/utils/` — `date_key`, `retry_with_backoff`, `json_cache_store`, `result`, `logger`
+- `core/services/database_provider.dart` — global Drift instance
+- `core/widgets/async_error_view.dart` — branded error placeholder
+- `data/datasources/remote/user_scoped_query.dart` — centralized
+  user-scoped query helper that every Appwrite fetch goes through
 
 ## Tech Stack
 
-- **Flutter** - UI framework
-- **Riverpod** - State management (StreamNotifierProvider, StateNotifierProvider)
-- **Drift** - Local SQLite database with type-safe queries
-- **Supabase** - Backend (auth, PostgreSQL database)
-- **flutter_secure_storage** - Secure credential storage
-- **table_calendar** - Calendar widget
-- **image_picker** - Avatar upload from gallery/camera
-- **local_auth** - Biometric authentication
-- **connectivity_plus** - Network status monitoring
-- **share_plus** - Share functionality
+- **Flutter** — UI framework
+- **Riverpod** — state management (`NotifierProvider`, `StreamNotifierProvider`,
+  `Provider`, `FutureProvider`)
+- **Drift** — local SQLite database with type-safe queries
+- **Appwrite** — self-hosted backend (auth, database, sessions)
+- **flutter_secure_storage** — encrypted credential storage (Android Keystore /
+  iOS Keychain)
+- **pointycastle** — PBKDF2-HMAC-SHA256 for PIN derivation
+- **table_calendar** — calendar widget
+- **image_picker** — avatar upload from gallery/camera
+- **local_auth** — biometric authentication
+- **connectivity_plus** — network status monitoring
+- **share_plus** — share functionality
 
 ## Development
 
 ```bash
-# Install dependencies
+# Install dependencies (required before first run or after pubspec changes)
 flutter pub get
 
 # Run on device/emulator
 flutter run
 
-# Build debug APK
+# Run a single test file
+flutter test test/unit/sync_manager_test.dart
+
+# Run all tests
+flutter test
+
+# Analyze code (lib/ only)
+flutter analyze lib/
+
+# Build for a specific platform
 flutter build apk --debug
-
-# Build release APK
 flutter build apk --release
-
-# Build Windows
 flutter build windows --release
-
-# Build macOS
 flutter build macos --release
-
-# Build Linux
 flutter build linux --release
 ```
 
@@ -89,98 +106,9 @@ GitHub Actions release workflow builds and publishes artifacts for **Android**, 
 
 ## Version
 
-Current version: see `lib/version.dart` (`appVersion`)
+Current version: see `lib/version.dart` (`appVersion`). Used by `pubspec.yaml`
+and the CI artifact name.
 
 ## Changelog
 
-### 0.8.1
-- Fix: BuildContext async gap issues, unnecessary null assertions, deprecated activeColor
-- Cleanup: Remove dead code _TimeSummaryCard, fix underscore local variable naming
-- Const optimization: 35+ prefer_const_constructors fixes across codebase
-- Dates: Responsive calendar grid (7 days/row) with mobile vs desktop layouts
-- Dashboard: Dashboard now default first page in sidebar
-- Build: Add macOS DMG packaging script (scripts/build_dmg.sh)
-
-### 0.8.0
-- Code quality: full codebase scan with 6 review agents — fixes for N+1 batch upserts, TOCTOU patterns, timer leaks, deprecated withOpacity calls
-- Export: fix `_loadSpecialDays/Moods/Journal` stubs — now actually exports all data
-- Timer: fix `Timer.periodic` leak on error paths in time_tracking_provider
-- TOCTOU: fix `ensureDefaultProject` and `deleteProject` to use direct ID lookup instead of fetchAll
-- Import: add `getTimeEntryById` to DB/repository/provider chain
-- Drift: regenerate `app_database.g.dart` with new methods
-- macOS: close button minimizes to Dock instead of quitting; dock menu adds quit option
-- macOS: add network client entitlement for Supabase connectivity
-- macOS: set app name to TaskManager and update app icon
-
-### 0.7.33
-- Fix: copy Android APK to artifacts directory in CI
-
-### 0.7.32
-- Fix: use absolute path for macOS artifact zip
-
-### 0.7.31
-- Fix: correct macOS artifact path in CI workflow
-
-### 0.7.30
-- Revert: app.dart split due to navigation issues (Dates/Settings/Profile buttons not responding)
-- Code quality: AppException hierarchy, SyncQueue with retry, Logger utility
-- Security: Supabase credentials moved to flutter_secure_storage
-
-### 0.7.28
-- Unify version management with single source of truth
-- Linux desktop platform support
-
-### 0.7.0
-- Sync: immediate push on all CRUD (tasks, projects, moods, special days, journal)
-- Sync: remote-wins reconciliation — local stale data auto-pruned
-- Sync: delete via upsert + deleted_at (bypasses RLS UPDATE restrictions)
-- App Lock: fingerprint/biometric + 4-digit PIN with background lock
-- Removed Gantt chart page
-- UI: Special Days Intervals in single row, desktop sidebar polish
-- Android: FlutterFragmentActivity + AppCompat theme for biometric support
-
-### 0.6.3
-- Android: add INTERNET permission + network_security_config for Supabase connectivity
-- Auth: improve error handling with detailed network error messages
-- CI: fix release artifact upload with merge-multiple
-
-### 0.6.2
-- Dashboard: add Weekly Completion, Project Progress, Time Overview cards
-- Mood: Supabase sync with auto-refresh after pull
-- Desktop sidebar: avatar at bottom, version/update banner in top bar
-
-### 0.6.0
-- All data synced bidirectionally (tasks, projects, time entries, journal, special days, moods)
-- Dashboard: Weekly Completion, Project Progress, Time Overview stats
-- Sidebar: Journal → Tasks → Dashboard → Calendar → Mood → Dates
-- Desktop fixed sidebar with collapse/expand, unified responsive breakpoints
-- Mood: multi-emoji (max 3/day), month navigation fix, tap calendar to edit
-- Journal: multi-entry per day with timestamps, Supabase sync
-- Special Days: 12x31 grid, 6-color categories, long-press edit/delete
-- CI: matrix build for Android/Windows/macOS, GitHub Release on tag
-
-### 0.5.0
-- Journal / quick notes page with daily entry + history
-- Mood stats page with month/year views and distribution charts
-- Special days tracker: 12×31 grid with intervals, year switching
-- Calendar: mood emoji picker, go-to-today button
-- Desktop: fixed sidebar with collapse/expand
-- Dashboard: remove time/mood cards, keep priority + recent tasks
-
-### 0.4.0
-- CI: matrix build for Android/Windows/macOS/Linux, streamlined release
-
-### 0.3.0
-- Gantt: zoom levels W/M/Q/Y with adaptive time headers
-- Time Tracking: task name display instead of UUID
-- Auto-update: GitHub Release checker with banner + dialog
-- macOS platform support
-- GitHub Release CI with APK/EXE/App artifacts
-
-### 0.2.0
-- **Sync**: Bidirectional Supabase sync for projects, tasks, and time entries
-- **Time Tracking**: Manual entry form with task selector, date/time pickers, and notes
-- **Timer**: Task selector dialog before starting a timer
-
-### 0.1.0
-- Initial release with task management and project organization
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
