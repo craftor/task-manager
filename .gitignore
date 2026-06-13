@@ -50,3 +50,7 @@ app.*.map.json
 
 # Drift generated files
 lib/data/datasources/local/*.g.dart
+
+# Local debug artifacts
+launch.png
+debug_*.png
