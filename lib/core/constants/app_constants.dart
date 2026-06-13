@@ -1,6 +1,5 @@
 import '../../version.dart' as app_version;
 class AppConstants {
-  static const String appName = 'Task Manager';
   // Single source of truth for app version is lib/version.dart
   // Build system may override via --dart-define=APP_VERSION
   static const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: app_version.appVersion);
@@ -16,9 +15,7 @@ class AppConstants {
   static const double masterPaneMaxWidth = 500.0;
 
   // Spacing
-  static const double spacing4 = 4.0;
   static const double spacing8 = 8.0;
-  static const double spacing12 = 12.0;
   static const double spacing16 = 16.0;
   static const double spacing24 = 24.0;
   static const double spacing32 = 32.0;
@@ -26,15 +23,6 @@ class AppConstants {
 
   // Border radius
   static const double radiusSmall = 4.0;
-  static const double radiusMedium = 8.0;
-  static const double radiusLarge = 12.0;
-  static const double radiusCard = 16.0;
-
-  // Priority levels
-  static const int priorityLow = 1;
-  static const int priorityMedium = 2;
-  static const int priorityHigh = 3;
-  static const int priorityUrgent = 4;
 
   // Default project id (used as the seed for first-launch projects)
   static const String defaultProjectId = '00000000-0000-0000-0000-000000000001';

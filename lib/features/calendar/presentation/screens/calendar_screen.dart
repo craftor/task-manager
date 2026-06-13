@@ -5,8 +5,8 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/entities/task.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
-import '../../../mood/mood_provider.dart';
-import '../../../mood/mood_service.dart';
+import '../../../mood/domain/mood_repository.dart';
+import '../../../mood/presentation/providers/mood_provider.dart';
 import '../../../sync/presentation/providers/sync_status_provider.dart' show remoteDatasourceProvider;
 import '../providers/calendar_provider.dart';
 
@@ -264,7 +264,7 @@ class CalendarScreen extends ConsumerWidget {
                           TextButton(
                             onPressed: () async {
                               final remote = ref.read(remoteDatasourceProvider);
-                              if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, key);
+                              if (remote != null) ref.read(moodActionsProvider).removeMoods(key);
                               ref.invalidate(allMoodsProvider);
                               ref.invalidate(weeklyMoodDistributionProvider);
                               Navigator.pop(ctx);
@@ -280,7 +280,7 @@ class CalendarScreen extends ConsumerWidget {
                         ElevatedButton(
                           onPressed: () {
                             final remote = ref.read(remoteDatasourceProvider);
-                            if (remote != null) ref.read(moodServiceProvider).setMoods(remote, key, selected.toList());
+                            if (remote != null) ref.read(moodActionsProvider).setMoods(key, selected.toList());
                             ref.invalidate(allMoodsProvider);
                             ref.invalidate(weeklyMoodDistributionProvider);
                             Navigator.pop(ctx);

@@ -45,6 +45,8 @@ class Projects extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(true))();
+  // Tombstone marker for soft-deletes — null = live, non-null = soft-deleted.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -69,6 +71,7 @@ class Tasks extends Table {
   DateTimeColumn get updatedAt => dateTime()();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   BoolColumn get pendingSync => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -93,7 +96,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -117,21 +120,44 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('ALTER TABLE projects ADD COLUMN sort_order INTEGER DEFAULT 0');
           await customStatement('ALTER TABLE tasks ADD COLUMN sort_order INTEGER DEFAULT 0');
         }
+        if (from < 6) {
+          // Soft-delete columns. Pre-migration deletes were already
+          // physically gone, so no row backfill is needed; any rows that
+          // are still pending-sync (e.g. user hit delete while offline)
+          // get a sentinel tombstone so the prune loop skips them.
+          await customStatement('ALTER TABLE projects ADD COLUMN deleted_at INTEGER');
+          await customStatement('ALTER TABLE tasks ADD COLUMN deleted_at INTEGER');
+          await customStatement(
+            'UPDATE projects SET deleted_at = 0 WHERE pending_sync = 1',
+          );
+          await customStatement(
+            'UPDATE tasks SET deleted_at = 0 WHERE pending_sync = 1',
+          );
+        }
       },
     );
   }
 
   // Project queries
-  Future<List<Project>> getAllProjects() => select(projects).get();
-  Stream<List<Project>> watchAllProjects() => select(projects).watch();
+  Future<List<Project>> getAllProjects() =>
+      (select(projects)..where((p) => p.deletedAt.isNull())).get();
+  Stream<List<Project>> watchAllProjects() =>
+      (select(projects)..where((p) => p.deletedAt.isNull())).watch();
   Future<Project?> getProjectById(String id) =>
-      (select(projects)..where((p) => p.id.equals(id))).getSingleOrNull();
+      (select(projects)
+            ..where((p) => p.id.equals(id) & p.deletedAt.isNull()))
+          .getSingleOrNull();
   Future<int> insertProject(ProjectsCompanion project) =>
       into(projects).insert(project);
   Future<bool> updateProject(ProjectsCompanion project) =>
       update(projects).replace(project);
   Future<int> deleteProject(String id) =>
       (delete(projects)..where((p) => p.id.equals(id))).go();
+
+  /// Includes tombstoned rows. Used by SyncManager to drive the
+  /// push-then-delete lifecycle and by the prune guard to skip them.
+  Future<List<Project>> getAllProjectsIncludingDeleted() =>
+      select(projects).get();
 
   // Sync-related queries
   Future<List<Project>> getPendingProjects() =>
@@ -159,17 +185,25 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // Task queries
-  Future<List<Task>> getAllTasks() => select(tasks).get();
-  Stream<List<Task>> watchAllTasks() => select(tasks).watch();
+  Future<List<Task>> getAllTasks() =>
+      (select(tasks)..where((t) => t.deletedAt.isNull())).get();
+  Stream<List<Task>> watchAllTasks() =>
+      (select(tasks)..where((t) => t.deletedAt.isNull())).watch();
   Future<Task?> getTaskById(String id) =>
-      (select(tasks)..where((t) => t.id.equals(id))).getSingleOrNull();
+      (select(tasks)
+            ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
+          .getSingleOrNull();
   Future<List<Task>> getTasksByProject(String projectId) =>
-      (select(tasks)..where((t) => t.projectId.equals(projectId))).get();
+      (select(tasks)
+            ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull()))
+          .get();
   Future<int> insertTask(TasksCompanion task) => into(tasks).insert(task);
   Future<int> updateTask(TasksCompanion task) =>
       (update(tasks)..where((t) => t.id.equals(task.id.value))).write(task);
   Future<int> deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
+
+  Future<List<Task>> getAllTasksIncludingDeleted() => select(tasks).get();
 
   // Sync-related task queries
   Future<List<Task>> getPendingTasks() =>
@@ -198,6 +232,9 @@ class AppDatabase extends _$AppDatabase {
       createdAt: Value(DateTime.parse(data['created_at'] as String)),
       updatedAt: Value(data['updated_at'] != null ? DateTime.parse(data['updated_at'] as String) : DateTime.now()),
       sortOrder: Value(data['sort_order'] as int? ?? 0),
+      deletedAt: Value(data['deleted_at'] != null
+          ? DateTime.parse(data['deleted_at'] as String)
+          : null),
       pendingSync: const Value(false),
     ));
   }
@@ -233,15 +270,6 @@ class AppDatabase extends _$AppDatabase {
   Future<void> markTimeEntrySynced(String id) async {
     await (update(timeEntries)..where((e) => e.id.equals(id)))
         .write(const TimeEntriesCompanion(pendingSync: Value(false)));
-  }
-
-  // Parametrized delete to replace customStatement SQL
-  Future<void> deleteProjectById(String id) async {
-    await (delete(projects)..where((p) => p.id.equals(id))).go();
-  }
-
-  Future<void> deleteTaskById(String id) async {
-    await (delete(tasks)..where((t) => t.id.equals(id))).go();
   }
 
   Future<void> upsertTimeEntryFromRemote(Map<String, dynamic> data) async {

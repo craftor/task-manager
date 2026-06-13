@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
-import '../../special_days/special_days_provider.dart';
-import '../../special_days/special_days_service.dart';
-import '../../sync/data/sync_manager.dart';
+import '../../sync/data/sync_manager.dart' show SyncStatus;
 import '../../sync/presentation/providers/sync_status_provider.dart';
+import '../domain/special_days_repository.dart';
+import 'providers/special_days_provider.dart';
 
 class SpecialDaysScreen extends ConsumerStatefulWidget {
   const SpecialDaysScreen({super.key});
@@ -380,7 +380,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
           ElevatedButton.icon(
             onPressed: () {
-              if (_remote != null) ref.read(specialDaysServiceProvider).removeDay(_remote!, key);
+              if (_remote != null) ref.read(specialDaysActionsProvider).removeDay(key);
               ref.invalidate(specialDaysProvider);
               ref.invalidate(specialDaysSortedProvider);
               Navigator.pop(ctx);
@@ -507,7 +507,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                 ElevatedButton(
                   onPressed: () {
                     final desc = descController.text.trim().isEmpty ? null : descController.text.trim();
-                    if (_remote != null) ref.read(specialDaysServiceProvider).setDay(_remote!, key, selectedColor, desc);
+                    if (_remote != null) ref.read(specialDaysActionsProvider).setDay(key, selectedColor, desc);
                     ref.invalidate(specialDaysProvider);
                     ref.invalidate(specialDaysSortedProvider);
                     Navigator.pop(ctx);
@@ -537,7 +537,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              if (_remote != null) ref.read(specialDaysServiceProvider).removeDay(_remote!, key);
+              if (_remote != null) ref.read(specialDaysActionsProvider).removeDay(key);
               ref.invalidate(specialDaysProvider);
               ref.invalidate(specialDaysSortedProvider);
               Navigator.pop(ctx);
@@ -634,7 +634,7 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
                   onPressed: () {
                     final key = DateFormat('yyyy-MM-dd').format(selectedDate);
                     final desc = descController.text.trim().isEmpty ? null : descController.text.trim();
-                    if (_remote != null) ref.read(specialDaysServiceProvider).setDay(_remote!, key, selectedColor, desc);
+                    if (_remote != null) ref.read(specialDaysActionsProvider).setDay(key, selectedColor, desc);
                     ref.invalidate(specialDaysProvider);
                     ref.invalidate(specialDaysSortedProvider);
                     Navigator.pop(ctx);

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../projects/presentation/providers/projects_provider.dart';
+import '../../../../core/services/database_provider.dart';
+import '../../../../domain/entities/time_entry.dart';
 import '../../data/time_entry_repository_impl.dart';
-import '../../domain/time_entry_entity.dart';
 import '../../domain/time_entry_repository.dart';
 
 final timeEntryRepositoryProvider = Provider<TimeEntryRepository>((ref) {
@@ -15,20 +15,33 @@ final timeEntriesProvider =
   TimeEntriesNotifier.new,
 );
 
-class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
-  Timer? _runningTimer;
-  String? _runningEntryId;
+/// Tracks the id of the entry currently being timed (if any), so screens
+/// can render the running timer without holding their own periodic
+/// Timer. This replaces the per-screen `Timer.periodic` that caused
+/// double-tick rebuilds and the broken `ref.invalidateSelf()` loop in
+/// the previous notifier (each tick rebuilt `build()`, leaked the old
+/// `_runningTimer`, and accumulated timers across seconds).
+final runningEntryIdProvider = StateProvider<String?>((ref) => null);
 
+/// Live "now" timestamp, ticking once per second while a timer is
+/// running. The screen watches this to render the elapsed duration.
+final stopwatchProvider = StreamProvider<DateTime>((ref) {
+  final id = ref.watch(runningEntryIdProvider);
+  if (id == null) return const Stream.empty();
+  return Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+});
+
+class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
   @override
   Stream<List<TimeEntry>> build() {
-    ref.onDispose(() {
-      _runningTimer?.cancel();
-    });
     return ref.watch(timeEntryRepositoryProvider).watchAllTimeEntries();
   }
 
   Future<void> startTimer(String taskId) async {
-    if (_runningEntryId != null) {
+    // If a previous timer is still running, stop it first so we don't
+    // leave an orphan "running" entry.
+    final previousId = ref.read(runningEntryIdProvider);
+    if (previousId != null) {
       await stopTimer();
     }
 
@@ -39,25 +52,16 @@ class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
       startTime: DateTime.now(),
     );
     await repository.createTimeEntry(entry);
-    _runningEntryId = entry.id;
-
-    ref.onDispose(() {
-      _runningTimer?.cancel();
-    });
-
-    _runningTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      ref.invalidateSelf();
-    });
+    ref.read(runningEntryIdProvider.notifier).state = entry.id;
   }
 
   Future<void> stopTimer() async {
-    if (_runningEntryId == null) return;
-
-    _runningTimer?.cancel();
-    _runningTimer = null;
+    final id = ref.read(runningEntryIdProvider);
+    if (id == null) return;
+    ref.read(runningEntryIdProvider.notifier).state = null;
 
     final repository = ref.read(timeEntryRepositoryProvider);
-    final runningEntry = await repository.getTimeEntryById(_runningEntryId!);
+    final runningEntry = await repository.getTimeEntryById(id);
     if (runningEntry == null) return;
 
     final endTime = DateTime.now();
@@ -69,8 +73,6 @@ class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
         durationMinutes: duration,
       ),
     );
-
-    _runningEntryId = null;
   }
 
   Future<void> createManualEntry({
@@ -94,9 +96,8 @@ class TimeEntriesNotifier extends StreamNotifier<List<TimeEntry>> {
   }
 
   Future<void> deleteTimeEntry(String id) async {
-    if (_runningEntryId == id) {
-      _runningTimer?.cancel();
-      _runningEntryId = null;
+    if (ref.read(runningEntryIdProvider) == id) {
+      ref.read(runningEntryIdProvider.notifier).state = null;
     }
     final repository = ref.read(timeEntryRepositoryProvider);
     await repository.deleteTimeEntry(id);

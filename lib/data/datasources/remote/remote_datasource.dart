@@ -14,12 +14,12 @@ abstract class RemoteDatasource {
   // Projects
   Future<List<Map<String, dynamic>>> fetchProjects();
   Future<void> upsertProject(Project project, {DateTime? deletedAt});
-  Future<void> deleteProject(String id);
+  Future<void> deleteProject(String id, {DateTime? deletedAt});
 
   // Tasks
   Future<List<Map<String, dynamic>>> fetchTasks();
   Future<void> upsertTask(Task task, {DateTime? deletedAt});
-  Future<void> deleteTask(String id);
+  Future<void> deleteTask(String id, {DateTime? deletedAt});
 
   // Time Entries
   Future<List<Map<String, dynamic>>> fetchTimeEntries();

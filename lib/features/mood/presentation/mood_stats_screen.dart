@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../sync/presentation/providers/sync_status_provider.dart' show syncStatusProvider, remoteDatasourceProvider;
-import '../../mood/mood_provider.dart';
-import '../../mood/mood_service.dart';
+import '../domain/mood_repository.dart';
+import '../presentation/providers/mood_provider.dart';
 
 class MoodStatsScreen extends ConsumerStatefulWidget {
   const MoodStatsScreen({super.key});
@@ -417,7 +417,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
               if (current.isNotEmpty)
                 TextButton(onPressed: () {
                   final remote = ref.read(remoteDatasourceProvider);
-                  if (remote != null) ref.read(moodServiceProvider).removeMoods(remote, dateKey);
+                  if (remote != null) ref.read(moodActionsProvider).removeMoods(dateKey);
                   ref.invalidate(allMoodsProvider);
                   ref.invalidate(weeklyMoodDistributionProvider);
                   Navigator.pop(ctx);
@@ -427,7 +427,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
               const SizedBox(width: 8),
               ElevatedButton(onPressed: () {
                 final remote = ref.read(remoteDatasourceProvider);
-                if (remote != null) ref.read(moodServiceProvider).setMoods(remote, dateKey, selected.toList());
+                if (remote != null) ref.read(moodActionsProvider).setMoods(dateKey, selected.toList());
                 ref.invalidate(allMoodsProvider);
                 ref.invalidate(weeklyMoodDistributionProvider);
                 Navigator.pop(ctx);

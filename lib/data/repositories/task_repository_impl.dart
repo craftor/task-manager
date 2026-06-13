@@ -131,40 +131,45 @@ class TaskRepositoryImpl implements TaskRepository {
 
   @override
   Future<void> deleteTask(String id) async {
-    try {
-      // Get task data BEFORE deleting, to push a full upsert with deleted_at
-      final dbTask = await _db.getTaskById(id);
-      if (dbTask != null && _remote != null) {
-        // Push full synced-delete via upsert (works with insert-only RLS)
-        _remote!.upsertTask(entity.Task(
-          id: dbTask.id,
-          projectId: dbTask.projectId,
-          parentTaskId: dbTask.parentTaskId,
-          title: dbTask.title,
-          description: dbTask.description,
-          priority: entity.Priority.values[dbTask.priority],
-          status: entity.TaskStatus.values[dbTask.status],
-          startDate: dbTask.startDate,
-          dueDate: dbTask.dueDate,
-          tags: dbTask.tags,
-          estimatedMinutes: dbTask.estimatedMinutes,
-          actualMinutes: dbTask.actualMinutes,
-          isRecurring: dbTask.isRecurring,
-          recurringRule: dbTask.recurringRule,
-          createdAt: dbTask.createdAt,
-          updatedAt: DateTime.now(),
-          sortOrder: dbTask.sortOrder,
-        ), deletedAt: DateTime.now()).then((_) {
-          Logger.d('TaskRepositoryImpl.deleteTask: pushed full sync-delete to remote');
-        }).catchError((e) {
-          Logger.d('TaskRepositoryImpl.deleteTask remote push failed: $e');
-        });
-      }
+    // Soft-delete: stamp deletedAt + pendingSync instead of physically
+    // removing the row. SyncManager will push the soft-delete to the
+    // remote and only then physical-delete locally on success. If the
+    // user is offline, the tombstone survives the next pull.
+    final dbTask = await _db.getTaskById(id);
+    if (dbTask == null) return;
 
-      // Then hard-delete locally
-      await _db.deleteTask(id);
-    } catch (e) {
-      rethrow;
+    await _db.updateTask(TasksCompanion(
+      id: Value(dbTask.id),
+      projectId: Value(dbTask.projectId),
+      parentTaskId: Value(dbTask.parentTaskId),
+      title: Value(dbTask.title),
+      description: Value(dbTask.description),
+      priority: Value(dbTask.priority),
+      status: Value(dbTask.status),
+      startDate: Value(dbTask.startDate),
+      dueDate: Value(dbTask.dueDate),
+      tags: Value(dbTask.tags),
+      estimatedMinutes: Value(dbTask.estimatedMinutes),
+      actualMinutes: Value(dbTask.actualMinutes),
+      isRecurring: Value(dbTask.isRecurring),
+      recurringRule: Value(dbTask.recurringRule),
+      createdAt: Value(dbTask.createdAt),
+      updatedAt: Value(DateTime.now()),
+      sortOrder: Value(dbTask.sortOrder),
+      deletedAt: Value(DateTime.now()),
+      pendingSync: const Value(true),
+    ));
+
+    // Fire-and-forget push — the upsert carries the deletedAt timestamp,
+    // Appwrite writes it, and on the next SyncManager tick the local
+    // tombstone will be physically deleted after successful ack.
+    if (_remote != null) {
+      _remote!.upsertTask(_mapToEntity(dbTask), deletedAt: DateTime.now())
+          .then((_) {
+        Logger.d('TaskRepositoryImpl.deleteTask: tombstone pushed to remote');
+      }).catchError((e) {
+        Logger.d('TaskRepositoryImpl.deleteTask remote push failed: $e');
+      });
     }
   }
 

@@ -1,14 +1,32 @@
 import 'app_user.dart';
 import 'auth_event.dart';
 
+/// Machine-readable failure kind for [AuthResult.failure]. Lets UI
+/// render differentiated copy ("wrong password" vs "rate limited")
+/// without parsing the human-readable [error] string.
+enum AuthFailureKind {
+  invalidCredentials,
+  emailInUse,
+  rateLimited,
+  network,
+  unknown,
+}
+
 /// Result of an authentication attempt.
 class AuthResult {
   final bool success;
   final String? error;
+  final AuthFailureKind failureKind;
   final AppUser? user;
 
-  AuthResult.success(this.user) : success = true, error = null;
-  AuthResult.failure(this.error) : success = false, user = null;
+  AuthResult.success(this.user)
+      : success = true,
+        error = null,
+        failureKind = AuthFailureKind.unknown;
+  AuthResult.failure(this.error,
+      {this.failureKind = AuthFailureKind.unknown})
+      : success = false,
+        user = null;
 }
 
 /// Backend-agnostic auth surface.

@@ -47,9 +47,11 @@ class AppwriteAuthService implements AuthService {
       _controller.add(AuthSignedInEvent(_cachedUser!));
       return AuthResult.success(_cachedUser!);
     } on AppwriteException catch (e) {
-      return AuthResult.failure(_humanize(e));
+      final (msg, kind) = _humanize(e);
+      return AuthResult.failure(msg, failureKind: kind);
     } catch (e) {
-      return AuthResult.failure('Network error: $e');
+      return AuthResult.failure('Network error: $e',
+          failureKind: AuthFailureKind.network);
     }
   }
 
@@ -71,9 +73,11 @@ class AppwriteAuthService implements AuthService {
       _controller.add(AuthSignedInEvent(_cachedUser!));
       return AuthResult.success(_cachedUser!);
     } on AppwriteException catch (e) {
-      return AuthResult.failure(_humanize(e));
+      final (msg, kind) = _humanize(e);
+      return AuthResult.failure(msg, failureKind: kind);
     } catch (e) {
-      return AuthResult.failure('Network error: $e');
+      return AuthResult.failure('Network error: $e',
+          failureKind: AuthFailureKind.network);
     }
   }
 
@@ -99,16 +103,25 @@ class AppwriteAuthService implements AuthService {
 
   /// Map Appwrite error codes to user-friendly messages. Falls back to the
   /// raw message if no translation is found.
-  String _humanize(AppwriteException e) {
+  (String, AuthFailureKind) _humanize(AppwriteException e) {
     switch (e.code) {
       case 401:
-        return 'Invalid email or password.';
+        return ('Invalid email or password.', AuthFailureKind.invalidCredentials);
       case 409:
-        return 'An account with this email already exists.';
+        return (
+          'An account with this email already exists.',
+          AuthFailureKind.emailInUse
+        );
       case 429:
-        return 'Too many attempts. Please try again later.';
+        return (
+          'Too many attempts. Please try again later.',
+          AuthFailureKind.rateLimited
+        );
       default:
-        return e.message ?? 'Auth error (code ${e.code}).';
+        return (
+          e.message ?? 'Auth error (code ${e.code}).',
+          AuthFailureKind.unknown
+        );
     }
   }
 }

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/async_error_view.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
-import '../../sync/data/sync_manager.dart';
+import '../../sync/data/sync_manager.dart' show SyncStatus;
 import '../../sync/presentation/providers/sync_status_provider.dart';
-import '../../journal/journal_provider.dart';
-import '../../journal/journal_service.dart';
+import '../domain/journal_entry.dart';
+import 'providers/journal_provider.dart';
 
 class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
@@ -37,10 +38,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     if (_remote != null && _editingEntryId != null) {
-      await ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, _editingEntryId!);
+      await ref.read(journalActionsProvider).delete(_todayKey, _editingEntryId!);
       _editingEntryId = null;
     }
-    if (_remote != null) await ref.read(journalServiceProvider).addEntry(_remote!, _todayKey, text);
+    if (_remote != null) await ref.read(journalActionsProvider).add(_todayKey, text);
     _controller.clear();
     ref.invalidate(journalEntriesProvider(_todayKey));
     ref.invalidate(journalDatesProvider);
@@ -161,7 +162,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       entry: entry,
                       onEdit: () => _editEntry(entry),
                       onDelete: () async {
-                        if (_remote != null) await ref.read(journalServiceProvider).deleteEntry(_remote!, _todayKey, entry.id);
+                        if (_remote != null) await ref.read(journalActionsProvider).delete(_todayKey, entry.id);
                         ref.invalidate(journalEntriesProvider(_todayKey));
                         ref.invalidate(journalDatesProvider);
                       },
@@ -171,7 +172,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (e, _) => AsyncErrorView(
+              error: e,
+              compact: true,
+              onRetry: () => ref.invalidate(journalEntriesProvider(_todayKey)),
+            ),
           ),
           // History divider
           Padding(

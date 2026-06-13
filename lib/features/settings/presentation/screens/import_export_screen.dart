@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../projects/presentation/providers/projects_provider.dart';
+import '../../../../core/services/database_provider.dart';
 import '../../../auth/presentation/providers/app_lock_provider.dart';
 import '../../data/import_export_service.dart';
 

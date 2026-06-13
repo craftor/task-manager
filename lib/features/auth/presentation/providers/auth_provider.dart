@@ -4,24 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../data/datasources/remote/remote_datasource_factory.dart';
 import '../../domain/auth_event.dart';
-import '../../domain/auth_service.dart';
+import '../../domain/auth_service.dart' show AuthFailureKind, AuthService;
 
 enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 class AuthState {
   final AuthStatus status;
   final String? errorMessage;
+  final AuthFailureKind? failureKind;
   final String? email;
-
-  /// User id of the authenticated user. Used by `sync_status_provider` to
-  /// build the `RemoteDatasource` (Appwrite / Supabase row partition key).
-  /// Null when unauthenticated / loading.
   final String? userId;
   final String? avatarUrl;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.errorMessage,
+    this.failureKind,
     this.email,
     this.userId,
     this.avatarUrl,
@@ -30,13 +28,16 @@ class AuthState {
   AuthState copyWith({
     AuthStatus? status,
     String? errorMessage,
+    AuthFailureKind? failureKind,
     String? email,
     String? userId,
     String? avatarUrl,
+    bool clearError = false,
   }) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      failureKind: clearError ? null : (failureKind ?? this.failureKind),
       email: email ?? this.email,
       userId: userId ?? this.userId,
       avatarUrl: avatarUrl ?? this.avatarUrl,
@@ -51,31 +52,35 @@ final authServiceProvider = Provider<AuthService>((ref) {
   return buildAuthService();
 });
 
-final authStateProvider =
-    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authServiceProvider));
-});
+final authStateProvider = NotifierProvider<AuthNotifier, AuthState>(
+  AuthNotifier.new,
+);
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthService _authService;
+class AuthNotifier extends Notifier<AuthState> {
+  late final AuthService _authService;
   StreamSubscription? _authSubscription;
 
-  AuthNotifier(this._authService) : super(const AuthState(status: AuthStatus.loading)) {
+  @override
+  AuthState build() {
+    _authService = ref.watch(authServiceProvider);
     _loadAvatar();
     _initAuthState();
+    ref.onDispose(() {
+      _authSubscription?.cancel();
+    });
+    return const AuthState(status: AuthStatus.loading);
   }
 
   Future<void> _loadAvatar() async {
     final prefs = await SharedPreferences.getInstance();
     final avatar = prefs.getString('user_avatar');
-    if (avatar != null && mounted) {
+    if (avatar != null) {
       state = state.copyWith(avatarUrl: avatar);
     }
   }
 
   Future<void> _initAuthState() async {
     await _authService.initialize();
-    if (!mounted) return;
     final user = _authService.currentUser;
     if (user != null) {
       state = AuthState(
@@ -89,7 +94,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     _authSubscription = _authService.onAuthStateChange.listen((event) {
-      if (!mounted) return;
       if (event is AuthSignedInEvent) {
         state = AuthState(
           status: AuthStatus.authenticated,
@@ -103,16 +107,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     });
   }
 
-  @override
-  void dispose() {
-    _authSubscription?.cancel();
-    super.dispose();
-  }
-
   Future<void> signIn(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
     final result = await _authService.signInWithEmail(email, password);
-    if (!mounted) return;
     if (result.success) {
       state = AuthState(
         status: AuthStatus.authenticated,
@@ -121,17 +118,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         avatarUrl: state.avatarUrl,
       );
     } else {
-      state = AuthState(
+      state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: result.error,
+        failureKind: result.failureKind,
       );
     }
   }
 
   Future<void> signUp(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
     final result = await _authService.signUp(email, password);
-    if (!mounted) return;
     if (result.success) {
       state = AuthState(
         status: AuthStatus.authenticated,
@@ -140,9 +137,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         avatarUrl: state.avatarUrl,
       );
     } else {
-      state = AuthState(
+      state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: result.error,
+        failureKind: result.failureKind,
       );
     }
   }
@@ -161,7 +159,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     await _authService.signOut();
-    if (!mounted) return;
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 }

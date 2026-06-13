@@ -102,32 +102,35 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   @override
   Future<void> deleteProject(String id) async {
-    try {
-      // Get project data BEFORE deleting, to push full upsert with deleted_at
-      final dbProject = await _db.getProjectById(id);
-      if (dbProject != null && _remote != null) {
-        _remote!.upsertProject(entity.Project(
-          id: dbProject.id,
-          parentId: dbProject.parentId,
-          name: dbProject.name,
-          description: dbProject.description,
-          color: dbProject.color,
-          icon: dbProject.icon,
-          startDate: dbProject.startDate,
-          endDate: dbProject.endDate,
-          createdAt: dbProject.createdAt,
-          sortOrder: dbProject.sortOrder,
-          isDefault: dbProject.isDefault,
-        ), deletedAt: DateTime.now()).then((_) {
-          Logger.d('ProjectRepositoryImpl.deleteProject: pushed full sync-delete');
-        }).catchError((e) {
-          Logger.d('ProjectRepositoryImpl.deleteProject remote push failed: $e');
-        });
-      }
+    // Soft-delete: stamp deletedAt + pendingSync instead of physically
+    // removing the row. SyncManager pushes the tombstone and only then
+    // physical-deletes locally after remote ack. Survives offline.
+    final dbProject = await _db.getProjectById(id);
+    if (dbProject == null) return;
 
-      await _db.deleteProject(id);
-    } catch (e) {
-      rethrow;
+    await _db.updateProject(ProjectsCompanion(
+      id: Value(dbProject.id),
+      parentId: Value(dbProject.parentId),
+      name: Value(dbProject.name),
+      description: Value(dbProject.description),
+      color: Value(dbProject.color),
+      icon: Value(dbProject.icon),
+      startDate: Value(dbProject.startDate),
+      endDate: Value(dbProject.endDate),
+      createdAt: Value(dbProject.createdAt),
+      sortOrder: Value(dbProject.sortOrder),
+      isDefault: Value(dbProject.isDefault),
+      deletedAt: Value(DateTime.now()),
+      pendingSync: const Value(true),
+    ));
+
+    if (_remote != null) {
+      _remote!.upsertProject(_mapToEntity(dbProject), deletedAt: DateTime.now())
+          .then((_) {
+        Logger.d('ProjectRepositoryImpl.deleteProject: tombstone pushed to remote');
+      }).catchError((e) {
+        Logger.d('ProjectRepositoryImpl.deleteProject remote push failed: $e');
+      });
     }
   }
 

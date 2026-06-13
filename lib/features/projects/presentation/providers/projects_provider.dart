@@ -1,15 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../data/datasources/local/app_database.dart' show AppDatabase;
+import '../../../../core/services/database_provider.dart';
 import '../../../../data/repositories/project_repository_impl.dart';
 import '../../../../domain/entities/project.dart';
 import '../../../../domain/repositories/project_repository.dart';
 import '../../../sync/presentation/providers/sync_status_provider.dart' show remoteDatasourceProvider;
-
-final databaseProvider = Provider<AppDatabase>((ref) {
-  return AppDatabase();
-});
 
 final projectRepositoryProvider = Provider<ProjectRepository>((ref) {
   return ProjectRepositoryImpl(ref.watch(databaseProvider), ref.watch(remoteDatasourceProvider));

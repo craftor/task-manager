@@ -1,4 +1,4 @@
-import 'time_entry_entity.dart';
+import '../../../../domain/entities/time_entry.dart';
 
 abstract class TimeEntryRepository {
   Future<List<TimeEntry>> getAllTimeEntries();

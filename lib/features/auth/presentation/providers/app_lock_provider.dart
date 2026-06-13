@@ -8,19 +8,24 @@ final appLockEnabledProvider = FutureProvider<bool>((ref) async {
   return service.isLockEnabled();
 });
 
-final appLockProvider = StateNotifierProvider<AppLockNotifier, bool>((ref) {
-  return AppLockNotifier(ref.watch(appLockServiceProvider));
-});
+final appLockProvider = NotifierProvider<AppLockNotifier, bool>(
+  AppLockNotifier.new,
+);
 
-class AppLockNotifier extends StateNotifier<bool> {
-  final AppLockService _service;
+class AppLockNotifier extends Notifier<bool> {
+  late final AppLockService _service;
 
-  AppLockNotifier(this._service) : super(false) {
+  @override
+  bool build() {
+    _service = ref.watch(appLockServiceProvider);
+    // Kick off async init; failures keep `state` at false (lock disabled).
     _init();
+    return false;
   }
 
   Future<void> _init() async {
-    state = await _service.isLockEnabled();
+    final enabled = await _service.isLockEnabled();
+    state = enabled;
   }
 
   Future<bool> verifyPin(String pin) => _service.verifyPin(pin);

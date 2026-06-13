@@ -9,6 +9,7 @@ import '../../../domain/entities/project.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/time_entry.dart';
 import 'remote_datasource.dart';
+import 'user_scoped_query.dart';
 
 /// Appwrite implementation of [RemoteDatasource].
 ///
@@ -73,11 +74,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'projects',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.isNull('deleted_at'),
-        Query.orderAsc(r'$createdAt'),
-      ],
+      queries: buildLiveUserScopedQueries(userId),
     );
     return result.documents.map(_docToRow).toList();
   }
@@ -92,12 +89,12 @@ class AppwriteDatasource implements RemoteDatasource {
   }
 
   @override
-  Future<void> deleteProject(String id) async {
+  Future<void> deleteProject(String id, {DateTime? deletedAt}) async {
     await _databases.updateDocument(
       databaseId: databaseId,
       collectionId: 'projects',
       documentId: id,
-      data: {'deleted_at': DateTime.now().toIso8601String()},
+      data: {'deleted_at': (deletedAt ?? DateTime.now()).toIso8601String()},
     );
   }
 
@@ -127,11 +124,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'tasks',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.isNull('deleted_at'),
-        Query.orderAsc(r'$createdAt'),
-      ],
+      queries: buildLiveUserScopedQueries(userId),
     );
     return result.documents.map(_docToRow).toList();
   }
@@ -146,12 +139,12 @@ class AppwriteDatasource implements RemoteDatasource {
   }
 
   @override
-  Future<void> deleteTask(String id) async {
+  Future<void> deleteTask(String id, {DateTime? deletedAt}) async {
     await _databases.updateDocument(
       databaseId: databaseId,
       collectionId: 'tasks',
       documentId: id,
-      data: {'deleted_at': DateTime.now().toIso8601String()},
+      data: {'deleted_at': (deletedAt ?? DateTime.now()).toIso8601String()},
     );
   }
 
@@ -186,10 +179,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'time_entries',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.orderAsc('start_time'),
-      ],
+      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('start_time')),
     );
     return result.documents.map(_docToRow).toList();
   }
@@ -227,10 +217,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'special_days',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.orderAsc('date_key'),
-      ],
+      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')),
     );
     return result.documents.map(_docToRow).toList();
   }
@@ -264,10 +251,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'moods',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.orderAsc('date_key'),
-      ],
+      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')),
     );
     return result.documents.map(_docToRow).toList();
   }
@@ -301,10 +285,7 @@ class AppwriteDatasource implements RemoteDatasource {
     final result = await _databases.listDocuments(
       databaseId: databaseId,
       collectionId: 'journal_entries',
-      queries: [
-        Query.equal('user_id', userId),
-        Query.orderDesc(r'$createdAt'),
-      ],
+      queries: buildUserScopedQueries(userId, orderBy: Query.orderDesc(r'$createdAt')),
     );
     return result.documents.map(_docToRow).toList();
   }

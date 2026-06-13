@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +15,7 @@ const _kTestUser = AppUser(id: 'u1', email: 'test@example.com');
 void main() {
   group('AuthNotifier', () {
     late MockAuthService mockAuthService;
+    late ProviderContainer container;
 
     setUp(() async {
       mockAuthService = MockAuthService();
@@ -21,83 +23,95 @@ void main() {
       when(() => mockAuthService.initialize()).thenAnswer((_) async {});
       when(() => mockAuthService.onAuthStateChange)
           .thenAnswer((_) => const Stream.empty());
+
+      container = ProviderContainer(overrides: [
+        authServiceProvider.overrideWithValue(mockAuthService),
+      ]);
+      // Let the async _initAuthState complete.
+      await Future<void>.delayed(Duration.zero);
     });
 
-    /// Wait for `_initAuthState` to settle, then return the notifier.
-    Future<AuthNotifier> buildNotifier() async {
-      final notifier = AuthNotifier(mockAuthService);
-      // Let the async _initAuthState complete (it awaits initialize() and
-      // then resolves the initial state from currentUser).
-      await Future<void>.delayed(Duration.zero);
-      return notifier;
+    tearDown(() {
+      container.dispose();
+    });
+
+    Future<void> settleAuth() async {
+      // Wait until _initAuthState finishes (status leaves `loading`).
+      for (var i = 0; i < 20; i++) {
+        if (container.read(authStateProvider).status != AuthStatus.loading) {
+          return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
     }
 
     test('initial auth state is unauthenticated when no user', () async {
       when(() => mockAuthService.currentUser).thenReturn(null);
-
-      final notifier = await buildNotifier();
-
-      expect(notifier.state.status, AuthStatus.unauthenticated);
-      notifier.dispose();
+      container.invalidate(authStateProvider);
+      await settleAuth();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.unauthenticated);
     });
 
     test('initial auth state is authenticated when user exists', () async {
       when(() => mockAuthService.currentUser).thenReturn(_kTestUser);
-
-      final notifier = await buildNotifier();
-
-      expect(notifier.state.status, AuthStatus.authenticated);
-      expect(notifier.state.userId, 'u1');
-      notifier.dispose();
+      container.invalidate(authStateProvider);
+      await settleAuth();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.authenticated);
+      expect(state.userId, 'u1');
     });
 
-    test('signIn transitions to loading then authenticated on success', () async {
+    test('signIn transitions to loading then authenticated on success',
+        () async {
       when(() => mockAuthService.currentUser).thenReturn(null);
       when(() => mockAuthService.signInWithEmail(any(), any()))
           .thenAnswer((_) async => AuthResult.success(_kTestUser));
 
-      final notifier = await buildNotifier();
-      await notifier.signIn('test@example.com', 'password123');
+      await container.read(authStateProvider.notifier)
+          .signIn('test@example.com', 'password123');
 
-      expect(notifier.state.status, AuthStatus.authenticated);
-      expect(notifier.state.userId, 'u1');
-      notifier.dispose();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.authenticated);
+      expect(state.userId, 'u1');
     });
 
     test('signIn transitions to error on failure', () async {
       when(() => mockAuthService.currentUser).thenReturn(null);
-      when(() => mockAuthService.signInWithEmail(any(), any()))
-          .thenAnswer((_) async => AuthResult.failure('Invalid credentials'));
+      when(() => mockAuthService.signInWithEmail(any(), any())).thenAnswer(
+          (_) async => AuthResult.failure('Invalid credentials',
+              failureKind: AuthFailureKind.invalidCredentials));
 
-      final notifier = await buildNotifier();
-      await notifier.signIn('test@example.com', 'wrongpassword');
+      await container.read(authStateProvider.notifier)
+          .signIn('test@example.com', 'wrongpassword');
 
-      expect(notifier.state.status, AuthStatus.error);
-      expect(notifier.state.errorMessage, 'Invalid credentials');
-      notifier.dispose();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.error);
+      expect(state.errorMessage, 'Invalid credentials');
+      expect(state.failureKind, AuthFailureKind.invalidCredentials);
     });
 
-    test('signUp transitions to loading then authenticated on success', () async {
+    test('signUp transitions to loading then authenticated on success',
+        () async {
       when(() => mockAuthService.currentUser).thenReturn(null);
       when(() => mockAuthService.signUp(any(), any()))
           .thenAnswer((_) async => AuthResult.success(_kTestUser));
 
-      final notifier = await buildNotifier();
-      await notifier.signUp('test@example.com', 'password123');
+      await container.read(authStateProvider.notifier)
+          .signUp('test@example.com', 'password123');
 
-      expect(notifier.state.status, AuthStatus.authenticated);
-      notifier.dispose();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.authenticated);
     });
 
     test('signOut transitions to unauthenticated', () async {
       when(() => mockAuthService.currentUser).thenReturn(null);
       when(() => mockAuthService.signOut()).thenAnswer((_) async {});
 
-      final notifier = await buildNotifier();
-      await notifier.signOut();
+      await container.read(authStateProvider.notifier).signOut();
 
-      expect(notifier.state.status, AuthStatus.unauthenticated);
-      notifier.dispose();
+      final state = container.read(authStateProvider);
+      expect(state.status, AuthStatus.unauthenticated);
     });
   });
 }

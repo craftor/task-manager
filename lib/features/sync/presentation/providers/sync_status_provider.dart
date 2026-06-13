@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../projects/presentation/providers/projects_provider.dart';
+import '../../../../core/services/database_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../journal/presentation/providers/journal_provider.dart';
+import '../../../mood/presentation/providers/mood_provider.dart';
+import '../../../special_days/presentation/providers/special_days_provider.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../../../data/datasources/remote/remote_datasource_factory.dart';
 import '../../data/sync_manager.dart';
@@ -36,7 +39,13 @@ final syncManagerProvider = Provider<SyncManager?>((ref) {
   final datasource = ref.watch(remoteDatasourceProvider);
   if (datasource == null) return null;
 
-  final manager = SyncManager(db, datasource);
+  final manager = SyncManager(
+    db,
+    datasource,
+    journalRepository: ref.watch(journalRepositoryProvider),
+    moodRepository: ref.watch(moodRepositoryProvider),
+    specialDaysRepository: ref.watch(specialDaysRepositoryProvider),
+  );
   _SyncManagerHolder.set(manager);
 
   ref.onDispose(() {
@@ -50,6 +59,6 @@ final syncManagerProvider = Provider<SyncManager?>((ref) {
 final syncStatusProvider = StreamProvider<SyncState>((ref) {
   // Read (not watch) to avoid creating new manager instances on each access
   final manager = ref.read(syncManagerProvider);
-  if (manager == null) return const Stream.empty();
+  if (manager == null) return Stream.value(const SyncState());
   return manager.syncStateStream;
 });

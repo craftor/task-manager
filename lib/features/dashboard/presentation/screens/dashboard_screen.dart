@@ -4,9 +4,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
-import '../../../journal/journal_provider.dart';
-import '../../../mood/mood_provider.dart';
-import '../../../special_days/special_days_provider.dart';
+import '../../../journal/presentation/providers/journal_provider.dart';
+import '../../../mood/presentation/providers/mood_provider.dart';
+import '../../../special_days/presentation/providers/special_days_provider.dart';
 import '../../../../domain/entities/task.dart';
 import '../../../../domain/entities/project.dart';
 

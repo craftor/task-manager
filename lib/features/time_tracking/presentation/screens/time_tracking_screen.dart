@@ -1,9 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../providers/time_tracking_provider.dart';
-import '../../domain/time_entry_entity.dart';
+import '../../../../domain/entities/time_entry.dart';
 import '../../../../domain/entities/task.dart' as task_entity;
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 
@@ -15,21 +14,9 @@ class TimeTrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _TimeTrackingScreenState extends ConsumerState<TimeTrackingScreen> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
+  // The per-second tick used to render the running timer now comes from
+  // `stopwatchProvider` (see time_tracking_provider.dart) so we don't
+  // need a local Timer — and don't double-tick with the notifier.
 
   @override
   Widget build(BuildContext context) {
