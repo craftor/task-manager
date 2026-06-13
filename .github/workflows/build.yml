@@ -81,14 +81,17 @@ jobs:
         if: matrix.target == 'windows'
         shell: powershell
         run: |
-          flutter build windows --release
+          $ErrorActionPreference = 'Stop'
+          $appVersion = $env:VERSION.TrimStart('v')
+          flutter build windows --release --dart-define=APP_VERSION=$appVersion
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           mkdir -p artifacts
           Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath artifacts/${env:APP_NAME}_${env:VERSION}_windows.zip
 
       - name: Build macOS
         if: matrix.target == 'macos'
         run: |
-          flutter build macos --release
+          flutter build macos --release --dart-define=APP_VERSION=${VERSION#v}
           mkdir -p $GITHUB_WORKSPACE/artifacts
           cd $GITHUB_WORKSPACE/build/macos/Build/Products/Release
           zip -r $GITHUB_WORKSPACE/artifacts/${APP_NAME}_${VERSION}_macos.zip .
@@ -102,7 +105,7 @@ jobs:
       - name: Build Linux
         if: matrix.target == 'linux'
         run: |
-          flutter build linux --release
+          flutter build linux --release --dart-define=APP_VERSION=${VERSION#v}
           mkdir -p artifacts
           tar -czf artifacts/${APP_NAME}_${VERSION}_linux.tar.gz -C build/linux/x64/release/bundle .
 
