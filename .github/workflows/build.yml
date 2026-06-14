@@ -93,8 +93,16 @@ jobs:
         run: |
           flutter build macos --release --dart-define=APP_VERSION=${VERSION#v}
           mkdir -p $GITHUB_WORKSPACE/artifacts
-          cd $GITHUB_WORKSPACE/build/macos/Build/Products/Release
-          zip -r $GITHUB_WORKSPACE/artifacts/${APP_NAME}_${VERSION}_macos.zip .
+          APP_PATH=$GITHUB_WORKSPACE/build/macos/Build/Products/Release/task_manager.app
+          DMG_STAGING=$(mktemp -d)
+          cp -R "$APP_PATH" "$DMG_STAGING/"
+          # /Applications symlink gives the Finder window a drag-to-install target.
+          ln -s /Applications "$DMG_STAGING/Applications"
+          hdiutil create -volname "${APP_NAME}" \
+            -srcfolder "$DMG_STAGING" \
+            -ov -format UDZO \
+            $GITHUB_WORKSPACE/artifacts/${APP_NAME}_${VERSION}_macos.dmg
+          rm -rf "$DMG_STAGING"
 
       - name: Install Linux dependencies
         if: matrix.target == 'linux'
