@@ -5,6 +5,15 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.3] - 2026-06-14
+
+### Changed
+- **GitHub Actions macOS artifact switched from `.zip` to `.dmg`**. The release
+  job now uses the macOS-bundled `hdiutil` to wrap `task_manager.app` in a
+  compressed read-only UDZO DMG with an `/Applications` symlink, so users
+  can drag the app to the Applications folder in Finder. No third-party
+  packaging tools added.
+
 ## [0.12.2] - 2026-06-14
 
 ### Fixed
