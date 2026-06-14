@@ -5,6 +5,19 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2026-06-14
+
+### Fixed
+- **GitHub Actions Linux build broken**: `desktop_webview_window` (used by
+  `flutter_web_auth_2` for OAuth) requires `webkit2gtk-4.x` + `libsoup` at
+  build time. The previous workflow only installed
+  `libgtk-3-dev / pkg-config / cmake / ninja-build / libsecret-1-dev`, so
+  the CMake configure step failed with:
+  `The following required packages were not found: - webkit2gtk-4.0`.
+  The install step now tries 4.1 / 3.0 first (Ubuntu 24.04, current
+  `ubuntu-latest`) and falls back to 4.0 / 2.4 (Ubuntu 22.04) so the
+  workflow survives runner bumps.
+
 ## [0.12.1] - 2026-06-14
 
 ### Fixed
