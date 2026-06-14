@@ -5,6 +5,31 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2026-06-14
+
+### Fixed
+- **macOS login broken**: `createEmailPasswordSession` hung indefinitely with no
+  SnackBar feedback. Two root causes stacked:
+  - **App Transport Security** silently dropped the plain-HTTP request to
+    `http://o.21up.cn:6080/v1`. Added an `NSAppTransportSecurity` exception for
+    `o.21up.cn` in `macos/Runner/Info.plist` so NSURLSession actually starts the
+    connection. (Android was never affected — no ATS layer.)
+  - **Appwrite origin whitelist** rejected the bundled `com.example.taskManager`
+    with `403 general_unknown_origin`. The default Flutter scaffold bundle ID
+    was never registered in the Appwrite console. Renamed the Runner target to
+    `cn.logicpi.TaskManager` to match the project's registered macOS platform.
+    When registering a new bundle in Appwrite, also update
+    `macos/Runner/Configs/AppInfo.xcconfig` and the `RunnerTests` targets in
+    `project.pbxproj`.
+
+### Changed
+- **`AppwriteAuthService.signInWithEmail` now logs `[AUTH]`-prefixed traces
+  and applies a 15s timeout** to each Appwrite call. Previously a hung request
+  left the UI stuck on the loading spinner with no signal; now a real timeout
+  surfaces a SnackBar with `"请求超时 (15s) — 网络或后端无响应"`.
+- `_humanize` defaults now use `e.message` so unexpected Appwrite error codes
+  reach the user instead of being swallowed as `"Auth error (code N)"`.
+
 ## [0.12.0] - 2026-06-13
 
 ### Security

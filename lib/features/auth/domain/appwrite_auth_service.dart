@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:appwrite/appwrite.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/appwrite/appwrite_client.dart';
 import 'app_user.dart';
 import 'auth_event.dart';
@@ -37,19 +38,28 @@ class AppwriteAuthService implements AuthService {
 
   @override
   Future<AuthResult> signInWithEmail(String email, String password) async {
+    debugPrint('[AUTH] signInWithEmail called: $email endpoint=${client.endPoint}');
     try {
-      await _account.createEmailPasswordSession(
-        email: email,
-        password: password,
-      );
-      final user = await _account.get();
+      debugPrint('[AUTH] calling createEmailPasswordSession…');
+      await _account
+          .createEmailPasswordSession(email: email, password: password)
+          .timeout(const Duration(seconds: 15));
+      debugPrint('[AUTH] session created, calling _account.get()…');
+      final user = await _account.get().timeout(const Duration(seconds: 15));
+      debugPrint('[AUTH] got user: ${user.$id}');
       _cachedUser = AppUser(id: user.$id, email: user.email);
       _controller.add(AuthSignedInEvent(_cachedUser!));
       return AuthResult.success(_cachedUser!);
     } on AppwriteException catch (e) {
+      debugPrint('[AUTH] AppwriteException code=${e.code} type=${e.type} message=${e.message} response=${e.response}');
       final (msg, kind) = _humanize(e);
       return AuthResult.failure(msg, failureKind: kind);
-    } catch (e) {
+    } on TimeoutException catch (e) {
+      debugPrint('[AUTH] TimeoutException: $e');
+      return AuthResult.failure('请求超时 (15s) — 网络或后端无响应',
+          failureKind: AuthFailureKind.network);
+    } catch (e, st) {
+      debugPrint('[AUTH] Other error: $e\n$st');
       return AuthResult.failure('Network error: $e',
           failureKind: AuthFailureKind.network);
     }

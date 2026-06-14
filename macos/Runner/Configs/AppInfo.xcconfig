@@ -8,7 +8,7 @@
 PRODUCT_NAME = task_manager
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.taskManager
+PRODUCT_BUNDLE_IDENTIFIER = cn.logicpi.TaskManager
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
