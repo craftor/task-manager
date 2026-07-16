@@ -5,6 +5,14 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.4] - 2026-07-16
+
+### Fixed
+- **macOS update dialog downloaded the Android APK**. `UpdateService` now picks
+  the GitHub Release asset that matches the current platform (`.apk`,
+  `_macos.dmg`, `_windows.zip`, `_linux.tar.gz`) instead of always selecting the
+  first `.apk`. Falls back to the release page when no matching asset is found.
+
 ## [0.12.3] - 2026-06-14
 
 ### Changed

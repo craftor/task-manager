@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../constants/app_constants.dart';
@@ -38,6 +39,16 @@ class UpdateService {
     return 0;
   }
 
+  /// Returns a matcher for the GitHub release asset that belongs to the
+  /// current platform, or `null` on unsupported platforms.
+  static bool Function(String)? get _platformAssetPattern {
+    if (Platform.isAndroid) return (name) => name.endsWith('.apk');
+    if (Platform.isMacOS) return (name) => name.endsWith('_macos.dmg');
+    if (Platform.isWindows) return (name) => name.endsWith('_windows.zip');
+    if (Platform.isLinux) return (name) => name.endsWith('_linux.tar.gz');
+    return null;
+  }
+
   /// Check if an update is available by comparing current version
   /// with the latest GitHub release.
   static Future<UpdateInfo?> checkForUpdate(String currentVersion) async {
@@ -66,13 +77,14 @@ class UpdateService {
         return null;
       }
 
-      // Find Android APK asset
+      // Pick the asset that matches the current platform.
       String? downloadUrl;
       final assets = data['assets'] as List<dynamic>?;
-      if (assets != null) {
+      final assetPattern = _platformAssetPattern;
+      if (assets != null && assetPattern != null) {
         for (final asset in assets) {
           final name = asset['name'] as String?;
-          if (name != null && name.endsWith('.apk')) {
+          if (name != null && assetPattern(name)) {
             downloadUrl = asset['browser_download_url'] as String?;
             break;
           }
