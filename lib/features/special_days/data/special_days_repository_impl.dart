@@ -16,11 +16,14 @@ class SpecialDaysRepositoryImpl implements SpecialDaysRepository {
     RemoteDatasource? remote,
   ) async {
     final cached = await _loadCache();
-    if (cached.isEmpty && remote != null) {
-      await pullFromRemote(remote);
-      return _loadCache();
-    }
-    return cached;
+    if (remote == null) return cached;
+
+    // Always refresh from remote when available. A non-empty local cache can
+    // become stale (e.g., after reinstalling on a different platform or when
+    // another device wrote data), and relying solely on cache emptiness leaves
+    // the UI stuck with outdated/empty data.
+    await pullFromRemote(remote);
+    return _loadCache();
   }
 
   @override
