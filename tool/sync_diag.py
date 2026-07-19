@@ -106,7 +106,7 @@ req = urllib.request.Request(
         "X-Appwrite-Response-Format": "1.8.0",
         "X-Appwrite-Project": PROJ,
         "Origin": "appwrite-windows://com.example.task_manager",
-        "user-agent": "com.example.task_manager/0.12.5 (Windows NT; DESKTOP)",
+        "user-agent": "com.example.task_manager/0.12.6 (Windows NT; DESKTOP)",
         "Cookie": COOKIE_HDR,
     },
 )

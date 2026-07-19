@@ -5,6 +5,31 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.6] - 2026-07-19
+
+### Fixed
+- **Special Days / Moods never synced from the cloud (all platforms)**.
+  Appwrite SDK 21.4.0's `Document.fromMap` does `data: map["data"] ?? map`,
+  so any document in a collection with a custom attribute literally named
+  `data` (`special_days`, `moods`) deserialized with `Document.data` set to
+  that attribute's raw String — losing all sibling attributes and throwing
+  `type 'String' is not a subtype of type 'Map<String, dynamic>'` in
+  `_docToRow`. The pull died before touching the local cache, so 68 cloud
+  rows never appeared. Both collections now fetch through a raw
+  `client.call` path that skips the broken model (`_fetchRaw`).
+- **Fetches capped at 25 rows**. Every `listDocuments` call used the
+  Appwrite default page size; larger collections silently truncated. All
+  fetches now paginate with `limit(100)` + `offset`.
+- **Failed logins showed no error and no navigation**. `AuthWrapper`
+  replaces `LoginScreen` with a loading splash during the sign-in attempt,
+  so the SnackBar listener unmounted before the error state arrived.
+  Sign-in errors now render inline on the login page, straight from
+  `AuthState`.
+
+### Added
+- **"Send a ping" button** on the Dashboard (calls `client.ping()`), per
+  the Appwrite onboarding checklist.
+
 ## [0.12.5] - 2026-07-16
 
 ### Fixed
