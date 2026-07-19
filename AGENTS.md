@@ -80,3 +80,15 @@ Version is defined in `lib/version.dart` (`appVersion`). This is the single sour
 ## Known Issues
 
 - Run `flutter analyze lib/` to check lib/ code quality
+- **Windows build picks the wrong Visual Studio instance.** On machines with
+  multiple VS installations, `flutter build windows` may select a BuildTools
+  instance that lacks the ATL/MFC components, failing with
+  `error C1083: atlstr.h: No such file or directory` (required by
+  `flutter_secure_storage_windows`). Fix: reconfigure the CMake cache to a VS
+  instance that has "C++ ATL for build tools" installed (e.g. the full
+  Community edition), then rebuild:
+  `cmake -S windows -B build/windows/x64 -DCMAKE_GENERATOR_INSTANCE="C:\Program Files\Microsoft Visual Studio\18\Community"`
+  (use the `cmake.exe` bundled under that instance's
+  `Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin`). The instance is
+  cached in `build/windows/x64`, so this only needs to be done once per
+  machine — or delete `build/` to redo it.

@@ -51,26 +51,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
-    ref.listen<AuthState>(authStateProvider, (previous, next) {
-      if (next.status == AuthStatus.error && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(child: Text(next.errorMessage!)),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
-    });
-
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
@@ -182,6 +162,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         onSubmitted: (_) => _signIn(),
                       ),
                       const SizedBox(height: 32),
+                      // AuthWrapper swaps this screen for a splash while
+                      // AuthStatus.loading, so transient SnackBars are lost.
+                      // Render sign-in errors inline — the state survives the
+                      // loading → error transition.
+                      if (authState.status == AuthStatus.error &&
+                          authState.errorMessage != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: AppColors.error),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  authState.errorMessage!,
+                                  style: const TextStyle(
+                                      color: AppColors.error, fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       ElevatedButton(
                         onPressed: authState.status == AuthStatus.loading
                             ? null

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/appwrite/appwrite_client.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
@@ -27,6 +28,13 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             const Text('Dashboard'),
             const Spacer(),
+            TextButton.icon(
+              onPressed: () => _sendPing(context),
+              icon: const Icon(Icons.wifi_tethering,
+                  size: 18, color: AppColors.primary),
+              label: const Text('Send a ping',
+                  style: TextStyle(color: AppColors.primary)),
+            ),
             _CompactQuickActions(onNavigate: onNavigate),
           ],
         ),
@@ -43,6 +51,27 @@ class DashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Appwrite connectivity check from the official onboarding flow.
+  Future<void> _sendPing(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final result = await client.ping();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Ping successful: $result'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Ping failed: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildDashboard(
