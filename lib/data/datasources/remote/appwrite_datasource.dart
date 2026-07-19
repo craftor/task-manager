@@ -5,6 +5,9 @@
 
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+// HttpMethod is not re-exported by appwrite.dart (SDK 21.4.0, pinned).
+// ignore: implementation_imports
+import 'package:appwrite/src/enums.dart' show HttpMethod;
 import '../../../domain/entities/project.dart';
 import '../../../domain/entities/task.dart';
 import '../../../domain/entities/time_entry.dart';
@@ -36,6 +39,68 @@ class AppwriteDatasource implements RemoteDatasource {
   AppwriteDatasource(this._client, this.userId, this.databaseId);
 
   Databases get _databases => Databases(_client);
+
+  static const int _pageSize = 100;
+
+  // ─── Shared fetch helpers (paginated) ────────────────────────────────
+
+  /// Fetch ALL documents of [collectionId] through the SDK's Document
+  /// model, paging with limit/offset. (Appwrite caps a single listDocuments
+  /// call at 25 rows by default.)
+  Future<List<Map<String, dynamic>>> _fetchAllDocuments(
+    String collectionId,
+    List<String> baseQueries,
+  ) async {
+    final out = <Map<String, dynamic>>[];
+    var offset = 0;
+    while (true) {
+      final result = await _databases.listDocuments(
+        databaseId: databaseId,
+        collectionId: collectionId,
+        queries: [...baseQueries, Query.limit(_pageSize), Query.offset(offset)],
+      );
+      out.addAll(result.documents.map(_docToRow));
+      if (result.documents.isEmpty || out.length >= result.total) break;
+      offset += _pageSize;
+    }
+    return out;
+  }
+
+  /// Raw fetch that bypasses the SDK's Document model. SDK 21.4.0's
+  /// `Document.fromMap` does `data: map["data"] ?? map`, so a document with
+  /// a custom attribute literally named `data` (special_days, moods)
+  /// deserializes with `Document.data` set to that attribute's raw value —
+  /// losing all sibling attributes and throwing
+  /// `type 'String' is not a subtype of type 'Map<String, dynamic>'` in
+  /// [_docToRow]. Calling the REST endpoint directly avoids that.
+  Future<List<Map<String, dynamic>>> _fetchRaw(
+    String collectionId,
+    List<String> baseQueries,
+  ) async {
+    final out = <Map<String, dynamic>>[];
+    var offset = 0;
+    while (true) {
+      final res = await _client.call(
+        HttpMethod.get,
+        path: '/databases/$databaseId/collections/$collectionId/documents',
+        params: {
+          'queries': [...baseQueries, Query.limit(_pageSize), Query.offset(offset)],
+        },
+      );
+      final total = res.data['total'] as int;
+      final docs = (res.data['documents'] as List).cast<Map<String, dynamic>>();
+      for (final doc in docs) {
+        final row = Map<String, dynamic>.from(doc);
+        row['id'] = doc[r'$id'];
+        row['created_at'] = doc[r'$createdAt'];
+        row['updated_at'] = doc[r'$updatedAt'];
+        out.add(row);
+      }
+      if (docs.isEmpty || out.length >= total) break;
+      offset += _pageSize;
+    }
+    return out;
+  }
 
   // ─── Shared upsert helper ────────────────────────────────────────────
 
@@ -70,14 +135,8 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Projects (C.1) ─────────────────────────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchProjects() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'projects',
-      queries: buildLiveUserScopedQueries(userId),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  Future<List<Map<String, dynamic>>> fetchProjects() =>
+      _fetchAllDocuments('projects', buildLiveUserScopedQueries(userId));
 
   @override
   Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
@@ -120,14 +179,8 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Tasks (C.2) — closes the 7-field gap ───────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchTasks() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'tasks',
-      queries: buildLiveUserScopedQueries(userId),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  Future<List<Map<String, dynamic>>> fetchTasks() =>
+      _fetchAllDocuments('tasks', buildLiveUserScopedQueries(userId));
 
   @override
   Future<void> upsertTask(Task task, {DateTime? deletedAt}) async {
@@ -175,14 +228,9 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Time Entries (C.3) — hard delete on deleteTimeEntry ──────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchTimeEntries() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'time_entries',
-      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('start_time')),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  Future<List<Map<String, dynamic>>> fetchTimeEntries() => _fetchAllDocuments(
+      'time_entries',
+      buildUserScopedQueries(userId, orderBy: Query.orderAsc('start_time')));
 
   @override
   Future<void> upsertTimeEntry(TimeEntry entry) async {
@@ -213,14 +261,11 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Special Days (C.4) — composite id = userId_dateKey ────────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchSpecialDays() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'special_days',
-      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  // Raw path: this collection has a custom attribute literally named
+  // 'data' — see [_fetchRaw] for why the Document model can't parse it.
+  Future<List<Map<String, dynamic>>> fetchSpecialDays() => _fetchRaw(
+      'special_days',
+      buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')));
 
   @override
   Future<void> upsertSpecialDay(String dateKey, String data) async {
@@ -247,14 +292,9 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Moods (C.4) — same shape as special_days ──────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchMoods() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'moods',
-      queries: buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  // Raw path: same 'data'-attribute hazard as special_days — see [_fetchRaw].
+  Future<List<Map<String, dynamic>>> fetchMoods() => _fetchRaw(
+      'moods', buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')));
 
   @override
   Future<void> upsertMood(String dateKey, String data) async {
@@ -281,14 +321,10 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Journal Entries (C.5) — hard delete ────────────────────────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchJournalEntries() async {
-    final result = await _databases.listDocuments(
-      databaseId: databaseId,
-      collectionId: 'journal_entries',
-      queries: buildUserScopedQueries(userId, orderBy: Query.orderDesc(r'$createdAt')),
-    );
-    return result.documents.map(_docToRow).toList();
-  }
+  Future<List<Map<String, dynamic>>> fetchJournalEntries() =>
+      _fetchAllDocuments(
+          'journal_entries',
+          buildUserScopedQueries(userId, orderBy: Query.orderDesc(r'$createdAt')));
 
   @override
   Future<void> upsertJournalEntry(
