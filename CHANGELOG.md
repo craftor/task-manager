@@ -5,6 +5,15 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.7] - 2026-07-19
+
+### Changed
+- **CI actions bumped to Node 24 majors** (`checkout` v7,
+  `upload-artifact` v7, `download-artifact` v8, `action-gh-release` v3),
+  silencing the "Node.js 20 is deprecated" workflow annotations. No app
+  code changes — this tag exists to exercise the updated release workflow
+  end to end.
+
 ## [0.12.6] - 2026-07-19
 
 ### Fixed
