@@ -1,8 +1,3 @@
-// ignore_for_file: deprecated_member_use
-// All `Databases` methods (createDocument / updateDocument / deleteDocument /
-// listDocuments) are deprecated in Appwrite SDK 1.8.0 in favor of
-// `TablesDB`. SDK 21.4.0 still ships the deprecated surface, so we use it.
-
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 // HttpMethod is not re-exported by appwrite.dart (SDK 21.4.0, pinned).
@@ -14,19 +9,21 @@ import '../../../domain/entities/time_entry.dart';
 import 'remote_datasource.dart';
 import 'user_scoped_query.dart';
 
-/// Appwrite implementation of [RemoteDatasource].
+/// Appwrite implementation of [RemoteDatasource], using the `TablesDB`
+/// service (SDK 21.4.0's recommended replacement for the deprecated
+/// `Databases` API).
 ///
-/// All methods are now implemented for the 6 collections:
+/// All methods cover the 6 collections (now addressed as tables):
 /// - projects (C.1)
 /// - tasks (C.2) — also closes the 7-field gap left by SupabaseDatasource
 /// - time_entries (C.3)
 /// - special_days + moods (C.4)
 /// - journal_entries (C.5)
 ///
-/// Appwrite auto-manages `$createdAt` / `$updatedAt` on every document —
-/// they are never sent in the payload. On read, we project them into the
-/// row map as `created_at` / `updated_at` (ISO 8601) so the local Drift
-/// schema is satisfied.
+/// Appwrite auto-manages `$createdAt` / `$updatedAt` on every row —
+/// they are never sent in the payload. On read, we project them into
+/// the row map as `created_at` / `updated_at` (ISO 8601) so the local
+/// Drift schema is satisfied.
 ///
 /// All queries include `Query.equal('user_id', userId)` because Appwrite
 /// self-hosted has no native row-level RLS — every collection permission
@@ -38,7 +35,7 @@ class AppwriteDatasource implements RemoteDatasource {
 
   AppwriteDatasource(this._client, this.userId, this.databaseId);
 
-  Databases get _databases => Databases(_client);
+  TablesDB get _tablesDB => TablesDB(_client);
 
   /// Exposed for `SyncManager`'s Realtime subscription. Shares the same
   /// authenticated `Client` instance used for REST calls (so the
@@ -49,37 +46,37 @@ class AppwriteDatasource implements RemoteDatasource {
 
   // ─── Shared fetch helpers (paginated) ────────────────────────────────
 
-  /// Fetch ALL documents of [collectionId] through the SDK's Document
-  /// model, paging with limit/offset. (Appwrite caps a single listDocuments
-  /// call at 25 rows by default.)
-  Future<List<Map<String, dynamic>>> _fetchAllDocuments(
-    String collectionId,
+  /// Fetch ALL rows of [tableId] through the SDK's `Row` model, paging
+  /// with limit/offset. (Appwrite caps a single listRows call at 25
+  /// rows by default.)
+  Future<List<Map<String, dynamic>>> _fetchAllRows(
+    String tableId,
     List<String> baseQueries,
   ) async {
     final out = <Map<String, dynamic>>[];
     var offset = 0;
     while (true) {
-      final result = await _databases.listDocuments(
+      final result = await _tablesDB.listRows(
         databaseId: databaseId,
-        collectionId: collectionId,
+        tableId: tableId,
         queries: [...baseQueries, Query.limit(_pageSize), Query.offset(offset)],
       );
-      out.addAll(result.documents.map(_docToRow));
-      if (result.documents.isEmpty || out.length >= result.total) break;
+      out.addAll(result.rows.map(_rowToMap));
+      if (result.rows.isEmpty || out.length >= result.total) break;
       offset += _pageSize;
     }
     return out;
   }
 
-  /// Raw fetch that bypasses the SDK's Document model. SDK 21.4.0's
-  /// `Document.fromMap` does `data: map["data"] ?? map`, so a document with
-  /// a custom attribute literally named `data` (special_days, moods)
-  /// deserializes with `Document.data` set to that attribute's raw value —
+  /// Raw fetch that bypasses the SDK's `Row` model. SDK 21.4.0's
+  /// `Row.fromMap` does `data: map["data"] ?? map`, so a row with a
+  /// custom attribute literally named `data` (special_days, moods)
+  /// deserializes with `Row.data` set to that attribute's raw value —
   /// losing all sibling attributes and throwing
   /// `type 'String' is not a subtype of type 'Map<String, dynamic>'` in
-  /// [_docToRow]. Calling the REST endpoint directly avoids that.
+  /// [_rowToMap]. Calling the REST endpoint directly avoids that.
   Future<List<Map<String, dynamic>>> _fetchRaw(
-    String collectionId,
+    String tableId,
     List<String> baseQueries,
   ) async {
     final out = <Map<String, dynamic>>[];
@@ -87,21 +84,21 @@ class AppwriteDatasource implements RemoteDatasource {
     while (true) {
       final res = await _client.call(
         HttpMethod.get,
-        path: '/databases/$databaseId/collections/$collectionId/documents',
+        path: '/tablesdb/$databaseId/tables/$tableId/rows',
         params: {
           'queries': [...baseQueries, Query.limit(_pageSize), Query.offset(offset)],
         },
       );
       final total = res.data['total'] as int;
-      final docs = (res.data['documents'] as List).cast<Map<String, dynamic>>();
-      for (final doc in docs) {
-        final row = Map<String, dynamic>.from(doc);
-        row['id'] = doc[r'$id'];
-        row['created_at'] = doc[r'$createdAt'];
-        row['updated_at'] = doc[r'$updatedAt'];
-        out.add(row);
+      final rows = (res.data['rows'] as List).cast<Map<String, dynamic>>();
+      for (final row in rows) {
+        final r = Map<String, dynamic>.from(row);
+        r['id'] = row[r'$id'];
+        r['created_at'] = row[r'$createdAt'];
+        r['updated_at'] = row[r'$updatedAt'];
+        out.add(r);
       }
-      if (docs.isEmpty || out.length >= total) break;
+      if (rows.isEmpty || out.length >= total) break;
       offset += _pageSize;
     }
     return out;
@@ -109,55 +106,42 @@ class AppwriteDatasource implements RemoteDatasource {
 
   // ─── Shared upsert helper ────────────────────────────────────────────
 
-  /// Appwrite has no native upsert. Try create; on 409 (document already
-  /// exists) fall back to update. Any other Appwrite error rethrows.
-  Future<void> _upsertDocument({
-    required String collectionId,
-    required String documentId,
+  /// SDK 21.4.0's `TablesDB.upsertRow` is a single round-trip native
+  /// upsert — no try/catch, no 409 probing.
+  Future<void> _upsertRow({
+    required String tableId,
+    required String rowId,
     required Map<String, dynamic> data,
-  }) async {
-    try {
-      await _databases.createDocument(
-        databaseId: databaseId,
-        collectionId: collectionId,
-        documentId: documentId,
-        data: data,
-      );
-    } on AppwriteException catch (e) {
-      if (e.code == 409) {
-        await _databases.updateDocument(
-          databaseId: databaseId,
-          collectionId: collectionId,
-          documentId: documentId,
-          data: data,
-        );
-      } else {
-        rethrow;
-      }
-    }
+  }) {
+    return _tablesDB.upsertRow(
+      databaseId: databaseId,
+      tableId: tableId,
+      rowId: rowId,
+      data: data,
+    );
   }
 
   // ─── Projects (C.1) ─────────────────────────────────────────────────
 
   @override
   Future<List<Map<String, dynamic>>> fetchProjects() =>
-      _fetchAllDocuments('projects', buildLiveUserScopedQueries(userId));
+      _fetchAllRows('projects', buildLiveUserScopedQueries(userId));
 
   @override
   Future<void> upsertProject(Project project, {DateTime? deletedAt}) async {
-    await _upsertDocument(
-      collectionId: 'projects',
-      documentId: project.id,
+    await _upsertRow(
+      tableId: 'projects',
+      rowId: project.id,
       data: _projectPayload(project, deletedAt: deletedAt),
     );
   }
 
   @override
   Future<void> deleteProject(String id, {DateTime? deletedAt}) async {
-    await _databases.updateDocument(
+    await _tablesDB.updateRow(
       databaseId: databaseId,
-      collectionId: 'projects',
-      documentId: id,
+      tableId: 'projects',
+      rowId: id,
       data: {'deleted_at': (deletedAt ?? DateTime.now()).toIso8601String()},
     );
   }
@@ -185,23 +169,23 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<List<Map<String, dynamic>>> fetchTasks() =>
-      _fetchAllDocuments('tasks', buildLiveUserScopedQueries(userId));
+      _fetchAllRows('tasks', buildLiveUserScopedQueries(userId));
 
   @override
   Future<void> upsertTask(Task task, {DateTime? deletedAt}) async {
-    await _upsertDocument(
-      collectionId: 'tasks',
-      documentId: task.id,
+    await _upsertRow(
+      tableId: 'tasks',
+      rowId: task.id,
       data: _taskPayload(task, deletedAt: deletedAt),
     );
   }
 
   @override
   Future<void> deleteTask(String id, {DateTime? deletedAt}) async {
-    await _databases.updateDocument(
+    await _tablesDB.updateRow(
       databaseId: databaseId,
-      collectionId: 'tasks',
-      documentId: id,
+      tableId: 'tasks',
+      rowId: id,
       data: {'deleted_at': (deletedAt ?? DateTime.now()).toIso8601String()},
     );
   }
@@ -233,15 +217,15 @@ class AppwriteDatasource implements RemoteDatasource {
   // ─── Time Entries (C.3) — hard delete on deleteTimeEntry ──────────
 
   @override
-  Future<List<Map<String, dynamic>>> fetchTimeEntries() => _fetchAllDocuments(
+  Future<List<Map<String, dynamic>>> fetchTimeEntries() => _fetchAllRows(
       'time_entries',
       buildUserScopedQueries(userId, orderBy: Query.orderAsc('start_time')));
 
   @override
   Future<void> upsertTimeEntry(TimeEntry entry) async {
-    await _upsertDocument(
-      collectionId: 'time_entries',
-      documentId: entry.id,
+    await _upsertRow(
+      tableId: 'time_entries',
+      rowId: entry.id,
       data: {
         'user_id': userId,
         'task_id': entry.taskId,
@@ -256,10 +240,10 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<void> deleteTimeEntry(String id) async {
-    await _databases.deleteDocument(
+    await _tablesDB.deleteRow(
       databaseId: databaseId,
-      collectionId: 'time_entries',
-      documentId: id,
+      tableId: 'time_entries',
+      rowId: id,
     );
   }
 
@@ -267,16 +251,16 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   // Raw path: this collection has a custom attribute literally named
-  // 'data' — see [_fetchRaw] for why the Document model can't parse it.
+  // 'data' — see [_fetchRaw] for why the Row model can't parse it.
   Future<List<Map<String, dynamic>>> fetchSpecialDays() => _fetchRaw(
       'special_days',
       buildUserScopedQueries(userId, orderBy: Query.orderAsc('date_key')));
 
   @override
   Future<void> upsertSpecialDay(String dateKey, String data) async {
-    await _upsertDocument(
-      collectionId: 'special_days',
-      documentId: _compositeId(dateKey),
+    await _upsertRow(
+      tableId: 'special_days',
+      rowId: _compositeId(dateKey),
       data: {
         'user_id': userId,
         'date_key': dateKey,
@@ -287,10 +271,10 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<void> deleteSpecialDay(String dateKey) async {
-    await _databases.deleteDocument(
+    await _tablesDB.deleteRow(
       databaseId: databaseId,
-      collectionId: 'special_days',
-      documentId: _compositeId(dateKey),
+      tableId: 'special_days',
+      rowId: _compositeId(dateKey),
     );
   }
 
@@ -303,9 +287,9 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<void> upsertMood(String dateKey, String data) async {
-    await _upsertDocument(
-      collectionId: 'moods',
-      documentId: _compositeId(dateKey),
+    await _upsertRow(
+      tableId: 'moods',
+      rowId: _compositeId(dateKey),
       data: {
         'user_id': userId,
         'date_key': dateKey,
@@ -316,10 +300,10 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<void> deleteMood(String dateKey) async {
-    await _databases.deleteDocument(
+    await _tablesDB.deleteRow(
       databaseId: databaseId,
-      collectionId: 'moods',
-      documentId: _compositeId(dateKey),
+      tableId: 'moods',
+      rowId: _compositeId(dateKey),
     );
   }
 
@@ -327,16 +311,16 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<List<Map<String, dynamic>>> fetchJournalEntries() =>
-      _fetchAllDocuments(
+      _fetchAllRows(
           'journal_entries',
           buildUserScopedQueries(userId, orderBy: Query.orderDesc(r'$createdAt')));
 
   @override
   Future<void> upsertJournalEntry(
       String dateKey, Map<String, dynamic> entry) async {
-    await _upsertDocument(
-      collectionId: 'journal_entries',
-      documentId: entry['id'] as String,
+    await _upsertRow(
+      tableId: 'journal_entries',
+      rowId: entry['id'] as String,
       data: {
         'user_id': userId,
         'date_key': dateKey,
@@ -347,28 +331,28 @@ class AppwriteDatasource implements RemoteDatasource {
 
   @override
   Future<void> deleteJournalEntry(String entryId) async {
-    await _databases.deleteDocument(
+    await _tablesDB.deleteRow(
       databaseId: databaseId,
-      collectionId: 'journal_entries',
-      documentId: entryId,
+      tableId: 'journal_entries',
+      rowId: entryId,
     );
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────
 
-  /// Project an Appwrite `Document` back to the row shape downstream
+  /// Project an Appwrite `Row` back to the row shape downstream
   /// repositories expect: snake_case fields, `id` set, `created_at` /
   /// `updated_at` populated from the auto-managed `$createdAt` /
   /// `$updatedAt` (which are already ISO 8601 strings in SDK 21.4.0).
-  Map<String, dynamic> _docToRow(Document doc) {
-    final data = Map<String, dynamic>.from(doc.data);
-    data['id'] = doc.$id;
-    data['created_at'] = doc.$createdAt;
-    data['updated_at'] = doc.$updatedAt;
+  Map<String, dynamic> _rowToMap(Row row) {
+    final data = Map<String, dynamic>.from(row.data);
+    data['id'] = row.$id;
+    data['created_at'] = row.$createdAt;
+    data['updated_at'] = row.$updatedAt;
     return data;
   }
 
-  /// Composite document id for special_days and moods (one row per
+  /// Composite row id for special_days and moods (one row per
   /// user × date). Matches the Supabase convention.
   String _compositeId(String dateKey) => '${userId}_$dateKey';
 }
