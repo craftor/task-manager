@@ -40,6 +40,11 @@ class AppwriteDatasource implements RemoteDatasource {
 
   Databases get _databases => Databases(_client);
 
+  /// Exposed for `SyncManager`'s Realtime subscription. Shares the same
+  /// authenticated `Client` instance used for REST calls (so the
+  /// WebSocket upgrade carries the session cookie).
+  Realtime get realtime => Realtime(_client);
+
   static const int _pageSize = 100;
 
   // ─── Shared fetch helpers (paginated) ────────────────────────────────

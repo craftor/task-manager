@@ -89,6 +89,41 @@ class JournalRepositoryImpl implements JournalRepository {
     }
   }
 
+  @override
+  Future<void> applyRemoteUpsertEntry(
+    String dateKey,
+    Map<String, dynamic> entry,
+  ) async {
+    try {
+      final all = await _loadCache();
+      final entries = all.putIfAbsent(dateKey, () => []);
+      final id = entry['id'] as String;
+      final idx = entries.indexWhere((e) => e.id == id);
+      final parsed = JournalEntry.fromJson(entry);
+      if (idx >= 0) {
+        entries[idx] = parsed;
+      } else {
+        entries.insert(0, parsed);
+      }
+      await _saveCache(all);
+    } catch (e) {
+      // Local-cache-only operation; never let a Realtime event crash the
+      // pipeline.
+    }
+  }
+
+  @override
+  Future<void> applyRemoteDeleteEntry(String dateKey, String entryId) async {
+    try {
+      final all = await _loadCache();
+      all[dateKey]?.removeWhere((e) => e.id == entryId);
+      if (all[dateKey]?.isEmpty == true) all.remove(dateKey);
+      await _saveCache(all);
+    } catch (_) {
+      // see applyRemoteUpsertEntry
+    }
+  }
+
   Future<Map<String, List<JournalEntry>>> _loadCache() async {
     final raw = await _store.readJson();
     if (raw is! Map) return {};

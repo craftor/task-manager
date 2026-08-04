@@ -28,4 +28,15 @@ abstract class JournalRepository {
   /// Replace the local cache with whatever [remote] currently holds.
   /// Used by SyncManager after a successful pull.
   Future<void> pullFromRemote(RemoteDatasource remote);
+
+  /// Apply a single entry upsert from an inbound Realtime event. Only
+  /// touches the local cache — never makes a remote call.
+  Future<void> applyRemoteUpsertEntry(
+    String dateKey,
+    Map<String, dynamic> entry,
+  );
+
+  /// Apply a single entry delete from an inbound Realtime event.
+  /// Only touches the local cache.
+  Future<void> applyRemoteDeleteEntry(String dateKey, String entryId);
 }

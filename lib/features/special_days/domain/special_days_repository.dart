@@ -23,4 +23,11 @@ abstract class SpecialDaysRepository {
   Future<void> removeDay(RemoteDatasource remote, String dateKey);
   Future<List<DateTime>> getSortedDates();
   Future<void> pullFromRemote(RemoteDatasource remote);
+
+  /// Per-key upsert from an inbound Realtime event. Only touches the
+  /// local cache — never makes a remote call.
+  Future<void> applyRemoteDay(String dateKey, String dataJson);
+
+  /// Per-key delete from an inbound Realtime event.
+  Future<void> applyRemoteDeleteDay(String dateKey);
 }

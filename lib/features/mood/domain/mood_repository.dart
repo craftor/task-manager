@@ -25,4 +25,11 @@ abstract class MoodRepository {
   Future<void> removeMoods(RemoteDatasource remote, String dateKey);
   Future<Map<String, int>> getDistribution(DateTime start, DateTime end);
   Future<void> pullFromRemote(RemoteDatasource remote);
+
+  /// Per-key upsert from an inbound Realtime event. Only touches the
+  /// local cache — never makes a remote call.
+  Future<void> applyRemoteMood(String dateKey, String dataJson);
+
+  /// Per-key delete from an inbound Realtime event.
+  Future<void> applyRemoteDeleteMood(String dateKey);
 }
