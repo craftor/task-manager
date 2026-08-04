@@ -8,9 +8,11 @@ if [ -z "$NEW_VERSION" ]; then
 fi
 
 # Update pubspec.yaml
-sed -i "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
+# `-i ''` is the BSD/macOS sed syntax (empty backup extension). GNU sed
+# also accepts it, so this works on both.
+sed -i '' "s/^version: .*/version: $NEW_VERSION/" pubspec.yaml
 
 # Update lib/version.dart
-sed -i "s/const String appVersion = '[^']*'/const String appVersion = '$NEW_VERSION'/" lib/version.dart
+sed -i '' "s/const String appVersion = '[^']*'/const String appVersion = '$NEW_VERSION'/" lib/version.dart
 
 echo "Bumped version to $NEW_VERSION"

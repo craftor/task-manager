@@ -5,6 +5,52 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-08-04
+
+### Added
+- **Appwrite Realtime subscription** in `SyncManager`. Changes from
+  other devices now propagate within ~1s instead of waiting for the
+  5-min poll. Subscribes to all 6 collections (`projects`, `tasks`,
+  `time_entries`, `special_days`, `moods`, `journal_entries`) over a
+  shared WebSocket using the Appwrite session cookie for auth.
+- **Per-key apply methods** on the journal / mood / special_days
+  repositories (`applyRemoteUpsertEntry` / `applyRemoteDeleteEntry`,
+  `applyRemoteMood` / `applyRemoteDeleteMood`,
+  `applyRemoteDay` / `applyRemoteDeleteDay`). Realtime events now
+  write the affected key only, instead of clobbering the whole
+  SharedPreferences cache the way `pullFromRemote` does.
+- **`scripts/smoke_tablesdb.sh`** — pre-merge validation for the
+  TablesDB migration. Accepts either an opaque session token or
+  email + password (auto-login). 6/6 collections pass against the
+  self-hosted Appwrite 1.9 instance.
+
+### Changed
+- **Migrated Appwrite `Databases` → `TablesDB`** (SDK 21.4.0's
+  recommended replacement for the deprecated document API).
+  `listDocuments` → `listRows`, `createDocument` → `createRow`,
+  `updateDocument` → `updateRow`, `deleteDocument` → `deleteRow`;
+  collection/document ids renamed to table/row. The manual
+  try-create-then-update-on-409 upsert is replaced with the SDK's
+  native `TablesDB.upsertRow` (one round-trip, no exception-driven
+  control flow). `Row.fromMap` has the same `data: map["data"] ?? map`
+  shadowing bug that hit `Document.fromMap` (now fixed in 0.12.6),
+  so `special_days` and `moods` still use the raw HTTP path — now
+  pointing at `/tablesdb/.../tables/.../rows`. The
+  `// ignore_for_file: deprecated_member_use` annotation is gone.
+- **Drift `upsert{Project,Task,TimeEntry}FromRemote` now return
+  `Future<bool>`** and short-circuit when the local copy is
+  `pendingSync=true`. Same guard applies to the periodic pull, so
+  offline edits are never clobbered by either a Realtime event or a
+  pull that arrives before the push completes.
+
+### Removed
+- **`backend/`** — the v0.10.0-era Rust+Axum+PostgreSQL service
+  that was made redundant by the v0.11.0 Supabase → Appwrite
+  migration but never deleted. Cargo workspace, Dockerfile,
+  docker-compose, migrations, and 22 Rust source files all gone.
+  `run_api_tests.bat` (the only file outside `backend/` that
+  referenced it) gone too. Net diff: −1,773 lines.
+
 ## [0.12.7] - 2026-07-19
 
 ### Changed
