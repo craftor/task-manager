@@ -3,13 +3,19 @@
 # self-hosted Appwrite instance. Used for pre-merge validation of the
 # Databases → TablesDB migration.
 #
-# Usage:
-#   1. Sign in to the app (or use the Appwrite console to create a
-#      session for your test user). Copy the session token.
-#   2. Run:
+# Two ways to authenticate:
+#
+#   A) Provide a session token directly (the opaque JWT-like value from
+#      the `Set-Cookie: a_session_<projectId>=...` response of
+#      POST /v1/account/sessions/email, NOT the session `$id` field):
 #        APPWRITE_SESSION_TOKEN=... ./scripts/smoke_tablesdb.sh
-#      Optional overrides: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID,
-#                          APPWRITE_DATABASE_ID
+#
+#   B) Provide email + password; the script logs in and extracts the
+#      cookie value automatically:
+#        APPWRITE_EMAIL=... APPWRITE_PASSWORD=... ./scripts/smoke_tablesdb.sh
+#
+# Optional overrides: APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID,
+#                     APPWRITE_DATABASE_ID.
 #
 # Exits 0 if every collection accepts upsertRow + getRow, and deletes the
 # smoke row on exit (clean state). Exits 1 (with a per-endpoint report)
@@ -23,7 +29,54 @@ set -o pipefail
 ENDPOINT="${APPWRITE_ENDPOINT:-http://o.21up.cn:6080/v1}"
 PROJECT_ID="${APPWRITE_PROJECT_ID:-6a20e0b10013cae75d20}"
 DB_ID="${APPWRITE_DATABASE_ID:-6a20eeaa002f0f294ab9}"
-SESSION="${APPWRITE_SESSION_TOKEN:?APPWRITE_SESSION_TOKEN env var is required (no default)}"
+
+# Appwrite 1.9+ requires the session via the `a_session_<projectId>` cookie.
+# The cookie value is the JWT-like opaque session token, not the session
+# `$id` from createSession. Appwrite SDKs set this on the client
+# automatically; raw curl needs to do it by hand because the
+# X-Appwrite-Session header alone is not honored on 1.9.
+COOKIE_NAME="a_session_${PROJECT_ID}"
+
+# Resolve SESSION: prefer explicit APPWRITE_SESSION_TOKEN; fall back to
+# logging in with APPWRITE_EMAIL + APPWRITE_PASSWORD.
+if [[ -z "${APPWRITE_SESSION_TOKEN:-}" ]]; then
+  if [[ -n "${APPWRITE_EMAIL:-}" && -n "${APPWRITE_PASSWORD:-}" ]]; then
+    echo "=== login: extracting session cookie from /account/sessions/email ==="
+    raw=$(curl -sS -i -X POST "$ENDPOINT/account/sessions/email" \
+      -H "X-Appwrite-Project: $PROJECT_ID" \
+      -H "Content-Type: application/json" \
+      -d "{\"email\":\"$APPWRITE_EMAIL\",\"password\":\"$APPWRITE_PASSWORD\"}")
+    status=$(printf '%s\n' "$raw" | head -1 | awk '{print $2}')
+    if [[ "$status" != "201" ]]; then
+      echo "login failed (HTTP $status):"
+      printf '%s\n' "$raw" | head -20
+      exit 2
+    fi
+    # Pull `a_session_<projectId>=<value>` out of the Set-Cookie header.
+    # curl's -i output puts headers above a blank line; the cookie value
+    # may be URL-encoded (contains %3D at the end). `cut -d= -f2-` keeps
+    # any further `=` characters intact.
+    SESSION=$(printf '%s\n' "$raw" \
+      | tr -d '\r' \
+      | grep -i "^set-cookie: $COOKIE_NAME=" \
+      | head -1 \
+      | sed -e "s/^[Ss]et-[Cc]ookie: $COOKIE_NAME=//" \
+            -e 's/;.*$//')
+    if [[ -z "$SESSION" ]]; then
+      echo "login succeeded but no $COOKIE_NAME cookie in response"
+      printf '%s\n' "$raw" | head -20
+      exit 2
+    fi
+    echo "  got session (length=${#SESSION})"
+  else
+    echo "error: provide either APPWRITE_SESSION_TOKEN, or APPWRITE_EMAIL + APPWRITE_PASSWORD" >&2
+    exit 2
+  fi
+else
+  SESSION="$APPWRITE_SESSION_TOKEN"
+fi
+
+COOKIE_HEADER="Cookie: ${COOKIE_NAME}=${SESSION}"
 
 # Synthetic user_id so the smoke row is invisible to the real user's
 # user-scoped queries (every fetch filters by user_id; this row never
@@ -58,7 +111,7 @@ cleanup() {
     code=$(curl -sS -o /dev/null -w "%{http_code}" \
       -X DELETE "$ENDPOINT/tablesdb/$DB_ID/tables/$c/rows/$ROW_ID" \
       -H "X-Appwrite-Project: $PROJECT_ID" \
-      -H "X-Appwrite-Session: $SESSION" || echo "ERR")
+      -H "$COOKIE_HEADER" || echo "ERR")
     if [[ "$code" =~ ^2 || "$code" == "404" ]]; then
       echo "  $c: deleted (HTTP $code)"
     else
@@ -78,7 +131,7 @@ check_endpoint() {
       http=$(curl -sS -o "$tmpf" -w "%{http_code}" \
         -X POST "$ENDPOINT/tablesdb/$DB_ID/tables/$c/rows" \
         -H "X-Appwrite-Project: $PROJECT_ID" \
-        -H "X-Appwrite-Session: $SESSION" \
+        -H "$COOKIE_HEADER" \
         -H "Content-Type: application/json" \
         -d "{\"rowId\":\"$ROW_ID\",\"data\":$(payload_for "$c")}")
       ;;
@@ -86,7 +139,7 @@ check_endpoint() {
       http=$(curl -sS -o "$tmpf" -w "%{http_code}" \
         "$ENDPOINT/tablesdb/$DB_ID/tables/$c/rows/$ROW_ID" \
         -H "X-Appwrite-Project: $PROJECT_ID" \
-        -H "X-Appwrite-Session: $SESSION")
+        -H "$COOKIE_HEADER")
       ;;
   esac
 
