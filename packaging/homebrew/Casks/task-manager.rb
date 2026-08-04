@@ -1,6 +1,6 @@
 cask "task-manager" do
-  version "0.12.3"
-  sha256 "13c7514d0de0495582903f523202557cfb36e8af26c5c9c17139aae29ca1fa41"
+  version "0.13.0"
+  sha256 "343191351ef0c204aaa31b5253f7b949a8e5522df5f30184254c8b7957d843de"
 
   url "https://github.com/craftor/task-manager/releases/download/v#{version}/TaskManager_v#{version}_macos.dmg"
   name "Task Manager"
