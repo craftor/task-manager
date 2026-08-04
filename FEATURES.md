@@ -101,7 +101,7 @@
 
 ## 13. 同步 (Sync)
 
-- Supabase 远程数据同步
+- Appwrite 远程数据同步
 - 离线队列管理
 - 远程数据优先的冲突解决
 - 心跳检测连接状态
@@ -110,5 +110,5 @@
 
 - **状态管理**：Riverpod (StreamNotifierProvider)
 - **本地数据库**：Drift (SQLite)
-- **实时同步**：Supabase PostgreSQL
+- **实时同步**：Appwrite Realtime（WebSocket 推送）
 - **架构**：Clean Architecture（domain/data/presentation 分层）
