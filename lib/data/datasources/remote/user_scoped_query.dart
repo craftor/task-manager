@@ -1,7 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 
 /// Build the standard user-scoped query string list for every Appwrite
-/// fetch. Appwrite SDK 21.4.0's `listDocuments` accepts `List<String>`
+/// fetch. Appwrite SDK 21.4.0's `listRows` accepts `List<String>`
 /// (each entry is a serialized Query JSON), so we return strings.
 /// Centralized so the security invariant ("every row partitioned by
 /// `user_id`") can't drift between call sites.
