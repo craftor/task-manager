@@ -54,9 +54,9 @@ void main() {
       when(() => mockDb.markProjectSynced(any())).thenAnswer((_) async {});
       when(() => mockDb.markTaskSynced(any())).thenAnswer((_) async {});
       when(() => mockDb.markTimeEntrySynced(any())).thenAnswer((_) async {});
-      when(() => mockDb.upsertProjectFromRemote(any())).thenAnswer((_) async {});
-      when(() => mockDb.upsertTaskFromRemote(any())).thenAnswer((_) async {});
-      when(() => mockDb.upsertTimeEntryFromRemote(any())).thenAnswer((_) async {});
+      when(() => mockDb.upsertProjectFromRemote(any())).thenAnswer((_) async => true);
+      when(() => mockDb.upsertTaskFromRemote(any())).thenAnswer((_) async => true);
+      when(() => mockDb.upsertTimeEntryFromRemote(any())).thenAnswer((_) async => true);
       when(() => mockDb.deleteProject(any())).thenAnswer((_) async => 0);
       when(() => mockDb.deleteTask(any())).thenAnswer((_) async => 0);
 

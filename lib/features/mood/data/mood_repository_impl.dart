@@ -97,6 +97,31 @@ class MoodRepositoryImpl implements MoodRepository {
     }
   }
 
+  @override
+  Future<void> applyRemoteMood(String dateKey, String dataJson) async {
+    try {
+      final list = (json.decode(dataJson) as List)
+          .map((e) => e.toString())
+          .toList();
+      final all = await _loadCache();
+      all[dateKey] = list.take(3).toList();
+      await _saveCache(all);
+    } catch (_) {
+      // Local-cache-only operation; Realtime events must never crash.
+    }
+  }
+
+  @override
+  Future<void> applyRemoteDeleteMood(String dateKey) async {
+    try {
+      final all = await _loadCache();
+      all.remove(dateKey);
+      await _saveCache(all);
+    } catch (_) {
+      // see applyRemoteMood
+    }
+  }
+
   Future<Map<String, List<String>>> _loadCache() async {
     final raw = await _store.readJson();
     if (raw is! Map) return {};

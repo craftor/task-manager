@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:appwrite/appwrite.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import '../../../core/utils/logger.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/datasources/local/app_database.dart';
+import '../../../../data/datasources/remote/appwrite_datasource.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
 import '../../../../domain/entities/project.dart' as entity;
 import '../../../../domain/entities/task.dart' as task_entity;
@@ -37,6 +39,7 @@ class SyncManager {
 
   StreamSubscription? _connectivitySubscription;
   Timer? _periodicSync;
+  RealtimeSubscription? _realtimeSub;
 
   final _syncStateController = StreamController<SyncState>.broadcast();
   Stream<SyncState> get syncStateStream => _syncStateController.stream;
@@ -53,6 +56,7 @@ class SyncManager {
     Logger.d('SyncManager: created, initializing listeners');
     _initConnectivityListener();
     _initPeriodicSync();
+    _initRealtime();
     // Trigger initial sync after a short delay to let auth settle
     Future.delayed(const Duration(seconds: 1), () async {
       try {
@@ -78,6 +82,141 @@ class SyncManager {
       AppConstants.syncInterval,
       (_) => syncAll(),
     );
+  }
+
+  /// Appwrite Realtime subscription — complements the 5-min poll with
+  /// instant change notifications. Pending policy: local rows with
+  /// `pendingSync=true` are authoritative; [upsert*FromRemote] skips
+  /// them, so we never clobber unsynced local edits.
+  ///
+  /// Only attaches to [AppwriteDatasource] (the only backend in use).
+  /// Other datasource implementations get the poll-only behavior.
+  void _initRealtime() {
+    if (_remoteDs is! AppwriteDatasource) return;
+    final appwrite = _remoteDs as AppwriteDatasource;
+    final channels = AppConstants.realtimeChannels
+        .map((c) => 'databases.${appwrite.databaseId}.collections.$c.documents')
+        .toList();
+    try {
+      _realtimeSub = appwrite.realtime.subscribe(channels);
+      _realtimeSub!.stream.listen(_onRealtimeEvent,
+          onError: (Object e, StackTrace st) {
+        Logger.e('SyncManager: realtime stream error', error: e, stackTrace: st);
+      });
+      Logger.d('SyncManager: realtime subscribed to ${channels.length} channels');
+    } catch (e, st) {
+      Logger.e('SyncManager: realtime subscribe failed', error: e, stackTrace: st);
+    }
+  }
+
+  /// Route a Realtime event to the matching local write. Filters out
+  /// events for other users (`payload['user_id']`) before doing any
+  /// work — the Appwrite server doesn't filter by user on its own
+  /// when the client subscribes with the wildcard channel.
+  void _onRealtimeEvent(RealtimeMessage msg) {
+    if (msg.payload.isEmpty) return;
+    final payloadUserId = msg.payload['user_id'];
+    if (payloadUserId != null && payloadUserId != _userIdOf(_remoteDs)) return;
+
+    final collection = _collectionFromChannel(msg.channels);
+    if (collection == null) return;
+
+    final event = msg.events.isNotEmpty ? msg.events.first : '';
+    final isDelete = event.endsWith('.delete');
+
+    // Build a row map mirroring what the REST listDocuments path
+    // produces (snake_case fields, `id` set, `created_at`/`updated_at`).
+    final row = _payloadToRow(msg.payload, isDelete: isDelete);
+    if (row == null) return;
+
+    switch (collection) {
+      case 'projects':
+        if (isDelete) {
+          // Soft-delete is propagated as a row with `deleted_at`. The
+          // delete-only branch here is a safety net for an actual
+          // server-side hard delete (shouldn't happen for projects).
+          _localDb.upsertProjectFromRemote(row);
+        } else {
+          _localDb.upsertProjectFromRemote(row);
+        }
+        break;
+      case 'tasks':
+        if (isDelete) {
+          _localDb.upsertTaskFromRemote(row);
+        } else {
+          _localDb.upsertTaskFromRemote(row);
+        }
+        break;
+      case 'time_entries':
+        if (isDelete) {
+          // Time entries are hard-deleted server-side; replicate that
+          // locally so the local cache doesn't keep a tombstone.
+          _localDb.deleteTimeEntry(row['id'] as String);
+        } else {
+          _localDb.upsertTimeEntryFromRemote(row);
+        }
+        break;
+      case 'journal_entries':
+        final dateKey = row['date_key'] as String?;
+        final id = row['id'] as String;
+        if (dateKey == null) return;
+        if (isDelete) {
+          _journalRepo.applyRemoteDeleteEntry(dateKey, id);
+        } else {
+          _journalRepo.applyRemoteUpsertEntry(
+            dateKey,
+            {
+              'id': id,
+              'created_at': row['created_at'],
+              'content': row['content'],
+            },
+          );
+        }
+        break;
+      case 'moods':
+        final dateKey = row['date_key'] as String?;
+        if (dateKey == null) return;
+        if (isDelete) {
+          _moodRepo.applyRemoteDeleteMood(dateKey);
+        } else {
+          _moodRepo.applyRemoteMood(dateKey, row['data'] as String? ?? '[]');
+        }
+        break;
+      case 'special_days':
+        final dateKey = row['date_key'] as String?;
+        if (dateKey == null) return;
+        if (isDelete) {
+          _specialDaysRepo.applyRemoteDeleteDay(dateKey);
+        } else {
+          _specialDaysRepo.applyRemoteDay(dateKey, row['data'] as String? ?? '{}');
+        }
+        break;
+    }
+  }
+
+  String? _collectionFromChannel(List<String> channels) {
+    for (final c in channels) {
+      for (final id in AppConstants.realtimeChannels) {
+        if (c.contains('.collections.$id.')) return id;
+      }
+    }
+    return null;
+  }
+
+  String? _userIdOf(RemoteDatasource ds) {
+    if (ds is AppwriteDatasource) return ds.userId;
+    return null;
+  }
+
+  Map<String, dynamic>? _payloadToRow(Map<String, dynamic> payload,
+      {required bool isDelete}) {
+    final id = payload[r'$id'] as String?;
+    if (id == null) return null;
+    final row = Map<String, dynamic>.from(payload);
+    row['id'] = id;
+    row['created_at'] = payload[r'$createdAt'] ?? row['created_at'];
+    row['updated_at'] = payload[r'$updatedAt'] ?? row['updated_at'];
+    return row;
   }
 
   Future<void> syncAll() async {
@@ -312,6 +451,7 @@ class SyncManager {
   }
 
   void dispose() {
+    _realtimeSub?.close();
     _connectivitySubscription?.cancel();
     _periodicSync?.cancel();
     _syncStateController.close();

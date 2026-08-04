@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/logger.dart';
 
 part 'app_database.g.dart';
 
@@ -167,7 +168,17 @@ class AppDatabase extends _$AppDatabase {
         .write(const ProjectsCompanion(pendingSync: Value(false)));
   }
 
-  Future<void> upsertProjectFromRemote(Map<String, dynamic> data) async {
+  /// Returns `true` if the row was written, `false` if skipped because
+  /// the local copy is `pendingSync=true` (unpushed local edit is
+  /// authoritative; Realtime / pull must not clobber it).
+  Future<bool> upsertProjectFromRemote(Map<String, dynamic> data) async {
+    final id = data['id'] as String;
+    final existing = await (select(projects)..where((p) => p.id.equals(id)))
+        .getSingleOrNull();
+    if (existing != null && existing.pendingSync) {
+      Logger.d('upsertProjectFromRemote: skip project $id (pendingSync=true)');
+      return false;
+    }
     await into(projects).insertOnConflictUpdate(ProjectsCompanion(
       id: Value(data['id'] as String),
       parentId: Value(data['parent_id'] as String?),
@@ -182,6 +193,7 @@ class AppDatabase extends _$AppDatabase {
       isDefault: Value(data['is_default'] as bool? ?? false),
       pendingSync: const Value(false),
     ));
+    return true;
   }
 
   // Task queries
@@ -213,7 +225,17 @@ class AppDatabase extends _$AppDatabase {
         .write(const TasksCompanion(pendingSync: Value(false)));
   }
 
-  Future<void> upsertTaskFromRemote(Map<String, dynamic> data) async {
+  /// Returns `true` if the row was written, `false` if skipped because
+  /// the local copy is `pendingSync=true` (unpushed local edit is
+  /// authoritative; Realtime / pull must not clobber it).
+  Future<bool> upsertTaskFromRemote(Map<String, dynamic> data) async {
+    final id = data['id'] as String;
+    final existing = await (select(tasks)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    if (existing != null && existing.pendingSync) {
+      Logger.d('upsertTaskFromRemote: skip task $id (pendingSync=true)');
+      return false;
+    }
     await into(tasks).insertOnConflictUpdate(TasksCompanion(
       id: Value(data['id'] as String),
       projectId: Value(data['project_id'] as String),
@@ -237,6 +259,7 @@ class AppDatabase extends _$AppDatabase {
           : null),
       pendingSync: const Value(false),
     ));
+    return true;
   }
 
   /// Normalize the `tags` field across remote backends.
@@ -272,7 +295,17 @@ class AppDatabase extends _$AppDatabase {
         .write(const TimeEntriesCompanion(pendingSync: Value(false)));
   }
 
-  Future<void> upsertTimeEntryFromRemote(Map<String, dynamic> data) async {
+  /// Returns `true` if the row was written, `false` if skipped because
+  /// the local copy is `pendingSync=true` (unpushed local edit is
+  /// authoritative; Realtime / pull must not clobber it).
+  Future<bool> upsertTimeEntryFromRemote(Map<String, dynamic> data) async {
+    final id = data['id'] as String;
+    final existing = await (select(timeEntries)..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (existing != null && existing.pendingSync) {
+      Logger.d('upsertTimeEntryFromRemote: skip $id (pendingSync=true)');
+      return false;
+    }
     await into(timeEntries).insertOnConflictUpdate(TimeEntriesCompanion(
       id: Value(data['id'] as String),
       taskId: Value(data['task_id'] as String),
@@ -283,6 +316,7 @@ class AppDatabase extends _$AppDatabase {
       manual: Value(data['manual'] as bool? ?? false),
       pendingSync: const Value(false),
     ));
+    return true;
   }
 }
 

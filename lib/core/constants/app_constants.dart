@@ -33,4 +33,16 @@ class AppConstants {
 
   // Sync settings
   static const Duration syncInterval = Duration(minutes: 5);
+
+  // Realtime subscription — collection ids to subscribe to for instant
+  // sync (Realtime events complement the 5-min poll; pendingSync=true
+  // local rows still take precedence over incoming events).
+  static const List<String> realtimeChannels = [
+    'projects',
+    'tasks',
+    'time_entries',
+    'special_days',
+    'moods',
+    'journal_entries',
+  ];
 }

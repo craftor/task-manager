@@ -96,6 +96,29 @@ class SpecialDaysRepositoryImpl implements SpecialDaysRepository {
     }
   }
 
+  @override
+  Future<void> applyRemoteDay(String dateKey, String dataJson) async {
+    try {
+      final data = json.decode(dataJson) as Map<String, dynamic>;
+      final all = await _loadCache();
+      all[dateKey] = data.map((k, v) => MapEntry(k, v.toString()));
+      await _saveCache(all);
+    } catch (_) {
+      // Local-cache-only operation; Realtime events must never crash.
+    }
+  }
+
+  @override
+  Future<void> applyRemoteDeleteDay(String dateKey) async {
+    try {
+      final all = await _loadCache();
+      all.remove(dateKey);
+      await _saveCache(all);
+    } catch (_) {
+      // see applyRemoteDay
+    }
+  }
+
   Future<Map<String, Map<String, String>>> _loadCache() async {
     final raw = await _store.readJson();
     if (raw is! Map) return {};
