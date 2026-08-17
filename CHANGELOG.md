@@ -5,6 +5,19 @@ All notable changes to Task Manager are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-08-17
+
+### Changed
+- **Dependency upgrade within `^` constraints** — 42 packages bumped
+  to newer compatible versions via `flutter pub upgrade`. Notable
+  cross-minor jumps: `analyzer` 6.4.1 → 10.0.1, `source_gen`
+  1.5.0 → 4.2.4 (drove a Drift codegen re-run), `sqlite3` 2.9.4 →
+  3.5.1 (build hook downloads the macOS arm64 dylib on first build,
+  cached thereafter), `sqlparser` 0.37.1 → 0.44.5, `shelf_web_socket`
+  2.0.1 → 3.0.0. No `pubspec.yaml` edits and no application code
+  changes. `flutter analyze` clean, 27/27 unit tests pass, macOS
+  debug build verified.
+
 ## [0.13.0] - 2026-08-04
 
 ### Added
