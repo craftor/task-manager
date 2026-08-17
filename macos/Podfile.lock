@@ -53,7 +53,7 @@ PODS:
     - sqlite3/session
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
-  - window_to_front (0.0.1):
+  - window_to_front (0.0.4):
     - FlutterMacOS
 
 DEPENDENCIES:
@@ -127,7 +127,7 @@ SPEC CHECKSUMS:
   sqlite3: a51c07cf16e023d6c48abd5e5791a61a47354921
   sqlite3_flutter_libs: b3e120efe9a82017e5552a620f696589ed4f62ab
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  window_to_front: 9e76fd432e36700a197dac86a0011e49c89abe0a
+  window_to_front: 2d7d31f268d0b13b7e63b26e31eb0a2e9612239e
 
 PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
 
