@@ -1,20 +1,17 @@
-import '../../../core/appwrite/appwrite_client.dart';
-import '../../../features/auth/domain/appwrite_auth_service.dart';
-import '../../../features/auth/domain/auth_service.dart';
-import 'appwrite_datasource.dart';
+/// Stub for the deleted `remote_datasource_factory.dart`.
+///
+/// All previous entry points returned an Appwrite-backed
+/// [RemoteDatasource]. With Appwrite gone, every public function now
+/// returns a [NoopRemote]. Kept so the `buildRemoteDatasource(userId:)`
+/// callsite in the sync provider keeps compiling.
+library;
+
 import 'remote_datasource.dart';
 
-/// Appwrite database id used by every [AppwriteDatasource] instance.
-const String kAppwriteDatabaseId = '6a20eeaa002f0f294ab9';
+export 'remote_datasource.dart';
 
-/// Build the [AuthService] backed by the global Appwrite client.
-AuthService buildAuthService() => AppwriteAuthService();
-
-/// Build the appropriate [RemoteDatasource] for the current build flag.
-///
-/// When [userId] is null (no signed-in user), returns null — call sites
-/// already handle this case.
-RemoteDatasource? buildRemoteDatasource({required String? userId}) {
-  if (userId == null) return null;
-  return AppwriteDatasource(client, userId, kAppwriteDatabaseId);
-}
+/// Always returns a no-op remote. The `userId` argument is ignored —
+/// the WebDAV pipeline doesn't need per-user scoping because each
+/// installation has its own user-scoped WebDAV folder.
+RemoteDatasource buildRemoteDatasource({String? userId}) =>
+    const NoopRemote();

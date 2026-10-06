@@ -38,7 +38,7 @@ class _MoodStatsScreenState extends ConsumerState<MoodStatsScreen> {
   Widget build(BuildContext context) {
     // Auto-refresh after sync completes
     final syncState = ref.watch(syncStatusProvider);
-    final lastSync = syncState.valueOrNull?.lastSyncTime;
+    final lastSync = syncState.valueOrNull?.lastSuccessAt;
     if (lastSync != null && lastSync != _lastSyncTime) {
       _lastSyncTime = lastSync;
       // Schedule invalidation after build to avoid modifying during build

@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/async_error_view.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
-import '../../sync/data/sync_manager.dart' show SyncStatus;
 import '../../sync/presentation/providers/sync_status_provider.dart';
 import '../domain/journal_entry.dart';
 import 'providers/journal_provider.dart';
@@ -53,7 +52,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // Invalidate on each sync success
     ref.listen(syncStatusProvider, (prev, next) {
       final now = next.valueOrNull;
-      if (now != null && now.status == SyncStatus.success) {
+      if (now != null &&
+          now.lastSuccessAt != null &&
+          prev?.valueOrNull?.lastSuccessAt != now.lastSuccessAt) {
         ref.invalidate(journalEntriesProvider(_todayKey));
         ref.invalidate(journalDatesProvider);
       }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../data/datasources/remote/remote_datasource.dart';
-import '../../sync/data/sync_manager.dart' show SyncStatus;
 import '../../sync/presentation/providers/sync_status_provider.dart';
 import '../domain/special_days_repository.dart';
 import 'providers/special_days_provider.dart';
@@ -39,10 +38,12 @@ class _SpecialDaysScreenState extends ConsumerState<SpecialDaysScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Invalidate on each sync success (SyncManager writes to SharedPreferences)
+    // Invalidate on each sync success (SyncEngine writes to SharedPreferences)
     ref.listen(syncStatusProvider, (prev, next) {
       final now = next.valueOrNull;
-      if (now != null && now.status == SyncStatus.success) {
+      if (now != null &&
+          now.lastSuccessAt != null &&
+          prev?.valueOrNull?.lastSuccessAt != now.lastSuccessAt) {
         ref.invalidate(specialDaysProvider);
         ref.invalidate(specialDaysSortedProvider);
       }

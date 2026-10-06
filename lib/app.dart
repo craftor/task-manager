@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
-import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/app_lock_screen.dart';
 import 'features/auth/presentation/screens/profile_screen.dart';
 import 'features/auth/presentation/providers/app_lock_provider.dart';
@@ -17,7 +16,6 @@ import 'features/mood/presentation/mood_stats_screen.dart';
 import 'features/special_days/presentation/special_days_screen.dart';
 import 'features/settings/presentation/screens/import_export_screen.dart';
 import 'features/sync/presentation/providers/sync_status_provider.dart';
-import 'features/sync/data/sync_manager.dart' show SyncStatus;
 import 'core/services/providers/update_provider.dart';
 import 'core/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,47 +28,40 @@ class TaskManagerApp extends ConsumerWidget {
       title: 'Task Manager',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const AuthWrapper(),
+      home: const AppLauncher(),
     );
   }
 }
 
-class AuthWrapper extends ConsumerWidget {
-  const AuthWrapper({super.key});
+/// First-frame screen. After the Appwrite removal there is no auth
+/// flow — we just decide between the AppLock screen (when enabled)
+/// and the main app. A tiny splash is shown briefly while the
+/// lock-enabled flag is still loading from SharedPreferences.
+class AppLauncher extends ConsumerWidget {
+  const AppLauncher({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    final lockEnabled = ref.watch(appLockEnabledProvider).valueOrNull ?? false;
-
-    // If authenticated but lock is enabled, show lock screen
-    if (authState.status == AuthStatus.authenticated && lockEnabled) {
+    final lockEnabled = ref.watch(appLockEnabledProvider).valueOrNull;
+    if (lockEnabled == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.task_alt, size: 80, color: AppColors.primary),
+              SizedBox(height: 32),
+              CircularProgressIndicator(color: AppColors.primary),
+            ],
+          ),
+        ),
+      );
+    }
+    if (lockEnabled) {
       return const _AppLockWrapper(child: MainScreen());
     }
-
-    switch (authState.status) {
-      case AuthStatus.initial:
-      case AuthStatus.loading:
-        return const Scaffold(
-          backgroundColor: AppColors.background,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.task_alt, size: 80, color: AppColors.primary),
-                SizedBox(height: 32),
-                CircularProgressIndicator(color: AppColors.primary),
-              ],
-            ),
-          ),
-        );
-      case AuthStatus.authenticated:
-        // Handled above with lock wrapper
-        return const MainScreen();
-      case AuthStatus.unauthenticated:
-      case AuthStatus.error:
-        return const LoginScreen();
-    }
+    return const MainScreen();
   }
 }
 
@@ -108,8 +99,22 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     ref.listen(syncStatusProvider, (prev, next) {
       final now = next.valueOrNull;
-      if (now == null || prev?.valueOrNull?.status == now.status) return;
-      if (now.status == SyncStatus.success) {
+      if (now == null || prev?.valueOrNull?.phase == now.phase) return;
+      if (now.lastError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(children: [
+              const Icon(Icons.cloud_off, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(child: Text(now.lastError!)),
+            ]),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else if (now.lastSuccessAt != null &&
+          (prev?.valueOrNull?.lastSuccessAt != now.lastSuccessAt)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(children: [
@@ -120,19 +125,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 2),
-          ),
-        );
-      } else if (now.status == SyncStatus.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(children: [
-              const Icon(Icons.cloud_off, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Expanded(child: Text(now.errorMessage ?? 'Sync failed')),
-            ]),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
           ),
         );
       }

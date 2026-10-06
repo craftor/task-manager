@@ -52,4 +52,20 @@ class Project {
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
+
+  /// Serialize to the snake_case JSON shape used by the WebDAV snapshot
+  /// and (historically) the Appwrite schema.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'parent_id': parentId,
+        'name': name,
+        'description': description,
+        'color': color,
+        'icon': icon,
+        'start_date': startDate?.toIso8601String(),
+        'end_date': endDate?.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+        'is_default': isDefault,
+        'sort_order': sortOrder,
+      };
 }

@@ -80,4 +80,26 @@ class Task {
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
+
+  /// Serialize to the snake_case JSON shape used by the WebDAV snapshot
+  /// and (historically) the Appwrite schema.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'project_id': projectId,
+        'parent_task_id': parentTaskId,
+        'title': title,
+        'description': description,
+        'priority': priority.index,
+        'status': status.index,
+        'start_date': startDate?.toIso8601String(),
+        'due_date': dueDate?.toIso8601String(),
+        'tags': tags,
+        'estimated_minutes': estimatedMinutes,
+        'actual_minutes': actualMinutes,
+        'is_recurring': isRecurring,
+        'recurring_rule': recurringRule,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+        'sort_order': sortOrder,
+      };
 }

@@ -78,7 +78,7 @@ class TaskRepositoryImpl implements TaskRepository {
 
       // Push to remote immediately
       if (_remote != null) {
-        _remote!.upsertTask(task).then((_) {
+        _remote!.upsertTask(task.toJson()).then((_) {
           Logger.d('TaskRepositoryImpl.createTask: synced to remote');
         }).catchError((e) {
           Logger.d('TaskRepositoryImpl.createTask remote push failed: $e');
@@ -118,7 +118,7 @@ class TaskRepositoryImpl implements TaskRepository {
 
       // Push to remote immediately
       if (_remote != null) {
-        _remote!.upsertTask(task).then((_) {
+        _remote!.upsertTask(task.toJson()).then((_) {
           Logger.d('TaskRepositoryImpl.updateTask: synced to remote');
         }).catchError((e) {
           Logger.d('TaskRepositoryImpl.updateTask remote push failed: $e');
@@ -164,7 +164,9 @@ class TaskRepositoryImpl implements TaskRepository {
     // Appwrite writes it, and on the next SyncManager tick the local
     // tombstone will be physically deleted after successful ack.
     if (_remote != null) {
-      _remote!.upsertTask(_mapToEntity(dbTask), deletedAt: DateTime.now())
+      _remote!
+          .upsertTask(_mapToEntity(dbTask).toJson(),
+              deletedAt: DateTime.now())
           .then((_) {
         Logger.d('TaskRepositoryImpl.deleteTask: tombstone pushed to remote');
       }).catchError((e) {

@@ -1,43 +1,44 @@
-import 'dart:async';
+/// Local-auth state holder.
+///
+/// After the Appwrite removal there is no server-side auth. This
+/// provider exists to keep the existing UI surface (avatar / email /
+/// userId) working without forcing every callsite to be rewritten.
+///
+/// New writes (signIn / signUp) are intentionally NOT exposed — the
+/// email/password flow is gone. The app launches directly into the
+/// dashboard, gated only by [appLockEnabledProvider].
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../../data/datasources/remote/remote_datasource_factory.dart';
-import '../../domain/auth_event.dart';
-import '../../domain/auth_service.dart' show AuthFailureKind, AuthService;
-
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 class AuthState {
-  final AuthStatus status;
-  final String? errorMessage;
-  final AuthFailureKind? failureKind;
-  final String? email;
-  final String? userId;
-  final String? avatarUrl;
-
   const AuthState({
-    this.status = AuthStatus.initial,
-    this.errorMessage,
-    this.failureKind,
     this.email,
     this.userId,
     this.avatarUrl,
   });
 
+  /// Optional local "display name". Empty by default; the user can set
+  /// it from the settings screen to personalize the avatar.
+  final String? email;
+
+  /// Stable identifier for this installation. Always the literal
+  /// "local" — exists so the WebDAV pipeline and any legacy code
+  /// expecting a non-null user id keeps working.
+  final String? userId;
+
+  /// Path to a user-picked avatar image, stored in SharedPreferences.
+  final String? avatarUrl;
+
+  static const empty = AuthState(userId: 'local');
+
   AuthState copyWith({
-    AuthStatus? status,
-    String? errorMessage,
-    AuthFailureKind? failureKind,
     String? email,
     String? userId,
     String? avatarUrl,
-    bool clearError = false,
   }) {
     return AuthState(
-      status: status ?? this.status,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      failureKind: clearError ? null : (failureKind ?? this.failureKind),
       email: email ?? this.email,
       userId: userId ?? this.userId,
       avatarUrl: avatarUrl ?? this.avatarUrl,
@@ -45,120 +46,63 @@ class AuthState {
   }
 }
 
-/// Holds the active [AuthService] for the current build. Selected by
-/// `kUseAppwrite` in `remote_datasource_factory.dart`; tests can override
-/// via [authServiceProvider.overrideWithValue].
-final authServiceProvider = Provider<AuthService>((ref) {
-  return buildAuthService();
-});
-
-final authStateProvider = NotifierProvider<AuthNotifier, AuthState>(
-  AuthNotifier.new,
+final authStateProvider = NotifierProvider<LocalAuthNotifier, AuthState>(
+  LocalAuthNotifier.new,
 );
 
-class AuthNotifier extends Notifier<AuthState> {
-  late final AuthService _authService;
-  StreamSubscription? _authSubscription;
+class LocalAuthNotifier extends Notifier<AuthState> {
+  static const _kAvatarKey = 'user_avatar';
+  static const _kEmailKey = 'user_email';
 
   @override
   AuthState build() {
-    _authService = ref.watch(authServiceProvider);
-    _loadAvatar();
-    _initAuthState();
-    ref.onDispose(() {
-      _authSubscription?.cancel();
-    });
-    return const AuthState(status: AuthStatus.loading);
+    _loadFromPrefs();
+    return AuthState.empty;
   }
 
-  Future<void> _loadAvatar() async {
+  Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final avatar = prefs.getString('user_avatar');
-    if (avatar != null) {
-      state = state.copyWith(avatarUrl: avatar);
-    }
+    final avatar = prefs.getString(_kAvatarKey);
+    final email = prefs.getString(_kEmailKey);
+    if (avatar == null && email == null) return;
+    state = AuthState(
+      email: email,
+      userId: state.userId,
+      avatarUrl: avatar,
+    );
   }
 
-  Future<void> _initAuthState() async {
-    await _authService.initialize();
-    final user = _authService.currentUser;
-    if (user != null) {
-      state = AuthState(
-        status: AuthStatus.authenticated,
-        email: user.email,
-        userId: user.id,
-        avatarUrl: state.avatarUrl,
-      );
+  Future<void> setEmail(String? email) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (email == null || email.isEmpty) {
+      await prefs.remove(_kEmailKey);
     } else {
-      state = const AuthState(status: AuthStatus.unauthenticated);
+      await prefs.setString(_kEmailKey, email);
     }
-
-    _authSubscription = _authService.onAuthStateChange.listen((event) {
-      if (event is AuthSignedInEvent) {
-        state = AuthState(
-          status: AuthStatus.authenticated,
-          email: event.user.email,
-          userId: event.user.id,
-          avatarUrl: state.avatarUrl,
-        );
-      } else if (event is AuthSignedOutEvent) {
-        state = const AuthState(status: AuthStatus.unauthenticated);
-      }
-    });
-  }
-
-  Future<void> signIn(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
-    final result = await _authService.signInWithEmail(email, password);
-    if (result.success) {
-      state = AuthState(
-        status: AuthStatus.authenticated,
-        email: result.user?.email,
-        userId: result.user?.id,
-        avatarUrl: state.avatarUrl,
-      );
-    } else {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: result.error,
-        failureKind: result.failureKind,
-      );
-    }
-  }
-
-  Future<void> signUp(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading, clearError: true);
-    final result = await _authService.signUp(email, password);
-    if (result.success) {
-      state = AuthState(
-        status: AuthStatus.authenticated,
-        email: result.user?.email,
-        userId: result.user?.id,
-        avatarUrl: state.avatarUrl,
-      );
-    } else {
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: result.error,
-        failureKind: result.failureKind,
-      );
-    }
+    state = AuthState(
+      email: email,
+      userId: state.userId,
+      avatarUrl: state.avatarUrl,
+    );
   }
 
   Future<void> updateAvatar(String imagePath) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_avatar', imagePath);
-    state = state.copyWith(avatarUrl: imagePath);
+    await prefs.setString(_kAvatarKey, imagePath);
+    state = AuthState(
+      email: state.email,
+      userId: state.userId,
+      avatarUrl: imagePath,
+    );
   }
 
   Future<void> removeAvatar() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_avatar');
-    state = state.copyWith(avatarUrl: null);
-  }
-
-  Future<void> signOut() async {
-    await _authService.signOut();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    await prefs.remove(_kAvatarKey);
+    state = AuthState(
+      email: state.email,
+      userId: state.userId,
+      avatarUrl: null,
+    );
   }
 }

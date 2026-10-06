@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/appwrite/appwrite_client.dart';
+import '../../../sync/presentation/providers/sync_status_provider.dart';
 import '../../../tasks/presentation/providers/tasks_provider.dart';
 import '../../../projects/presentation/providers/projects_provider.dart';
 import '../../../time_tracking/presentation/providers/time_tracking_provider.dart' show timeEntriesProvider;
@@ -29,10 +29,10 @@ class DashboardScreen extends ConsumerWidget {
             const Text('Dashboard'),
             const Spacer(),
             TextButton.icon(
-              onPressed: () => _sendPing(context),
-              icon: const Icon(Icons.wifi_tethering,
+              onPressed: () => _testSync(context, ref),
+              icon: const Icon(Icons.cloud_sync,
                   size: 18, color: AppColors.primary),
-              label: const Text('Send a ping',
+              label: const Text('Sync now',
                   style: TextStyle(color: AppColors.primary)),
             ),
             _CompactQuickActions(onNavigate: onNavigate),
@@ -53,21 +53,34 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  /// Appwrite connectivity check from the official onboarding flow.
-  Future<void> _sendPing(BuildContext context) async {
+  /// Pull-merge from the configured WebDAV server. Surfaces a brief
+  /// SnackBar with the result. Triggered from the dashboard's "Sync
+  /// now" button.
+  Future<void> _testSync(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      final result = await client.ping();
+    final engine = ref.read(syncEngineProvider);
+    final creds = ref.read(webdavCredentialsProvider);
+    if (!creds.isValid) {
       messenger.showSnackBar(
-        SnackBar(
-          content: Text('Ping successful: $result'),
+        const SnackBar(
+          content: Text('Configure WebDAV in Settings → Sync first.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    try {
+      await engine.pull();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Sync completed'),
           backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Ping failed: $e'),
+          content: Text('Sync failed: $e'),
           backgroundColor: AppColors.error,
         ),
       );

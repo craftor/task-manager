@@ -58,7 +58,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
       // Push to remote immediately
       if (_remote != null) {
-        _remote!.upsertProject(project).then((_) {
+        _remote!.upsertProject(project.toJson()).then((_) {
           Logger.d('ProjectRepositoryImpl.createProject: synced to remote');
         }).catchError((e) {
           Logger.d('ProjectRepositoryImpl.createProject remote push failed: $e');
@@ -89,7 +89,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
       // Push to remote immediately
       if (_remote != null) {
-        _remote!.upsertProject(project).then((_) {
+        _remote!.upsertProject(project.toJson()).then((_) {
           Logger.d('ProjectRepositoryImpl.updateProject: synced to remote');
         }).catchError((e) {
           Logger.d('ProjectRepositoryImpl.updateProject remote push failed: $e');
@@ -125,8 +125,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
     ));
 
     if (_remote != null) {
-      _remote!.upsertProject(_mapToEntity(dbProject), deletedAt: DateTime.now())
-          .then((_) {
+      final json = _mapToEntity(dbProject).toJson();
+      json['deleted_at'] = DateTime.now().toIso8601String();
+      _remote!.upsertProject(json).then((_) {
         Logger.d('ProjectRepositoryImpl.deleteProject: tombstone pushed to remote');
       }).catchError((e) {
         Logger.d('ProjectRepositoryImpl.deleteProject remote push failed: $e');
