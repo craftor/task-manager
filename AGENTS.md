@@ -4,7 +4,11 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Project Overview
 
-Personal task and time management Flutter app with Appwrite backend, built with Clean Architecture.
+Personal task and time management Flutter app. **Local-first**: all data
+lives in a Drift/SQLite database plus a few SharedPreferences caches.
+**Optional WebDAV backup** (configurable server URL + Basic-auth) keeps
+a single snapshot file (`snapshot.json`) that the app can push to or
+pull-merge from on demand or on a 5-minute timer.
 
 ## Commands
 
@@ -16,7 +20,7 @@ flutter pub get
 flutter run
 
 # Run a single test file
-flutter test test/unit/sync_manager_test.dart
+flutter test test/unit/snapshot_merge_test.dart
 
 # Run all tests
 flutter test
@@ -36,8 +40,20 @@ flutter build linux --release
 
 ```
 lib/
-├── core/              # Shared: theme, constants, exceptions, logger, appwrite client
-├── data/              # Repository implementations + Drift database + RemoteDatasource (Appwrite impl)
+├── core/              # Shared: theme, constants, exceptions, logger
+├── data/              # Repository implementations + Drift database + RemoteDatasource (Noop stub)
+│   ├── datasources/
+│   │   ├── local/app_database.dart  # Drift schema (projects, tasks, time_entries)
+│   │   └── remote/                  # NoopRemote + buildRemoteDatasource() shim
+│   └── sync/                       # NEW: WebDAV sync pipeline
+│       ├── snapshot.dart           # SyncSnapshot wire shape
+│       ├── snapshot_codec.dart     # Drift/SharedPrefs ↔ JSON
+│       ├── sync_engine.dart        # push / pull / merge orchestration
+│       ├── sync_status.dart        # SyncReport / SyncPhase / SyncDirection
+│       └── webdav/
+│           ├── webdav_client.dart
+│           ├── webdav_credentials.dart
+│           └── webdav_exceptions.dart
 ├── domain/            # Entities + repository interfaces
 └── features/         # Feature modules (auth, calendar, dashboard, journal, mood, projects, settings, special_days, sync, tasks, time_tracking)
     └── [feature]/
@@ -48,24 +64,28 @@ lib/
 
 **State management:** Riverpod (StreamNotifierProvider, StateNotifierProvider)
 
-**Database:** Drift (SQLite) with generated type-safe queries in `lib/data/datasources/local/app_database.g.dart`
+**Database:** Drift (SQLite) with generated type-safe queries in `lib/data/datasources/local/app_database.g.dart`. Soft-delete is supported via `deleted_at` columns on `projects` and `tasks`.
 
-**Sync:** Appwrite self-hosted. `SyncManager` runs a 5-min pull timer with optimistic push-before-pull; offline changes queue in Drift (`pendingSync=true`) and retry on reconnect.
+**Auth:** Local-only. AppLock (PIN + biometric, PBKDF2-HMAC-SHA256 with random salt in `flutter_secure_storage`) gates the app on launch; user-facing nickname/avatar is optional cosmetic data stored in SharedPreferences. There is **no server-side account**.
 
-**Providers:** Located in `presentation/` directories under each feature (e.g., `features/auth/presentation/providers/`)
+**Sync:** Optional WebDAV. `SyncEngine` exports a JSON snapshot, uploads it via Basic-auth PUT to `<baseUrl><remotePath>/snapshot.json`. Pull downloads, three-way merges (last-write-wins on `updated_at`; tombstone priority; tie → local), applies to the local DB, then re-uploads the merged result so both sides converge. The default interval is 5 minutes.
+
+**Providers:** Located in `presentation/` directories under each feature (e.g., `features/auth/presentation/providers/`). The global `syncEngineProvider` lives in `features/sync/presentation/providers/sync_status_provider.dart`.
 
 ## Backend
 
-The app connects to a self-hosted Appwrite instance. Endpoint and project ID
-are hardcoded in `lib/core/appwrite/appwrite_client.dart`. **No local
-config, `.env`, or build-time secrets are needed.**
+There is **no backend**. The app connects to a user-configured WebDAV
+server (any standard-compliant provider — Nextcloud, Apache mod_dav,
+Synology, etc.) only when the user supplies a URL + username +
+password in **Settings → Sync (WebDAV)**. The default remote path is
+`/task_manager`, and credentials are kept locally:
 
-The Appwrite console must define 6 collections — `projects`, `tasks`,
-`time_entries`, `special_days`, `moods`, `journal_entries` — with the
-attributes each module expects (see `lib/data/datasources/remote/appwrite_datasource.dart`
-for the field-per-collection contract). Permissions are user-scoped; every
-query also adds `Query.equal('user_id', currentUserId)` because Appwrite
-self-hosted has no native row-level RLS.
+- `webdav_base_url` / `webdav_username` / `webdav_remote_path` →
+  SharedPreferences (plain text)
+- `webdav_password` → `flutter_secure_storage`
+
+No fields are baked into the source; nothing on the server is shared
+between installs.
 
 ## Version
 
@@ -73,8 +93,8 @@ Version is defined in `lib/version.dart` (`appVersion`). This is the single sour
 
 ## macOS Specifics
 
-- `macos/Runner/Release.entitlements` includes `com.apple.security.network.client` — required for Appwrite connectivity
-- Close button minimizes to Dock (AppDelegate.applicationShouldTerminateAfterLastWindowClosed = false)
+- `macos/Runner/Release.entitlements` includes `com.apple.security.network.client` — required for WebDAV connectivity
+- Close button minimizes to Dock (`AppDelegate.applicationShouldTerminateAfterLastWindowClosed = false`)
 - To rebuild after entitlement changes: `flutter build macos --release`
 
 ## Known Issues
@@ -92,3 +112,7 @@ Version is defined in `lib/version.dart` (`appVersion`). This is the single sour
   `Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin`). The instance is
   cached in `build/windows/x64`, so this only needs to be done once per
   machine — or delete `build/` to redo it.
+- **The `webdav_client` Dart package disables dio's default status-code
+  validation** (`WdDio.options.validateStatus = (s) => true`). `WebDavClientWrapper`
+  inspects every response itself and throws `WebDavAuthException`,
+  `WebDavNotFoundException`, or `WebDavNetworkException` as appropriate.

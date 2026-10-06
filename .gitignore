@@ -54,3 +54,7 @@ lib/data/datasources/local/*.g.dart
 # Local debug artifacts
 launch.png
 debug_*.png
+
+# DSH sandbox diagnostics + refactor scratch dirs
+/.acl-report/
+/.refactor-backup-*/
